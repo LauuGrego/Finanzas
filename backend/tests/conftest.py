@@ -49,11 +49,11 @@ def client(tmp_path: Path):
 @pytest.fixture
 def seed(client: TestClient):
     """Two accounts plus references to the categories created by the startup seed."""
-    accounts = client.post("/accounts", json={"name": "Banco", "initial_balance": 100000}).json()
+    accounts = client.post("/api/accounts", json={"name": "Banco", "initial_balance": 100000}).json()
     assert "id" in accounts, accounts
-    wallet = client.post("/accounts", json={"name": "Mercado Pago", "initial_balance": 0}).json()
+    wallet = client.post("/api/accounts", json={"name": "Mercado Pago", "initial_balance": 0}).json()
 
-    categories = client.get("/categories").json()
+    categories = client.get("/api/categories").json()
     by_name = {c["name"]: c for c in categories}
     return {
         "bank": accounts,

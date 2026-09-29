@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from pathlib import Path
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-DB_PATH = BASE_DIR / "finance.db"
-DATABASE_URL = f"sqlite:///{DB_PATH}"
+from app.config import DB_PATH
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+# The parent may not exist yet on a fresh server, and SQLite will not create it.
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+engine = create_engine(
+    f"sqlite:///{DB_PATH}", connect_args={"check_same_thread": False}
+)
 
 
 @event.listens_for(engine, "connect")

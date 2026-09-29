@@ -8,7 +8,7 @@ from tests.conftest import expense
 
 
 def test_create_expense(client, seed):
-    response = client.post("/transactions", json=expense(seed, 25000))
+    response = client.post("/api/transactions", json=expense(seed, 25000))
     assert response.status_code == 201
 
     body = response.json()
@@ -23,45 +23,45 @@ def test_create_expense(client, seed):
 def test_create_income(client, seed):
     payload = expense(seed, 100000)
     payload.update(category_id=seed["salary"]["id"], type="INCOME", description="Sueldo")
-    response = client.post("/transactions", json=payload)
+    response = client.post("/api/transactions", json=payload)
 
     assert response.status_code == 201
     assert response.json()["signed_amount"] == 100000
 
 
 def test_amount_must_be_positive(client, seed):
-    assert client.post("/transactions", json=expense(seed, -100)).status_code == 422
-    assert client.post("/transactions", json=expense(seed, 0)).status_code == 422
+    assert client.post("/api/transactions", json=expense(seed, -100)).status_code == 422
+    assert client.post("/api/transactions", json=expense(seed, 0)).status_code == 422
 
 
 def test_category_type_must_match(client, seed):
     payload = expense(seed, 1000, category_id=seed["salary"]["id"])
-    response = client.post("/transactions", json=payload)
+    response = client.post("/api/transactions", json=payload)
     assert response.status_code == 422
     assert "tipo" in response.json()["detail"].lower()
 
 
 def test_unknown_account_is_rejected(client, seed):
-    assert client.post("/transactions", json=expense(seed, 1000, account_id=9999)).status_code == 404
+    assert client.post("/api/transactions", json=expense(seed, 1000, account_id=9999)).status_code == 404
 
 
 def test_edit_transaction(client, seed):
-    created = client.post("/transactions", json=expense(seed, 25000)).json()
-    response = client.put(f"/transactions/{created['id']}", json={"amount": 30000})
+    created = client.post("/api/transactions", json=expense(seed, 25000)).json()
+    response = client.put(f"/api/transactions/{created['id']}", json={"amount": 30000})
 
     assert response.status_code == 200
     assert response.json()["amount"] == 30000
 
 
 def test_delete_transaction(client, seed):
-    created = client.post("/transactions", json=expense(seed, 25000)).json()
-    assert client.delete(f"/transactions/{created['id']}").status_code == 204
-    assert client.get(f"/transactions/{created['id']}").status_code == 404
+    created = client.post("/api/transactions", json=expense(seed, 25000)).json()
+    assert client.delete(f"/api/transactions/{created['id']}").status_code == 204
+    assert client.get(f"/api/transactions/{created['id']}").status_code == 404
 
 
 def test_transfer_creates_two_linked_movements(client, seed):
     response = client.post(
-        "/transfers",
+        "/api/transfers",
         json={
             "from_account_id": seed["bank"]["id"],
             "to_account_id": seed["wallet"]["id"],
@@ -81,7 +81,7 @@ def test_transfer_creates_two_linked_movements(client, seed):
     # Transfers never get a category: moving money is not spending it.
     assert out["category_id"] is None and income["category_id"] is None
 
-    accounts = client.get("/accounts").json()
+    accounts = client.get("/api/accounts").json()
     balances = {a["name"]: a["balance"] for a in accounts["accounts"]}
     assert balances["Banco"] == 50000
     assert balances["Mercado Pago"] == 50000
@@ -91,7 +91,7 @@ def test_transfer_creates_two_linked_movements(client, seed):
 
 def test_transfer_to_same_account_is_rejected(client, seed):
     response = client.post(
-        "/transfers",
+        "/api/transfers",
         json={
             "from_account_id": seed["bank"]["id"],
             "to_account_id": seed["bank"]["id"],
@@ -104,7 +104,7 @@ def test_transfer_to_same_account_is_rejected(client, seed):
 
 def test_transfer_movements_cannot_be_edited_individually(client, seed):
     created = client.post(
-        "/transfers",
+        "/api/transfers",
         json={
             "from_account_id": seed["bank"]["id"],
             "to_account_id": seed["wallet"]["id"],
@@ -113,14 +113,14 @@ def test_transfer_movements_cannot_be_edited_individually(client, seed):
         },
     ).json()
 
-    assert client.put(f"/transactions/{created['movements'][0]['id']}", json={"amount": 1}).status_code == 422
-    assert client.delete(f"/transactions/{created['movements'][0]['id']}").status_code == 422
+    assert client.put(f"/api/transactions/{created['movements'][0]['id']}", json={"amount": 1}).status_code == 422
+    assert client.delete(f"/api/transactions/{created['movements'][0]['id']}").status_code == 422
 
 
 def test_a_transfer_is_not_spending(client, seed):
     """A transfer must not inflate the month's expenses or appear in the category chart."""
     client.post(
-        "/transfers",
+        "/api/transfers",
         json={
             "from_account_id": seed["bank"]["id"],
             "to_account_id": seed["wallet"]["id"],
@@ -128,10 +128,10 @@ def test_a_transfer_is_not_spending(client, seed):
             "date": seed["today"],
         },
     )
-    client.post("/transactions", json=expense(seed, 12500))
+    client.post("/api/transactions", json=expense(seed, 12500))
 
     month = date.today().strftime("%Y-%m")
-    dashboard = client.get(f"/dashboard?month={month}").json()
+    dashboard = client.get(f"/api/dashboard?month={month}").json()
 
     # Only the 12500 grocery counts as spending.
     assert dashboard["month_summary"]["expense"] == 12500
@@ -145,7 +145,7 @@ def test_a_transfer_is_not_spending(client, seed):
     assert categories[0]["total"] == 12500
 
     # The same applies to the daily view...
-    day = client.get(f"/calendar/day?day={seed['today']}").json()
+    day = client.get(f"/api/calendar/day?day={seed['today']}").json()
     assert day["summary"]["expense"] == 12500
     # ...but the movements themselves are still listed.
     assert len(day["transactions"]) == 3
