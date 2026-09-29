@@ -40,7 +40,7 @@ export function NewMovement() {
               setMode(item.value)
               setOpen(true)
             }}
-            className="card flex flex-col items-center gap-2 py-6 transition hover:border-brand"
+            className="card flex flex-col items-center gap-2 py-6 transition hover:border-gold-dim"
           >
             <span
               aria-hidden="true"
@@ -49,7 +49,7 @@ export function NewMovement() {
                   ? 'text-income'
                   : item.value === 'expense'
                     ? 'text-expense'
-                    : 'text-brand'
+                    : 'text-gold'
               }`}
             >
               <Icon name={item.icon} size={20} />

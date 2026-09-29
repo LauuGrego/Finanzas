@@ -132,7 +132,7 @@ export function Settings() {
                     </span>
                     <button
                       onClick={() => void toggleActive(category)}
-                      className="text-xs text-brand hover:underline"
+                      className="text-xs text-gold hover:underline"
                     >
                       Reactivar
                     </button>

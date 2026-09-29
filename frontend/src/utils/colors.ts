@@ -4,24 +4,28 @@
  * fallbacks keep every chart and dot readable instead of rendering nothing.
  */
 
-/** Named swatches, so the picker can label itself instead of reading hex. */
+/**
+ * Named swatches. Ten hues that stay separable inside a pie chart, pulled
+ * toward the armour palette (copper, gold, arc cyan, steel) without going so
+ * monochrome that two categories end up looking like the same slice.
+ */
 export const CATEGORY_PALETTE = [
-  { name: 'Ámbar', value: '#fbbf24' },
-  { name: 'Azul', value: '#60a5fa' },
-  { name: 'Cian', value: '#22d3ee' },
-  { name: 'Violeta', value: '#c084fc' },
-  { name: 'Rosa', value: '#f472b6' },
-  { name: 'Verde', value: '#4ade80' },
-  { name: 'Naranja', value: '#fb923c' },
-  { name: 'Índigo', value: '#818cf8' },
-  { name: 'Lima', value: '#a3e635' },
-  { name: 'Rojo', value: '#f87171' },
+  { name: 'Cobre', value: '#d98c2b' },
+  { name: 'Acero', value: '#8b98a5' },
+  { name: 'Cian', value: '#5fb8cf' },
+  { name: 'Violeta', value: '#a98cc4' },
+  { name: 'Rojo', value: '#d4655d' },
+  { name: 'Verde', value: '#6fae7a' },
+  { name: 'Bronce', value: '#c47d4a' },
+  { name: 'Oro', value: '#c9a227' },
+  { name: 'Lima', value: '#a8b04e' },
+  { name: 'Rosa', value: '#c9707f' },
 ] as const
 
 /** Distinct hues that stay separable against the dark canvas. */
 export const CATEGORY_COLORS = CATEGORY_PALETTE.map((item) => item.value)
 
-export const FALLBACK_COLOR = '#94a3b8'
+export const FALLBACK_COLOR = '#9d9488'
 
 /** Deterministic pick so a category keeps the same colour across reloads. */
 export function colorFor(seed: number | string): string {

@@ -81,9 +81,9 @@ export function Calendar() {
                   className={`aspect-square rounded-lg sm:rounded-xl flex flex-col
                               items-center justify-center text-sm transition relative
                               ${isSelected
-                                ? 'bg-brand text-brand-ink font-semibold'
+                                ? 'bg-gold text-gold-ink font-semibold'
                                 : isToday
-                                  ? 'bg-brand/15 text-brand font-semibold'
+                                  ? 'bg-gold/10 text-gold font-semibold'
                                   : 'hover:bg-raised'}`}
                 >
                   <span>{day}</span>
@@ -92,9 +92,9 @@ export function Calendar() {
                       aria-hidden="true"
                       className={`absolute bottom-1 w-1 h-1 rounded-full ${
                         isSelected
-                          ? 'bg-brand-ink'
+                          ? 'bg-gold-ink'
                           : hasIncome && hasExpense
-                            ? 'bg-brand'
+                            ? 'bg-gold'
                             : hasIncome
                               ? 'bg-income'
                               : 'bg-expense'

@@ -12,18 +12,19 @@ from app.enums import AccountType, CategoryType
 from app.models import Account, Category
 from app.routers import accounts, categories, dashboard, transactions, transfers
 
-# Colours are chosen to stay distinguishable from each other on the dark UI.
+# Colours pulled toward the armour palette: copper, steel, arc cyan, gold.
+# Ten hues that stay separable inside a pie chart, none of them neon.
 DEFAULT_CATEGORIES: list[tuple[str, CategoryType, str]] = [
-    ("Comida", CategoryType.EXPENSE, "#fbbf24"),
-    ("Transporte", CategoryType.EXPENSE, "#60a5fa"),
-    ("Servicios", CategoryType.EXPENSE, "#22d3ee"),
-    ("Entretenimiento", CategoryType.EXPENSE, "#c084fc"),
-    ("Compras", CategoryType.EXPENSE, "#f472b6"),
-    ("Salud", CategoryType.EXPENSE, "#4ade80"),
-    ("Otros", CategoryType.EXPENSE, "#94a3b8"),
-    ("Sueldo", CategoryType.INCOME, "#34d399"),
-    ("Freelance", CategoryType.INCOME, "#818cf8"),
-    ("Otros ingresos", CategoryType.INCOME, "#fb923c"),
+    ("Comida", CategoryType.EXPENSE, "#d98c2b"),
+    ("Transporte", CategoryType.EXPENSE, "#8b98a5"),
+    ("Servicios", CategoryType.EXPENSE, "#5fb8cf"),
+    ("Entretenimiento", CategoryType.EXPENSE, "#a98cc4"),
+    ("Compras", CategoryType.EXPENSE, "#d4655d"),
+    ("Salud", CategoryType.EXPENSE, "#6fae7a"),
+    ("Otros", CategoryType.EXPENSE, "#a8b04e"),
+    ("Sueldo", CategoryType.INCOME, "#c9a227"),
+    ("Freelance", CategoryType.INCOME, "#c47d4a"),
+    ("Otros ingresos", CategoryType.INCOME, "#c9707f"),
 ]
 
 # The three places money actually sits: physical, bank and virtual wallet.

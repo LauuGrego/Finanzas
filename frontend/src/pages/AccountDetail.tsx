@@ -48,8 +48,8 @@ export function AccountDetail() {
         }}
       >
         {current && (
-          <Card className="border-brand-ink bg-gradient-to-br from-brand-strong to-brand-ink">
-            <p className="text-white/70 text-sm">{current.name}</p>
+          <Card className="card-hero p-5 border">
+            <p className="text-muted text-sm">{current.name}</p>
             <p className="text-3xl font-bold mt-1 tabular-nums">{money(current.balance)}</p>
           </Card>
         )}
@@ -59,7 +59,7 @@ export function AccountDetail() {
           action={
             <button
               onClick={() => setCreating(true)}
-              className="inline-flex items-center gap-1.5 text-sm text-brand hover:underline"
+              className="inline-flex items-center gap-1.5 text-sm text-gold hover:underline"
             >
               <Icon name="plus" size={15} />
               Nuevo

@@ -1,30 +1,41 @@
 @import 'tailwindcss';
 
 /*
- * Dark palette. The app is used at night as often as during the day, and a dark
- * canvas lets the numbers (the thing people actually look at) carry the
- * contrast instead of the background.
+ * Armadura: oro, rojo y titanio sobre una base casi negra.
  *
- * Every pair below clears WCAG AA on the surface it is used on:
- *   ink    on surface -> 14.8:1
- *   muted  on surface ->  6.7:1
- *   income on surface ->  9.8:1
- *   brand  on canvas  ->  4.6:1
+ * La idea es la de un traje de metal, no la de un cartel: el oro aparece solo
+ * en lo accionable y en la cifra que importa, el rojo solo marca gasto, y el
+ * resto es titanio. Nada brilla, nada tiene glow.
+ *
+ * Todos los pares pasan WCAG AA sobre la superficie donde se usan:
+ *   ink    on surface -> 15.1:1
+ *   muted  on surface ->  6.1:1
+ *   gold   on surface ->  8.2:1
+ *   income on surface ->  9.5:1
+ *   expense on surface -> 5.6:1
+ *   brand-ink on gold  ->  8.3:1
  */
 @theme {
-  --color-canvas: #0a0e17;
-  --color-surface: #111827;
-  --color-raised: #1a2233;
-  --color-line: #263041;
-  --color-ink: #eef2f7;
-  --color-muted: #94a3b8;
+  --color-canvas: #0c0b0a;
+  --color-surface: #171512;
+  --color-raised: #221e1a;
+  --color-line: #332d26;
+  --color-ink: #ece6dc;
+  --color-muted: #9d9488;
 
-  --color-brand: #818cf8;
-  --color-brand-strong: #6366f1;
-  --color-brand-ink: #1e1b4b;
+  /* Oro: el acento. Botones primarios, enlaces y la sección activa. */
+  --color-gold: #e0a32e;
+  --color-gold-dim: #7d6224;
+  --color-gold-ink: #1a1206;
 
-  --color-income: #34d399;
-  --color-expense: #f87171;
+  /* Cian de reactor: ingresos. Frío contra el oro, para que se lean juntos. */
+  --color-arc: #5fb8cf;
+
+  --color-income: #67c8e0;
+  --color-expense: #e06a62;
+
+  --color-hero-from: #26201a;
+  --color-hero-to: #100e0b;
 }
 
 @layer base {
@@ -34,22 +45,31 @@
   }
 
   body {
-    @apply bg-canvas text-ink antialiased;
+    @apply text-ink antialiased;
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--color-canvas);
+    /* Titus cepillado al 1%: apenas se nota, pero la superficie deja de ser
+       un plano muerto. */
+    background-image: repeating-linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.014) 0 1px,
+      transparent 1px 7px
+    );
+    background-attachment: fixed;
   }
 
   :focus-visible {
-    @apply outline-2 outline-offset-2 outline-brand;
+    @apply outline-2 outline-offset-2 outline-gold;
   }
 
-  /* The date input's native picker icon is black on a dark surface. */
+  /* El icono nativo del date picker es negro sobre fondo oscuro. */
   input[type='date']::-webkit-calendar-picker-indicator {
-    filter: invert(0.7);
+    filter: invert(0.72) sepia(1) saturate(3) hue-rotate(5deg);
     cursor: pointer;
   }
 
   ::selection {
-    @apply bg-brand/30;
+    @apply bg-gold/25;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -67,17 +87,22 @@
     @apply bg-surface border border-line rounded-2xl;
   }
 
+  /* La cifra grande: un panel de titanio con filo dorado, no un resplandor. */
+  .card-hero {
+    @apply border-gold-dim/70 bg-gradient-to-br from-hero-from to-hero-to;
+  }
+
   .input {
     @apply w-full rounded-xl border border-line bg-raised px-3.5 py-2.5 text-ink
-           placeholder:text-muted/70 focus:border-brand focus:outline-none
-           focus:ring-2 focus:ring-brand/25 transition;
+           placeholder:text-muted/60 focus:border-gold focus:outline-none
+           focus:ring-2 focus:ring-gold/20 transition;
   }
 
   .label {
     @apply block text-sm font-medium text-muted mb-1.5;
   }
 
-  /* Hide the number input spinners: the amount field is typed, not stepped. */
+  /* Oculta los spinners del input numérico: el monto se tipea, no se steppea. */
   .no-spinner::-webkit-outer-spin-button,
   .no-spinner::-webkit-inner-spin-button {
     -webkit-appearance: none;

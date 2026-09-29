@@ -5,7 +5,7 @@ export function Spinner({ label = 'Cargando' }: { label?: string }) {
     <div className="flex items-center justify-center gap-3 py-12 text-muted">
       <span
         aria-hidden="true"
-        className="w-5 h-5 rounded-full border-2 border-line border-t-brand animate-spin"
+        className="w-5 h-5 rounded-full border-2 border-line border-t-gold animate-spin"
       />
       <span className="text-sm">{label}…</span>
     </div>
@@ -20,7 +20,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
       {onRetry && (
         <button
           onClick={onRetry}
-          className="text-sm text-brand hover:underline font-medium"
+          className="text-sm text-gold hover:underline font-medium"
         >
           Reintentar
         </button>

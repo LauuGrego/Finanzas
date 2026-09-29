@@ -72,12 +72,12 @@ export function Accounts() {
             <ul className="space-y-3">
               {accounts.map((account) => (
                 <li key={account.id}>
-                  <Card className="p-5 hover:border-brand transition">
+                  <Card className="p-5 hover:border-gold-dim transition">
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <Link
                           to={`/cuentas/${account.id}`}
-                          className="font-semibold hover:text-brand transition"
+                          className="font-semibold hover:text-gold transition"
                         >
                           {account.name}
                         </Link>
@@ -117,11 +117,10 @@ export function Accounts() {
             </ul>
 
             <div
-              className="card p-5 border-brand-ink bg-gradient-to-br from-brand-strong
-                         to-brand-ink flex items-center justify-between"
+              className="card-hero card p-5 border flex items-center justify-between"
             >
-              <span className="text-white/70 text-sm">Total</span>
-              <span className="font-bold tabular-nums text-lg">{money(total)}</span>
+              <span className="text-muted text-sm">Total</span>
+              <span className="font-bold tabular-nums text-lg text-gold">{money(total)}</span>
             </div>
           </>
         )}

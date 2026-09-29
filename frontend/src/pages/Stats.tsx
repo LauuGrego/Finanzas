@@ -21,13 +21,13 @@ import {
 } from 'recharts'
 
 /** Recharts takes plain CSS colours, so the theme values live here too. */
-const INK = '#eef2f7'
-const MUTED = '#94a3b8'
-const GRID = '#263041'
-const SURFACE = '#1a2233'
-const INCOME = '#34d399'
-const EXPENSE = '#f87171'
-const BRAND = '#818cf8'
+const INK = '#ece6dc'
+const MUTED = '#9d9488'
+const GRID = '#332d26'
+const SURFACE = '#221e1a'
+const INCOME = '#67c8e0'
+const EXPENSE = '#e06a62'
+const GOLD = '#e0a32e'
 
 function shortMonth(period: string): string {
   const [year, month] = period.split('-')
@@ -205,9 +205,9 @@ export function Stats() {
                 <Line
                   type="monotone"
                   dataKey="Saldo"
-                  stroke={BRAND}
+                  stroke={GOLD}
                   strokeWidth={2.5}
-                  dot={{ r: 3, fill: BRAND }}
+                  dot={{ r: 3, fill: GOLD }}
                 />
               </LineChart>
             </ResponsiveContainer>

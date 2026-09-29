@@ -52,25 +52,22 @@ export function Dashboard() {
       >
         {data && (
           <>
-            <section
-              className="rounded-2xl p-5 border border-brand-ink
-                         bg-gradient-to-br from-brand-strong to-brand-ink"
-            >
-              <p className="text-white/70 text-sm">Dinero disponible</p>
+            <section className="card-hero rounded-2xl p-5 border">
+              <p className="text-muted text-sm">Dinero disponible</p>
               <p className="text-3xl sm:text-4xl font-bold mt-1 tabular-nums tracking-tight">
                 {money(data.available_balance)}
               </p>
 
-              <dl className="grid grid-cols-3 gap-2 sm:gap-3 mt-6 pt-5 border-t border-white/15">
+              <dl className="grid grid-cols-3 gap-2 sm:gap-3 mt-6 pt-5 border-t border-line">
                 <div className="min-w-0">
-                  <dt className="text-white/60 text-xs">Ingresos</dt>
-                  <dd className="font-semibold tabular-nums text-sm sm:text-base text-emerald-300 truncate">
+                  <dt className="text-muted text-xs">Ingresos</dt>
+                  <dd className="font-semibold tabular-nums text-sm sm:text-base text-income truncate">
                     {money(data.month_summary.income)}
                   </dd>
                 </div>
                 <div className="min-w-0">
-                  <dt className="text-white/60 text-xs">Gastos</dt>
-                  <dd className="font-semibold tabular-nums text-sm sm:text-base text-red-300 truncate">
+                  <dt className="text-muted text-xs">Gastos</dt>
+                  <dd className="font-semibold tabular-nums text-sm sm:text-base text-expense truncate">
                     {money(data.month_summary.expense)}
                   </dd>
                 </div>
@@ -141,7 +138,7 @@ export function Dashboard() {
               title="Últimos movimientos"
               action={
                 data.recent_transactions.length > 0 ? (
-                  <a href="/movimientos" className="text-sm text-brand hover:underline">
+                  <a href="/movimientos" className="text-sm text-gold hover:underline">
                     Ver todos
                   </a>
                 ) : null
@@ -232,11 +229,11 @@ function ActionCard({
   return (
     <button
       onClick={onClick}
-      className="card p-5 text-left hover:border-brand transition flex items-center gap-3.5"
+      className="card p-5 text-left hover:border-gold-dim transition flex items-center gap-3.5"
     >
       <span
         aria-hidden="true"
-        className="w-10 h-10 rounded-xl grid place-items-center bg-raised text-brand shrink-0"
+        className="w-10 h-10 rounded-xl grid place-items-center bg-raised text-gold shrink-0"
       >
         <Icon name={icon} size={20} />
       </span>

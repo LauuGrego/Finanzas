@@ -4,12 +4,11 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type Size = 'sm' | 'md'
 
 const VARIANTS: Record<Variant, string> = {
-  // The brand colour is a light indigo, so the label is dark ink on it rather
-  // than white, which would not clear contrast.
-  primary: 'bg-brand text-brand-ink hover:brightness-110 disabled:opacity-50',
-  secondary: 'bg-raised text-ink border border-line hover:border-brand/50',
+  // Oro con tinta oscura: en blanco no alcanzaba contraste.
+  primary: 'bg-gold text-gold-ink hover:brightness-110 disabled:opacity-50',
+  secondary: 'bg-raised text-ink border border-line hover:border-gold-dim',
   ghost: 'text-muted hover:text-ink hover:bg-raised',
-  danger: 'bg-expense text-canvas hover:brightness-110',
+  danger: 'bg-expense text-gold-ink hover:brightness-110',
 }
 
 const SIZES: Record<Size, string> = {
