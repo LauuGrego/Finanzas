@@ -1,0 +1,10 @@
+# Command to run the API
+run: uvicorn app.main:app --reload --port 8000
+
+# Python
+python-version = "3.13"
+dependencies = ["fastapi[standard]>=0.115"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"

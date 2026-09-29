@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# The database is personal data: never commit it
+*.db
+*.db-wal
+*.db-shm
+finance.db*
+
+# Environment
+.env
+.env.local
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Backups
+backups/
+*.backup
