@@ -1,32 +1,35 @@
-# React + TypeScript + Vite
+# Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Interfaz de la agenda financiera. React + TypeScript + Vite + Tailwind v4.
 
-Currently, two official plugins are available:
+## Desarrollo
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+El backend tiene que estar corriendo en el puerto 8000. Vite redirige las
+llamadas a `/api` hacia ahí (ver `vite.config.ts`).
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Build
+
+```bash
+npm run build     # verifica tipos y compila en dist/
+npm run preview   # sirve el build
+```
+
+## Estructura
+
+```
+src/
+  pages/         Una pantalla por ruta
+  components/     Modal, FormModal, Card, Button, TransactionItem, Layout...
+  hooks/          useAsync: carga con loading / error / reload
+  services/api.ts Cliente HTTP tipado contra /api
+  utils/format.ts Moneda y fechas en es-AR
+  types/          Los tipos de la API
+```
+
+`types/` espeja los schemas de Pydantic en `backend/app/schemas/`. Si cambiás
+uno, actualizá el otro.
