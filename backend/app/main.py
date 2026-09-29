@@ -26,9 +26,23 @@ DEFAULT_CATEGORIES: list[tuple[str, CategoryType, str]] = [
     ("Otros ingresos", CategoryType.INCOME, "#fb923c"),
 ]
 
+# The three places money actually sits: physical, bank and virtual wallet.
+# Starting balances are zero on purpose: whatever was there before the app
+# existed belongs in `initial_balance` the first time the user touches it.
+DEFAULT_ACCOUNTS: list[tuple[str, AccountType]] = [
+    ("Banco", AccountType.BANK),
+    ("Billetera virtual", AccountType.WALLET),
+    ("Efectivo", AccountType.CASH),
+]
+
 
 def seed_defaults(db: Session, *, with_accounts: bool = True) -> None:
-    """Fill an empty database with a starting set of categories. Idempotent."""
+    """Fill an empty database with a starting set. Idempotent.
+
+    Both blocks are gated on the table being empty rather than on missing
+    names, so an account the user deliberately deactivated or deleted is not
+    resurrected on the next start.
+    """
     if db.scalar(select(func.count(Category.id))) == 0:
         db.add_all(
             Category(name=name, type=type_, color=color)
@@ -37,10 +51,8 @@ def seed_defaults(db: Session, *, with_accounts: bool = True) -> None:
         db.commit()
     if with_accounts and db.scalar(select(func.count(Account.id))) == 0:
         db.add_all(
-            [
-                Account(name="Banco", type=AccountType.BANK, initial_balance=0),
-                Account(name="Efectivo", type=AccountType.CASH, initial_balance=0),
-            ]
+            Account(name=name, type=type_, initial_balance=0)
+            for name, type_ in DEFAULT_ACCOUNTS
         )
         db.commit()
 

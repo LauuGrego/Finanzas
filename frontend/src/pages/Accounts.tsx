@@ -13,7 +13,7 @@ import { money } from '../utils/format'
 
 const TYPE_LABELS: Record<string, string> = {
   BANK: 'Banco',
-  WALLET: 'Billetera',
+  WALLET: 'Billetera virtual',
   CASH: 'Efectivo',
   CREDIT: 'Crédito',
   OTHER: 'Otro',
