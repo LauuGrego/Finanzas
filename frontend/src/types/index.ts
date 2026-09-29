@@ -21,7 +21,7 @@ export interface Category {
   id: number
   name: string
   type: CategoryType
-  icon: string | null
+  color: string | null
   active: boolean
   created_at: string
 }
@@ -29,7 +29,7 @@ export interface Category {
 export interface CategoryRef {
   id: number
   name: string
-  icon: string | null
+  color: string | null
 }
 
 export interface Transaction {
@@ -63,7 +63,7 @@ export interface PeriodSummary {
 export interface CategoryTotal {
   category_id: number | null
   category_name: string
-  icon: string | null
+  color: string | null
   total: number
   percentage: number
   count: number

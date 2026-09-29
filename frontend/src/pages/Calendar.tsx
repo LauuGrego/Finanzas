@@ -1,10 +1,19 @@
 import { useState } from 'react'
 import { Card } from '../components/Card'
+import { MonthStepper } from '../components/MonthStepper'
 import { EmptyState, StateWrapper } from '../components/States'
 import { TransactionItem } from '../components/TransactionItem'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
-import { currentPeriod, daysInMonth, formatDate, mondayFirstWeekday, monthLabel, money, shiftPeriod, todayIso } from '../utils/format'
+import {
+  currentPeriod,
+  daysInMonth,
+  formatDate,
+  mondayFirstWeekday,
+  monthLabel,
+  money,
+  todayIso,
+} from '../utils/format'
 
 const WEEKDAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 
@@ -21,40 +30,21 @@ export function Calendar() {
   const selectedDay = days[selected]
   const selectedInMonth = selected.startsWith(period)
 
+  function goToMonth(next: string) {
+    setPeriod(next)
+    setSelected(todayIso())
+  }
+
   return (
     <div className="space-y-5">
       <header className="flex items-center justify-between gap-3">
-        <h1 className="text-sm font-medium uppercase tracking-wide text-muted">
+        <h1 className="text-sm font-medium uppercase tracking-wide text-muted truncate">
           {monthLabel(period)}
         </h1>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setPeriod(shiftPeriod(period, -1))}
-            aria-label="Mes anterior"
-            className="w-8 h-8 rounded-lg hover:bg-canvas transition"
-          >
-            ‹
-          </button>
-          <button
-            onClick={() => {
-              setPeriod(currentPeriod())
-              setSelected(todayIso())
-            }}
-            className="text-xs text-muted hover:text-ink px-2 py-1 rounded-lg hover:bg-canvas transition"
-          >
-            Hoy
-          </button>
-          <button
-            onClick={() => setPeriod(shiftPeriod(period, 1))}
-            aria-label="Mes siguiente"
-            className="w-8 h-8 rounded-lg hover:bg-canvas transition"
-          >
-            ›
-          </button>
-        </div>
+        <MonthStepper period={period} onChange={goToMonth} />
       </header>
 
-      <Card>
+      <Card className="p-3 sm:p-5">
         <div className="grid grid-cols-7 gap-1 mb-1">
           {WEEKDAYS.map((day) => (
             <div key={day} className="text-center text-xs font-medium text-muted py-1">
@@ -68,7 +58,7 @@ export function Calendar() {
           error={month.error}
           onRetry={() => void month.reload()}
         >
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
             {Array.from({ length: offset }, (_, index) => (
               <div key={`blank-${index}`} />
             ))}
@@ -77,8 +67,8 @@ export function Calendar() {
               const day = index + 1
               const iso = `${period}-${String(day).padStart(2, '0')}`
               const detail = days[iso]
-              const income = detail?.summary.income ?? 0
-              const expense = detail?.summary.expense ?? 0
+              const hasIncome = (detail?.summary.income ?? 0) > 0
+              const hasExpense = (detail?.summary.expense ?? 0) > 0
               const isSelected = selected === iso
               const isToday = iso === today
 
@@ -86,22 +76,28 @@ export function Calendar() {
                 <button
                   key={iso}
                   onClick={() => setSelected(iso)}
-                  aria-label={`${formatDate(iso)}${expense ? `, ${money(expense)} en gastos` : ''}`}
+                  aria-label={buildDayLabel(iso, detail?.summary.expense)}
                   aria-current={isSelected ? 'date' : undefined}
-                  className={`aspect-square rounded-xl flex flex-col items-center justify-center
-                              text-sm transition relative
+                  className={`aspect-square rounded-lg sm:rounded-xl flex flex-col
+                              items-center justify-center text-sm transition relative
                               ${isSelected
-                                ? 'bg-brand text-white font-semibold'
+                                ? 'bg-brand text-brand-ink font-semibold'
                                 : isToday
-                                  ? 'bg-brand/10 text-brand font-semibold'
-                                  : 'hover:bg-canvas'}`}
+                                  ? 'bg-brand/15 text-brand font-semibold'
+                                  : 'hover:bg-raised'}`}
                 >
                   <span>{day}</span>
-                  {(income > 0 || expense > 0) && (
+                  {(hasIncome || hasExpense) && (
                     <span
                       aria-hidden="true"
                       className={`absolute bottom-1 w-1 h-1 rounded-full ${
-                        isSelected ? 'bg-white' : income > 0 ? 'bg-income' : 'bg-expense'
+                        isSelected
+                          ? 'bg-brand-ink'
+                          : hasIncome && hasExpense
+                            ? 'bg-brand'
+                            : hasIncome
+                              ? 'bg-income'
+                              : 'bg-expense'
                       }`}
                     />
                   )}
@@ -143,4 +139,9 @@ export function Calendar() {
       </Card>
     </div>
   )
+}
+
+function buildDayLabel(iso: string, expense?: number): string {
+  const base = formatDate(iso)
+  return expense ? `${base}, ${money(expense)} en gastos` : base
 }

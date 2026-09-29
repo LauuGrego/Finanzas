@@ -10,7 +10,7 @@ from app.enums import CategoryType
 class CategoryBase(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     type: CategoryType
-    icon: str | None = Field(default=None, max_length=40)
+    color: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
 
 
 class CategoryCreate(CategoryBase):
@@ -20,7 +20,7 @@ class CategoryCreate(CategoryBase):
 class CategoryUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=80)
     type: CategoryType | None = None
-    icon: str | None = Field(default=None, max_length=40)
+    color: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
     active: bool | None = None
 
 

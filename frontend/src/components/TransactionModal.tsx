@@ -82,7 +82,7 @@ export function TransactionModal({
                 ? option === 'EXPENSE'
                   ? 'bg-expense/10 border-expense text-expense'
                   : 'bg-income/10 border-income text-income'
-                : 'border-line text-muted hover:bg-canvas'
+                : 'border-line text-muted hover:bg-raised'
             }`}
           >
             {option === 'EXPENSE' ? 'Gasto' : 'Ingreso'}
@@ -124,7 +124,7 @@ export function TransactionModal({
         >
           {relevant.map((category) => (
             <option key={category.id} value={category.id}>
-              {category.icon} {category.name}
+              {category.name}
             </option>
           ))}
         </select>

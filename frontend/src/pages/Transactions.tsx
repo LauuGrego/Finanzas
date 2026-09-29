@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { Card } from '../components/Card'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { MonthStepper } from '../components/MonthStepper'
 import { EmptyState, StateWrapper } from '../components/States'
 import { TransactionItem } from '../components/TransactionItem'
 import { TransactionModal } from '../components/TransactionModal'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Transaction } from '../types'
-import { currentPeriod, formatDate, monthLabel, money, shiftPeriod } from '../utils/format'
+import { currentPeriod, formatDate, money } from '../utils/format'
 
 export function Transactions() {
   const [period, setPeriod] = useState(currentPeriod())
@@ -47,38 +48,10 @@ export function Transactions() {
   return (
     <div className="space-y-5">
       <header className="flex items-center justify-between gap-3">
-        <h1 className="text-sm font-medium uppercase tracking-wide text-muted">Movimientos</h1>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setPeriod(shiftPeriod(period, -1))}
-            aria-label="Mes anterior"
-            className="w-8 h-8 rounded-lg hover:bg-canvas transition"
-          >
-            ‹
-          </button>
-          <select
-            value={period}
-            onChange={(event) => setPeriod(event.target.value)}
-            aria-label="Mes"
-            className="text-sm bg-transparent border-0 focus:outline-none cursor-pointer"
-          >
-            {Array.from({ length: 24 }, (_, index) => {
-              const value = shiftPeriod(currentPeriod(), -index)
-              return (
-                <option key={value} value={value}>
-                  {monthLabel(value)}
-                </option>
-              )
-            })}
-          </select>
-          <button
-            onClick={() => setPeriod(shiftPeriod(period, 1))}
-            aria-label="Mes siguiente"
-            className="w-8 h-8 rounded-lg hover:bg-canvas transition"
-          >
-            ›
-          </button>
-        </div>
+        <h1 className="text-sm font-medium uppercase tracking-wide text-muted">
+          Movimientos
+        </h1>
+        <MonthStepper period={period} onChange={setPeriod} />
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -99,7 +72,7 @@ export function Transactions() {
           <option value="">Todas las categorías</option>
           {(categories.data ?? []).map((category) => (
             <option key={category.id} value={category.id}>
-              {category.icon} {category.name}
+              {category.name}
             </option>
           ))}
         </select>
@@ -120,12 +93,14 @@ export function Transactions() {
 
               return (
                 <Card key={day}>
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between gap-3 mb-1">
                     <h2 className="text-sm font-semibold text-muted">{formatDate(day)}</h2>
-                    <p className="text-xs tabular-nums text-muted">
+                    <p className="text-xs tabular-nums text-muted shrink-0">
                       {dayIncome > 0 && <span className="text-income">+{money(dayIncome)}</span>}
                       {dayIncome > 0 && dayExpense > 0 && ' · '}
-                      {dayExpense > 0 && <span className="text-expense">−{money(dayExpense)}</span>}
+                      {dayExpense > 0 && (
+                        <span className="text-expense">−{money(dayExpense)}</span>
+                      )}
                     </p>
                   </div>
                   <ul className="divide-y divide-line">

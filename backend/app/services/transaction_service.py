@@ -101,7 +101,7 @@ def expenses_by_category(
         select(
             Transaction.category_id,
             Category.name,
-            Category.icon,
+            Category.color,
             func.sum(Transaction.amount).label("total"),
             func.count(Transaction.id).label("count"),
         )
@@ -113,7 +113,7 @@ def expenses_by_category(
             # A transfer out of an account is not a category expense.
             Transaction.transfer_id.is_(None),
         )
-        .group_by(Transaction.category_id, Category.name, Category.icon)
+        .group_by(Transaction.category_id, Category.name, Category.color)
         .order_by(func.sum(Transaction.amount).desc())
     )
     if account_id is not None:
@@ -125,7 +125,7 @@ def expenses_by_category(
         CategoryTotal(
             category_id=row.category_id,
             category_name=row.name or "Sin categoría",
-            icon=row.icon,
+            color=row.color,
             total=to_pesos(row.total),
             percentage=round(row.total * 100 / grand_total, 1),
             count=row.count,
@@ -209,7 +209,7 @@ def to_read(transaction: Transaction) -> TransactionRead:
         account_name=transaction.account.name if transaction.account else None,
         category=(
             CategoryRef(id=transaction.category.id, name=transaction.category.name,
-                        icon=transaction.category.icon)
+                        color=transaction.category.color)
             if transaction.category
             else None
         ),

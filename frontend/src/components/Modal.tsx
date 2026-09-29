@@ -32,7 +32,7 @@ export function Modal({ open, title, onClose, children, footer }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center
-                 bg-ink/40 p-0 sm:p-4 backdrop-blur-sm"
+                 bg-black/70 p-0 sm:p-4 backdrop-blur-sm"
       onClick={onClose}
       role="presentation"
     >
@@ -43,8 +43,8 @@ export function Modal({ open, title, onClose, children, footer }: Props) {
         aria-label={title}
         tabIndex={-1}
         className="bg-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl
-                   p-5 shadow-xl max-h-[90vh] overflow-y-auto
-                   focus:outline-none"
+                   border border-line p-5 shadow-2xl shadow-black/50
+                   max-h-[90vh] overflow-y-auto focus:outline-none"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 mb-5">

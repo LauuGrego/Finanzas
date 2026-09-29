@@ -2,6 +2,7 @@ import { Card } from '../components/Card'
 import { EmptyState, StateWrapper } from '../components/States'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
+import { resolveColor } from '../utils/colors'
 import { currentPeriod, money, monthLabel } from '../utils/format'
 import {
   Bar,
@@ -19,7 +20,14 @@ import {
   YAxis,
 } from 'recharts'
 
-const PALETTE = ['#4f46e5', '#0891b2', '#059669', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#65a30d']
+/** Recharts takes plain CSS colours, so the theme values live here too. */
+const INK = '#eef2f7'
+const MUTED = '#94a3b8'
+const GRID = '#263041'
+const SURFACE = '#1a2233'
+const INCOME = '#34d399'
+const EXPENSE = '#f87171'
+const BRAND = '#818cf8'
 
 function shortMonth(period: string): string {
   const [year, month] = period.split('-')
@@ -35,9 +43,13 @@ function compact(value: number): string {
 
 const TOOLTIP_STYLE = {
   borderRadius: 12,
-  border: '1px solid #e2e8f0',
+  border: `1px solid ${GRID}`,
+  backgroundColor: SURFACE,
+  color: INK,
   fontSize: 13,
 } as const
+
+const AXIS_TICK = { fontSize: 12, fill: MUTED } as const
 
 /** Recharts passes ValueType | undefined, so narrow before formatting. */
 function tooltipMoney(value: unknown): string {
@@ -50,9 +62,11 @@ export function Stats() {
   const monthly = useAsync(() => api.reports.monthly(6, period), [period])
   const evolution = useAsync(() => api.reports.balanceEvolution(6, period), [period])
 
-  const categoryData = (categories.data ?? []).map((item) => ({
-    name: `${item.icon ?? ''} ${item.category_name}`.trim(),
+  const categoryRows = categories.data ?? []
+  const categoryData = categoryRows.map((item, index) => ({
+    name: item.category_name,
     value: item.total,
+    fill: resolveColor(item.color, item.category_id ?? index),
   }))
 
   const monthData = (monthly.data ?? []).map((row) => ({
@@ -92,14 +106,16 @@ export function Stats() {
                     innerRadius="55%"
                     outerRadius="85%"
                     paddingAngle={2}
+                    stroke="none"
                   >
-                    {categoryData.map((_, index) => (
-                      <Cell key={index} fill={PALETTE[index % PALETTE.length]} />
+                    {categoryData.map((item, index) => (
+                      <Cell key={index} fill={item.fill} />
                     ))}
                   </Pie>
                   <Tooltip
                     contentStyle={TOOLTIP_STYLE}
                     formatter={tooltipMoney}
+                    itemStyle={{ color: INK }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -109,17 +125,20 @@ export function Stats() {
 
         {categoryData.length > 0 && (
           <ul className="mt-4 space-y-1.5">
-            {(categories.data ?? []).map((item, index) => (
-              <li key={item.category_name} className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-2">
+            {categoryRows.map((item, index) => (
+              <li
+                key={item.category_name}
+                className="flex items-center justify-between gap-3 text-sm"
+              >
+                <span className="flex items-center gap-2 min-w-0">
                   <span
                     aria-hidden="true"
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: PALETTE[index % PALETTE.length] }}
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: categoryData[index].fill }}
                   />
-                  {item.category_name}
+                  <span className="truncate">{item.category_name}</span>
                 </span>
-                <span className="tabular-nums text-muted">
+                <span className="tabular-nums text-muted shrink-0">
                   {money(item.total)} · {item.percentage}%
                 </span>
               </li>
@@ -137,19 +156,23 @@ export function Stats() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+                <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                 <YAxis
-                  tick={{ fontSize: 12, fill: '#64748b' }}
+                  tick={AXIS_TICK}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={compact}
                   width={40}
                 />
-                <Tooltip contentStyle={TOOLTIP_STYLE} formatter={tooltipMoney} />
-                <Legend wrapperStyle={{ fontSize: 13 }} />
-                <Bar dataKey="Ingresos" fill="#059669" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Gastos" fill="#dc2626" radius={[6, 6, 0, 0]} />
+                <Tooltip
+                  contentStyle={TOOLTIP_STYLE}
+                  formatter={tooltipMoney}
+                  itemStyle={{ color: INK }}
+                />
+                <Legend wrapperStyle={{ fontSize: 13, color: MUTED }} />
+                <Bar dataKey="Ingresos" fill={INCOME} radius={[6, 6, 0, 0]} />
+                <Bar dataKey="Gastos" fill={EXPENSE} radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -165,22 +188,26 @@ export function Stats() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={lineData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+                <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                 <YAxis
-                  tick={{ fontSize: 12, fill: '#64748b' }}
+                  tick={AXIS_TICK}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={compact}
                   width={40}
                 />
-                <Tooltip contentStyle={TOOLTIP_STYLE} formatter={tooltipMoney} />
+                <Tooltip
+                  contentStyle={TOOLTIP_STYLE}
+                  formatter={tooltipMoney}
+                  itemStyle={{ color: INK }}
+                />
                 <Line
                   type="monotone"
                   dataKey="Saldo"
-                  stroke="#4f46e5"
+                  stroke={BRAND}
                   strokeWidth={2.5}
-                  dot={{ r: 3 }}
+                  dot={{ r: 3, fill: BRAND }}
                 />
               </LineChart>
             </ResponsiveContainer>

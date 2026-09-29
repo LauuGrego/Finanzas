@@ -1,30 +1,21 @@
 import { useState } from 'react'
 import { Card } from '../components/Card'
+import { Icon } from '../components/Icon'
+import { MonthStepper } from '../components/MonthStepper'
 import { EmptyState, StateWrapper } from '../components/States'
 import { TransactionItem } from '../components/TransactionItem'
 import { TransactionModal, TransferModal } from '../components/TransactionModal'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Transaction } from '../types'
+import { resolveColor } from '../utils/colors'
 import {
   currentPeriod,
   formatDate,
   monthLabel,
   money,
-  shiftPeriod,
   todayIso,
 } from '../utils/format'
-
-const PALETTE = [
-  '#4f46e5',
-  '#0891b2',
-  '#059669',
-  '#d97706',
-  '#dc2626',
-  '#7c3aed',
-  '#db2777',
-  '#65a30d',
-]
 
 export function Dashboard() {
   const [period, setPeriod] = useState(currentPeriod())
@@ -51,28 +42,7 @@ export function Dashboard() {
         <h1 className="text-sm font-medium uppercase tracking-wide text-muted">
           {monthLabel(period)}
         </h1>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setPeriod(shiftPeriod(period, -1))}
-            aria-label="Mes anterior"
-            className="w-8 h-8 rounded-lg hover:bg-canvas transition"
-          >
-            ‹
-          </button>
-          <button
-            onClick={() => setPeriod(currentPeriod())}
-            className="text-xs text-muted hover:text-ink px-2 py-1 rounded-lg hover:bg-canvas transition"
-          >
-            Hoy
-          </button>
-          <button
-            onClick={() => setPeriod(shiftPeriod(period, 1))}
-            aria-label="Mes siguiente"
-            className="w-8 h-8 rounded-lg hover:bg-canvas transition"
-          >
-            ›
-          </button>
-        </div>
+        <MonthStepper period={period} onChange={setPeriod} />
       </header>
 
       <StateWrapper
@@ -82,28 +52,31 @@ export function Dashboard() {
       >
         {data && (
           <>
-            <section className="card bg-ink text-white border-ink">
-              <p className="text-white/60 text-sm">Dinero disponible</p>
-              <p className="text-3xl font-bold mt-1 tabular-nums">
+            <section
+              className="rounded-2xl p-5 border border-brand-ink
+                         bg-gradient-to-br from-brand-strong to-brand-ink"
+            >
+              <p className="text-white/70 text-sm">Dinero disponible</p>
+              <p className="text-3xl sm:text-4xl font-bold mt-1 tabular-nums tracking-tight">
                 {money(data.available_balance)}
               </p>
 
-              <dl className="grid grid-cols-3 gap-3 mt-6 pt-5 border-t border-white/10">
-                <div>
+              <dl className="grid grid-cols-3 gap-2 sm:gap-3 mt-6 pt-5 border-t border-white/15">
+                <div className="min-w-0">
                   <dt className="text-white/60 text-xs">Ingresos</dt>
-                  <dd className="font-semibold tabular-nums text-income">
+                  <dd className="font-semibold tabular-nums text-sm sm:text-base text-emerald-300 truncate">
                     {money(data.month_summary.income)}
                   </dd>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <dt className="text-white/60 text-xs">Gastos</dt>
-                  <dd className="font-semibold tabular-nums text-expense">
+                  <dd className="font-semibold tabular-nums text-sm sm:text-base text-red-300 truncate">
                     {money(data.month_summary.expense)}
                   </dd>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <dt className="text-white/60 text-xs">Balance</dt>
-                  <dd className="font-semibold tabular-nums">
+                  <dd className="font-semibold tabular-nums text-sm sm:text-base truncate">
                     {data.month_summary.balance >= 0 ? '+' : '−'}
                     {money(Math.abs(data.month_summary.balance))}
                   </dd>
@@ -112,26 +85,18 @@ export function Dashboard() {
             </section>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <button
+              <ActionCard
+                icon="expense"
+                title="Registrar gasto"
+                hint="En dos segundos"
                 onClick={() => setShowNew(true)}
-                className="card text-left hover:border-brand transition flex items-center gap-3"
-              >
-                <span aria-hidden="true" className="text-2xl">💸</span>
-                <span>
-                  <span className="block font-semibold">Registrar gasto</span>
-                  <span className="text-sm text-muted">En dos segundos</span>
-                </span>
-              </button>
-              <button
+              />
+              <ActionCard
+                icon="transfer"
+                title="Transferir dinero"
+                hint="Entre tus cuentas"
                 onClick={() => setShowTransfer(true)}
-                className="card text-left hover:border-brand transition flex items-center gap-3"
-              >
-                <span aria-hidden="true" className="text-2xl">↔️</span>
-                <span>
-                  <span className="block font-semibold">Transferir dinero</span>
-                  <span className="text-sm text-muted">Entre tus cuentas</span>
-                </span>
-              </button>
+              />
             </div>
 
             {data.expenses_by_category.length > 0 && (
@@ -139,18 +104,30 @@ export function Dashboard() {
                 <ul className="space-y-3">
                   {data.expenses_by_category.map((item, index) => (
                     <li key={item.category_id ?? item.category_name}>
-                      <div className="flex items-center justify-between text-sm mb-1.5">
-                        <span>
-                          <span aria-hidden="true">{item.icon}</span> {item.category_name}
+                      <div className="flex items-center justify-between text-sm mb-1.5 gap-3">
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span
+                            aria-hidden="true"
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{
+                              backgroundColor: resolveColor(
+                                item.color,
+                                item.category_id ?? index,
+                              ),
+                            }}
+                          />
+                          <span className="truncate">{item.category_name}</span>
                         </span>
-                        <span className="font-medium tabular-nums">{money(item.total)}</span>
+                        <span className="font-medium tabular-nums shrink-0">
+                          {money(item.total)}
+                        </span>
                       </div>
-                      <div className="h-2 bg-canvas rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-raised rounded-full overflow-hidden">
                         <div
-                          className="h-full rounded-full transition-all"
+                          className="h-full rounded-full"
                           style={{
                             width: `${item.percentage}%`,
-                            backgroundColor: PALETTE[index % PALETTE.length],
+                            backgroundColor: resolveColor(item.color, item.category_id ?? index),
                           }}
                         />
                       </div>
@@ -201,13 +178,15 @@ export function Dashboard() {
                   {data.upcoming.map((item, index) => (
                     <li
                       key={`${item.date}-${index}`}
-                      className="flex items-center justify-between py-3"
+                      className="flex items-center justify-between py-3 gap-3"
                     >
-                      <span className="text-sm">
+                      <span className="text-sm min-w-0 truncate">
                         <span className="text-muted">{formatDate(item.date)}</span>{' '}
                         {item.description}
                       </span>
-                      <span className="font-medium tabular-nums">{money(item.amount)}</span>
+                      <span className="font-medium tabular-nums shrink-0">
+                        {money(item.amount)}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -236,5 +215,35 @@ export function Dashboard() {
         onSaved={reloadAll}
       />
     </div>
+  )
+}
+
+function ActionCard({
+  icon,
+  title,
+  hint,
+  onClick,
+}: {
+  icon: 'expense' | 'transfer'
+  title: string
+  hint: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="card p-5 text-left hover:border-brand transition flex items-center gap-3.5"
+    >
+      <span
+        aria-hidden="true"
+        className="w-10 h-10 rounded-xl grid place-items-center bg-raised text-brand shrink-0"
+      >
+        <Icon name={icon} size={20} />
+      </span>
+      <span className="min-w-0">
+        <span className="block font-semibold">{title}</span>
+        <span className="text-sm text-muted">{hint}</span>
+      </span>
+    </button>
   )
 }

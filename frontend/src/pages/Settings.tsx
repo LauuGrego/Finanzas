@@ -2,11 +2,25 @@ import { useState } from 'react'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
 import { ConfirmDialog } from '../components/ConfirmDialog'
-import { EmptyState, StateWrapper } from '../components/States'
+import { Icon } from '../components/Icon'
 import { FormModal } from '../components/FormModal'
+import { EmptyState, StateWrapper } from '../components/States'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Category, CategoryType } from '../types'
+import { CATEGORY_COLORS, CATEGORY_PALETTE, resolveColor } from '../utils/colors'
+
+/** The dot that stands in for a category everywhere in the app. */
+function CategoryDot({ category, index = 0 }: { category: Category; index?: number }) {
+  const color = resolveColor(category.color, category.id || index)
+  return (
+    <span
+      aria-hidden="true"
+      className="w-3 h-3 rounded-full shrink-0"
+      style={{ backgroundColor: color }}
+    />
+  )
+}
 
 export function Settings() {
   const categories = useAsync(() => api.categories.list(undefined, true), [])
@@ -19,6 +33,11 @@ export function Settings() {
   const active = items.filter((c) => c.active)
   const inactive = items.filter((c) => !c.active)
 
+  // Picking the next unused colour means a new category rarely looks like an
+  // existing one by accident.
+  const suggestedColor =
+    CATEGORY_COLORS[items.length % CATEGORY_COLORS.length] ?? CATEGORY_COLORS[0]
+
   async function handleSave(form: FormData) {
     setError(null)
     const name = (form.get('name') as string)?.trim()
@@ -30,7 +49,7 @@ export function Settings() {
     const payload = {
       name,
       type: (form.get('type') as CategoryType) || 'EXPENSE',
-      icon: (form.get('icon') as string)?.trim() || null,
+      color: (form.get('color') as string) || suggestedColor,
     }
 
     try {
@@ -57,7 +76,8 @@ export function Settings() {
         title="Categorías"
         action={
           <Button size="sm" variant="secondary" onClick={() => setCreating(true)}>
-            + Nueva
+            <Icon name="plus" size={16} />
+            Nueva
           </Button>
         }
       >
@@ -70,11 +90,9 @@ export function Settings() {
             <EmptyState title="Sin categorías" />
           ) : (
             <ul className="divide-y divide-line">
-              {active.map((category) => (
+              {active.map((category, index) => (
                 <li key={category.id} className="flex items-center gap-3 py-2.5">
-                  <span aria-hidden="true" className="text-lg w-7 text-center">
-                    {category.icon ?? '•'}
-                  </span>
+                  <CategoryDot category={category} index={index} />
                   <span className="flex-1 min-w-0">
                     <span className="block truncate">{category.name}</span>
                     <span className="text-xs text-muted">
@@ -84,16 +102,16 @@ export function Settings() {
                   <button
                     onClick={() => setEditing(category)}
                     aria-label={`Editar ${category.name}`}
-                    className="text-muted hover:text-ink px-2 py-1 rounded-lg hover:bg-canvas transition"
+                    className="text-muted hover:text-ink p-2 rounded-lg hover:bg-raised transition"
                   >
-                    ✏️
+                    <Icon name="pencil" size={15} />
                   </button>
                   <button
                     onClick={() => setDeleting(category)}
                     aria-label={`Dar de baja ${category.name}`}
-                    className="text-muted hover:text-expense px-2 py-1 rounded-lg hover:bg-canvas transition"
+                    className="text-muted hover:text-expense p-2 rounded-lg hover:bg-raised transition"
                   >
-                    🗑️
+                    <Icon name="trash" size={15} />
                   </button>
                 </li>
               ))}
@@ -106,10 +124,11 @@ export function Settings() {
                 {inactive.length} dada{inactive.length === 1 ? '' : 's'} de baja
               </summary>
               <ul className="mt-2 space-y-1">
-                {inactive.map((category) => (
+                {inactive.map((category, index) => (
                   <li key={category.id} className="flex items-center gap-3 py-1.5">
-                    <span className="text-muted line-through flex-1 text-sm">
-                      {category.icon} {category.name}
+                    <CategoryDot category={category} index={index} />
+                    <span className="text-muted line-through flex-1 text-sm truncate">
+                      {category.name}
                     </span>
                     <button
                       onClick={() => void toggleActive(category)}
@@ -177,21 +196,29 @@ export function Settings() {
           </select>
         </div>
 
-        <div>
-          <label className="label" htmlFor="cat-icon">
-            Ícono
-          </label>
-          <input
-            id="cat-icon"
-            name="icon"
-            type="text"
-            maxLength={4}
-            placeholder="🍔"
-            defaultValue={editing?.icon ?? ''}
-            className="input"
-          />
-          <p className="text-xs text-muted mt-1.5">Un emoji, opcional.</p>
-        </div>
+        <fieldset>
+          <legend className="label">Color</legend>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORY_PALETTE.map((swatch) => (
+              <label key={swatch.value} className="cursor-pointer">
+                <input
+                  type="radio"
+                  name="color"
+                  value={swatch.value}
+                  aria-label={swatch.name}
+                  defaultChecked={(editing?.color ?? suggestedColor) === swatch.value}
+                  className="peer sr-only"
+                />
+                <span
+                  aria-hidden="true"
+                  className="block w-8 h-8 rounded-full border-2 border-transparent
+                             peer-checked:border-ink transition"
+                  style={{ backgroundColor: swatch.value }}
+                />
+              </label>
+            ))}
+          </div>
+        </fieldset>
       </FormModal>
 
       <ConfirmDialog

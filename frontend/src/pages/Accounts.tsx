@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { Icon } from '../components/Icon'
 import { EmptyState, StateWrapper } from '../components/States'
 import { FormModal } from '../components/FormModal'
 import { useAsync } from '../hooks/useAsync'
@@ -58,7 +59,8 @@ export function Accounts() {
       <header className="flex items-center justify-between">
         <h1 className="text-sm font-medium uppercase tracking-wide text-muted">Mis cuentas</h1>
         <Button size="sm" onClick={() => setCreating(true)}>
-          + Nueva
+          <Icon name="plus" size={16} />
+          Nueva
         </Button>
       </header>
 
@@ -70,7 +72,7 @@ export function Accounts() {
             <ul className="space-y-3">
               {accounts.map((account) => (
                 <li key={account.id}>
-                  <Card className="hover:border-brand transition">
+                  <Card className="p-5 hover:border-brand transition">
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <Link
@@ -91,20 +93,20 @@ export function Accounts() {
                         >
                           {money(account.balance)}
                         </p>
-                        <div className="flex gap-1 mt-1">
+                        <div className="flex gap-0.5 mt-1">
                           <button
                             onClick={() => setEditing(account)}
                             aria-label={`Editar ${account.name}`}
-                            className="text-muted hover:text-ink px-1.5 py-0.5 rounded hover:bg-canvas transition"
+                            className="text-muted hover:text-ink p-1.5 rounded-lg hover:bg-raised transition"
                           >
-                            ✏️
+                            <Icon name="pencil" size={15} />
                           </button>
                           <button
                             onClick={() => setDeleting(account)}
                             aria-label={`Dar de baja ${account.name}`}
-                            className="text-muted hover:text-expense px-1.5 py-0.5 rounded hover:bg-canvas transition"
+                            className="text-muted hover:text-expense p-1.5 rounded-lg hover:bg-raised transition"
                           >
-                            🗑️
+                            <Icon name="trash" size={15} />
                           </button>
                         </div>
                       </div>
@@ -114,9 +116,12 @@ export function Accounts() {
               ))}
             </ul>
 
-            <div className="card bg-ink text-white border-ink flex items-center justify-between">
-              <span className="text-white/60 text-sm">Total</span>
-              <span className="font-bold tabular-nums">{money(total)}</span>
+            <div
+              className="card p-5 border-brand-ink bg-gradient-to-br from-brand-strong
+                         to-brand-ink flex items-center justify-between"
+            >
+              <span className="text-white/70 text-sm">Total</span>
+              <span className="font-bold tabular-nums text-lg">{money(total)}</span>
             </div>
           </>
         )}

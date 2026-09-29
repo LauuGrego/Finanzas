@@ -20,7 +20,7 @@ class PeriodSummary(BaseModel):
 class CategoryTotal(BaseModel):
     category_id: int | None
     category_name: str
-    icon: str | None = None
+    color: str | None = None
     total: Money
     percentage: float = 0
     count: int = 0

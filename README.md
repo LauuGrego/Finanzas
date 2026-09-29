@@ -1,4 +1,4 @@
-# 💰 Agenda Financiera Personal
+# Agenda Financiera Personal
 
 Una agenda personal para saber qué dinero tenés, qué gastaste, qué tenés que
 payer y cómo venís administrando la plata.
@@ -33,8 +33,8 @@ npm run dev
 Abrí <http://localhost:5173>. La API queda documentada en
 <http://127.0.0.1:8000/docs>.
 
-En el primer arranque se crean las tablas, 10 categorías y dos cuentas
-(Banco y Efectivo).
+En el primer arranque se crean las tablas, 10 categorías con su color y dos
+cuentas (Banco y Efectivo).
 
 ## Tests
 
@@ -72,6 +72,15 @@ propias cuentas no es gastar ni ganar. El saldo total no cambia.
 Cuentas y categorías tienen `active`. Al darlas de baja desaparecen de los
 selectores pero sus movimientos históricos siguen siendo legibles. Solo se
 pueden editar o borrar los movimientos que no son parte de una transferencia.
+
+**Sin emojis: categorías con color, navegación con íconos.**
+
+El tema es oscuro y la interfaz no usa emojis. Cada categoría tiene un `color`
+hexadecimal que se elige de una paleta de diez en Configuración y se usa como
+punto de color en la agenda, la lista de movimientos y los gráficos. La
+navegación y las acciones usan SVG en línea (`frontend/src/components/Icon.tsx`),
+así que el ícono hereda el color del texto y no hay que cargar ninguna fuente
+de íconos.
 
 ## API
 
@@ -127,10 +136,11 @@ backend/
 frontend/
   src/
     pages/             Dashboard, Agenda, Movimientos, Cuentas, Estadísticas, Config
-    components/        Modal, FormModal, Card, Button, TransactionItem, Layout
+    components/        Modal, FormModal, Card, Button, TransactionItem, Layout, Icon
     hooks/useAsync.ts  Carga de datos con loading/error/reload
     services/api.ts    Cliente HTTP tipado
     utils/format.ts    Moneda y fechas en es-AR
+    utils/colors.ts    Paleta de categorías y resolución de colores
     types/             Tipos compartidos con la API
 ```
 

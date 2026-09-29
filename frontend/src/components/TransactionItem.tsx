@@ -1,5 +1,6 @@
 import type { Transaction } from '../types'
 import { formatDate, money } from '../utils/format'
+import { Icon, type IconName } from './Icon'
 
 interface Props {
   transaction: Transaction
@@ -19,13 +20,28 @@ export function TransactionItem({
   const isIncome = transaction.type === 'INCOME'
   const isTransfer = transaction.transfer_id !== null
 
+  const glyph: IconName = isTransfer ? 'transfer' : isIncome ? 'income' : 'expense'
+  const color = isTransfer
+    ? 'text-muted'
+    : isIncome
+      ? 'text-income'
+      : 'text-expense'
+
+  // Only spend the second line on details that are actually shown.
+  const meta = [
+    showDate ? formatDate(transaction.date) : null,
+    transaction.category?.name,
+    showAccount ? transaction.account_name : null,
+    isTransfer ? 'Transferencia' : null,
+  ].filter(Boolean)
+
   return (
     <div className="flex items-center gap-3 py-3">
       <div
         aria-hidden="true"
-        className="w-9 h-9 rounded-full grid place-items-center text-base shrink-0 bg-canvas"
+        className={`w-9 h-9 rounded-xl grid place-items-center shrink-0 bg-raised ${color}`}
       >
-        {isTransfer ? '↔️' : (transaction.category?.icon ?? (isIncome ? '💼' : '💸'))}
+        <Icon name={glyph} size={18} />
       </div>
 
       <div className="min-w-0 flex-1">
@@ -34,13 +50,12 @@ export function TransactionItem({
             transaction.category?.name ||
             (isTransfer ? 'Transferencia' : 'Movimiento')}
         </p>
-        <p className="text-sm text-muted truncate">
-          {showDate && `${formatDate(transaction.date)} · `}
-          {transaction.category?.name && `${transaction.category.name} · `}
-          {showAccount && transaction.account_name ? `${transaction.account_name} · ` : null}
-          {isTransfer ? 'Transferencia' : null}
-          {!isTransfer && !transaction.category?.name && !showAccount && 'Sin categoría'}
-        </p>
+        {meta.length > 0 && (
+          <p className="text-sm text-muted truncate">
+            {meta.length > 1 ? `${meta.slice(0, -1).join(' · ')} · ` : ''}
+            <span className="text-muted/80">{meta[meta.length - 1]}</span>
+          </p>
+        )}
       </div>
 
       <p
@@ -52,24 +67,24 @@ export function TransactionItem({
         {money(Math.abs(transaction.amount))}
       </p>
 
-      {(onEdit || onDelete) && (
-        <div className="flex gap-1 shrink-0">
-          {onEdit && !isTransfer && (
+      {(onEdit || onDelete) && !isTransfer && (
+        <div className="flex gap-0.5 shrink-0">
+          {onEdit && (
             <button
               onClick={() => onEdit(transaction)}
-              aria-label="Editar movimiento"
-              className="text-muted hover:text-ink px-2 py-1 rounded-lg hover:bg-canvas transition"
+              aria-label={`Editar ${transaction.description ?? 'movimiento'}`}
+              className="text-muted hover:text-ink p-2 rounded-lg hover:bg-raised transition"
             >
-              ✏️
+              <Icon name="pencil" size={16} />
             </button>
           )}
-          {onDelete && !isTransfer && (
+          {onDelete && (
             <button
               onClick={() => onDelete(transaction)}
-              aria-label="Eliminar movimiento"
-              className="text-muted hover:text-expense px-2 py-1 rounded-lg hover:bg-canvas transition"
+              aria-label={`Eliminar ${transaction.description ?? 'movimiento'}`}
+              className="text-muted hover:text-expense p-2 rounded-lg hover:bg-raised transition"
             >
-              🗑️
+              <Icon name="trash" size={16} />
             </button>
           )}
         </div>

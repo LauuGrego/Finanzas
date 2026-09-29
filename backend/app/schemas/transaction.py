@@ -34,7 +34,7 @@ class TransactionUpdate(BaseModel):
 class CategoryRef(BaseModel):
     id: int
     name: str
-    icon: str | None = None
+    color: str | None = None
 
 
 class TransactionRead(TransactionBase):

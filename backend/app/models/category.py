@@ -19,7 +19,8 @@ class Category(TimestampMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(80), nullable=False, unique=True)
     type: Mapped[CategoryType] = mapped_column(String(20), nullable=False)
-    icon: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # Hex colour used to tint the category in the UI, e.g. "#fbbf24".
+    color: Mapped[str | None] = mapped_column(String(7), nullable=True)
 
     transactions: Mapped[list["Transaction"]] = relationship(
         back_populates="category", passive_deletes=True

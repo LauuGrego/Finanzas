@@ -12,17 +12,18 @@ from app.enums import AccountType, CategoryType
 from app.models import Account, Category
 from app.routers import accounts, categories, dashboard, transactions, transfers
 
+# Colours are chosen to stay distinguishable from each other on the dark UI.
 DEFAULT_CATEGORIES: list[tuple[str, CategoryType, str]] = [
-    ("Comida", CategoryType.EXPENSE, "🍔"),
-    ("Transporte", CategoryType.EXPENSE, "🚗"),
-    ("Servicios", CategoryType.EXPENSE, "💡"),
-    ("Entretenimiento", CategoryType.EXPENSE, "🎬"),
-    ("Compras", CategoryType.EXPENSE, "🛍️"),
-    ("Salud", CategoryType.EXPENSE, "⚕️"),
-    ("Otros", CategoryType.EXPENSE, "📦"),
-    ("Sueldo", CategoryType.INCOME, "💼"),
-    ("Freelance", CategoryType.INCOME, "💻"),
-    ("Otros ingresos", CategoryType.INCOME, "✨"),
+    ("Comida", CategoryType.EXPENSE, "#fbbf24"),
+    ("Transporte", CategoryType.EXPENSE, "#60a5fa"),
+    ("Servicios", CategoryType.EXPENSE, "#22d3ee"),
+    ("Entretenimiento", CategoryType.EXPENSE, "#c084fc"),
+    ("Compras", CategoryType.EXPENSE, "#f472b6"),
+    ("Salud", CategoryType.EXPENSE, "#4ade80"),
+    ("Otros", CategoryType.EXPENSE, "#94a3b8"),
+    ("Sueldo", CategoryType.INCOME, "#34d399"),
+    ("Freelance", CategoryType.INCOME, "#818cf8"),
+    ("Otros ingresos", CategoryType.INCOME, "#fb923c"),
 ]
 
 
@@ -30,7 +31,8 @@ def seed_defaults(db: Session, *, with_accounts: bool = True) -> None:
     """Fill an empty database with a starting set of categories. Idempotent."""
     if db.scalar(select(func.count(Category.id))) == 0:
         db.add_all(
-            Category(name=name, type=type_, icon=icon) for name, type_, icon in DEFAULT_CATEGORIES
+            Category(name=name, type=type_, color=color)
+            for name, type_, color in DEFAULT_CATEGORIES
         )
         db.commit()
     if with_accounts and db.scalar(select(func.count(Account.id))) == 0:

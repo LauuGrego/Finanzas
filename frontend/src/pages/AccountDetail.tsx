@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Card } from '../components/Card'
+import { Icon } from '../components/Icon'
 import { EmptyState, StateWrapper } from '../components/States'
 import { TransactionItem } from '../components/TransactionItem'
 import { TransactionModal } from '../components/TransactionModal'
@@ -30,8 +31,12 @@ export function AccountDetail() {
 
   return (
     <div className="space-y-5">
-      <Link to="/cuentas" className="text-sm text-muted hover:text-ink transition">
-        ‹ Cuentas
+      <Link
+        to="/cuentas"
+        className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition"
+      >
+        <Icon name="back" size={16} />
+        Cuentas
       </Link>
 
       <StateWrapper
@@ -43,8 +48,8 @@ export function AccountDetail() {
         }}
       >
         {current && (
-          <Card className="bg-ink text-white border-ink">
-            <p className="text-white/60 text-sm">{current.name}</p>
+          <Card className="border-brand-ink bg-gradient-to-br from-brand-strong to-brand-ink">
+            <p className="text-white/70 text-sm">{current.name}</p>
             <p className="text-3xl font-bold mt-1 tabular-nums">{money(current.balance)}</p>
           </Card>
         )}
@@ -54,9 +59,10 @@ export function AccountDetail() {
           action={
             <button
               onClick={() => setCreating(true)}
-              className="text-sm text-brand hover:underline"
+              className="inline-flex items-center gap-1.5 text-sm text-brand hover:underline"
             >
-              + Nuevo
+              <Icon name="plus" size={15} />
+              Nuevo
             </button>
           }
         >

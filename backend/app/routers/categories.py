@@ -31,7 +31,7 @@ def create_category(payload: CategoryCreate, db: Session = Depends(get_db)) -> C
     existing = db.scalar(select(Category).where(Category.name == payload.name))
     if existing is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe una categoría con ese nombre")
-    category = Category(name=payload.name, type=payload.type, icon=payload.icon)
+    category = Category(name=payload.name, type=payload.type, color=payload.color)
     db.add(category)
     db.commit()
     db.refresh(category)
