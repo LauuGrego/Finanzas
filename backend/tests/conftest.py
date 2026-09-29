@@ -17,6 +17,19 @@ from app.main import app, seed_defaults  # noqa: E402
 
 
 @pytest.fixture
+def built(tmp_path, monkeypatch):
+    """A fake `npm run build` output that the SPA handler can serve."""
+    from app import main
+
+    static = tmp_path / "dist"
+    (static / "assets").mkdir(parents=True)
+    (static / "index.html").write_text("<!doctype html><title>Finanzas</title>")
+    (static / "favicon.svg").write_text("<svg/>")
+    monkeypatch.setattr(main, "STATIC", static)
+    return static
+
+
+@pytest.fixture
 def client(tmp_path: Path):
     """A fresh in-memory database per test."""
     engine = create_engine(

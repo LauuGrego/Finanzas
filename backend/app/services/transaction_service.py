@@ -6,6 +6,7 @@ All arithmetic happens on integer centavos so it stays exact.
 from __future__ import annotations
 
 from datetime import date
+from uuid import uuid4
 
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session, joinedload
@@ -298,7 +299,11 @@ def create_transfer(db: Session, payload: dict) -> tuple[str, list[Transaction]]
     )
     to_account, _ = resolve_references(db, payload["to_account_id"], None, INCOME)
 
-    transfer_id = f"tr_{from_account.id}_{to_account.id}_{to_cents(payload['amount'])}"
+    # A UUID, not something derived from the account ids and the amount. The
+    # derived version could exceed the 36 characters of the column on large
+    # amounts, which SQLite ignored but PostgreSQL rejects, and two identical
+    # transfers in a row produced the same value.
+    transfer_id = str(uuid4())
     amount = to_cents(payload["amount"])
     description = payload.get("description") or f"Transferencia {from_account.name} → {to_account.name}"
 

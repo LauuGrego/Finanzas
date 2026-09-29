@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-import base64
 import hmac
 import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import config
+from app import auth, config
 from app.database import Base, SessionLocal, engine
 from app.enums import AccountType, CategoryType
 from app.models import Account, Category
@@ -82,6 +82,8 @@ app = FastAPI(
 
 # The frontend runs on its own dev server, so it needs CORS during development.
 # In production it is served from this same origin and CORS is inert.
+# allow_credentials has to name the origins explicitly: the browser refuses a
+# wildcard on a request that carries the session cookie.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.CORS_ORIGINS,
@@ -90,39 +92,78 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Endpoints that have to answer before you can log in, or to find out that you
+# need to. Everything else waits behind the middleware.
+OPEN_PATHS = frozenset(
+    {"/api/health", "/api/login", "/api/logout", "/api/session", "/docs", "/openapi.json"}
+)
+
+
+def is_secure(request: Request) -> bool:
+    """Whether the client reached us over HTTPS, even behind a proxy.
+
+    Render terminates TLS and forwards X-Forwarded-Proto, so request.url.scheme
+    alone would read http and the cookie would come back SameSite=Lax, which
+    the browser then drops on the cross-site call from Vercel.
+    """
+    return request.headers.get("x-forwarded-proto", request.url.scheme) == "https"
+
 
 @app.middleware("http")
-async def require_password(request: Request, call_next):
-    """HTTP Basic auth, enabled only when FINANZAS_PASSWORD is set.
+async def require_session(request: Request, call_next):
+    """Gate every API call behind the password, when one is configured.
 
-    The app has no user model on purpose, and this is the cheapest thing that
-    keeps a public URL from handing over a full financial history. Browsers and
-    phones handle the challenge natively, so there is no login screen to build.
+    Off by default so local development needs no setup. The public URL of a free
+    tier is exactly the case it exists for: without it, a financial history is
+    one guessed path away.
     """
-    if not config.PASSWORD or request.url.path == "/api/health":
+    if not config.PASSWORD or request.url.path in OPEN_PATHS:
         return await call_next(request)
 
-    header = request.headers.get("authorization", "")
-    scheme, _, encoded = header.partition(" ")
-    if scheme.lower() == "basic":
-        try:
-            decoded = base64.b64decode(encoded).decode("utf-8")
-        except (ValueError, UnicodeDecodeError):
-            decoded = ""
-        user, _, password = decoded.partition(":")
-        # compare_digest on both halves: a plain == leaks length and prefix.
-        ok = hmac.compare_digest(user, config.USERNAME) & hmac.compare_digest(
-            password, config.PASSWORD
-        )
-        if ok:
-            return await call_next(request)
+    if auth.verify(request.cookies.get(auth.COOKIE)) or auth.check_basic(
+        request.headers.get("authorization", "")
+    ):
+        return await call_next(request)
 
-    return Response(
+    return JSONResponse(
         status_code=401,
-        headers={"WWW-Authenticate": 'Basic realm="Finanzas", charset="UTF-8"'},
-        content="Se necesita usuario y contraseña.",
-        media_type="text/plain",
+        content={"detail": "Necesitás iniciar sesión."},
     )
+
+
+class LoginRequest(BaseModel):
+    password: str
+
+
+@app.post("/api/login", tags=["meta"])
+def login(payload: LoginRequest, request: Request, response: Response) -> dict[str, bool]:
+    """Check the password and hand back a signed session cookie.
+
+    Deliberately does not say how wrong it was, and answers the same way for an
+    unknown user, so the endpoint cannot be used to test passwords.
+    """
+    if config.PASSWORD and not hmac.compare_digest(payload.password, config.PASSWORD):
+        raise HTTPException(status_code=401, detail="Clave incorrecta")
+    auth.issue_cookie(response, secure=is_secure(request))
+    return {"ok": True}
+
+
+@app.post("/api/logout", tags=["meta"])
+def logout(request: Request, response: Response) -> dict[str, bool]:
+    auth.clear_cookie(response, secure=is_secure(request))
+    return {"ok": True}
+
+
+@app.get("/api/session", tags=["meta"])
+def session(request: Request) -> dict[str, bool]:
+    """Tell the frontend whether the cookie is still good.
+
+    Answers 200 either way instead of 401, so the app can decide between the
+    login screen and the dashboard without treating "not logged in" as an error.
+    """
+    if not config.PASSWORD:
+        return {"authenticated": True}
+    return {"authenticated": auth.verify(request.cookies.get(auth.COOKIE))}
 
 
 # The API lives under /api so the built frontend can own the root and every

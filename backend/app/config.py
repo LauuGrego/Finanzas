@@ -44,3 +44,14 @@ def _origins() -> list[str]:
 
 
 CORS_ORIGINS = _origins()
+
+# The database connection. Leave it unset to keep using the local SQLite file,
+# which is what development and the test suite do. In the cloud it points at the
+# managed PostgreSQL, because a free-tier app host has no persistent disk.
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+
+# Render and Vercel are different sites, so the session cookie has to be
+# SameSite=None to survive the cross-origin call. Browsers only accept that
+# over HTTPS, which is why the flag is decided per request instead of in config.
+# See app/auth.py.
+SESSION_TTL_DAYS = int(os.getenv("FINANZAS_SESSION_DAYS", "30"))
