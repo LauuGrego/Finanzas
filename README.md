@@ -93,20 +93,62 @@ http://192.168.100.5:8000
 
 En Windows, si el Firewall pregunta, permití Python en redes privadas.
 
-**Desde afuera de la casa.** Dos caminos, y la elección importa:
+**Desde afuera de la casa, con Tailscale.**
 
-- **Tailscale** (recomendado). Es una red privada entre tus dispositivos: la
-  PC y el teléfono se ven por IP, y el puerto 8000 **no queda expuesto en
-  internet**. Gratis, sin abrir puertos en el router, y la app sigue siendo
-  inaccesible para cualquiera que no tenga tu cuenta.
-  Descargá Tailscale en ambos, y entrás por `http://100.x.y.z:8000`.
+Tailscale arma una red privada entre tus dispositivos usando WireGuard. El
+puerto 8000 **no queda abierto en internet**: solo llega quien tenga tu
+cuenta, y el tráfico va cifrado. No hay que abrir puertos en el router,
+ni comprar un dominio, ni configurar un certificado HTTPS.
 
-- **Cloudflare Tunnel**. Te da una URL pública con HTTPS y no requiere abrir
-  puertos, pero cualquiera que se sepa la URL llega al login. Con
-  `FINANZAS_PASSWORD` puesta es aceptable para una app de una persona; sin ella,
-  es publicar tu historial financiero.
+En la PC (una vez):
 
-No hace falta servidor propio en ningún caso: con la PC siempre encendida alcanza.
+```bash
+winget install --id Tailscale.Tailscale
+```
+
+Abrí el ícono de Tailscale en la bandeja del sistema → **Log in**, con la misma
+cuenta que vayas a usar en el teléfono. Después:
+
+```bash
+tailscale ip -4          # tu IP dentro de la red, algo como 100.x.y.z
+```
+
+En el teléfono, instalá Tailscale desde la App Store y logueate con **la misma
+cuenta**. Después abrí en el navegador del teléfono:
+
+```
+http://100.x.y.z:8000
+```
+
+Funciona con 4G, en la calle, en el trabajo. También podés usar el nombre de
+MagicDNS en vez de la IP, que es más cómodo de escribir:
+`http://<nombre-de-la-pc>:8000`
+
+Lo que **no** hace Tailscale es mantener la PC prendida. Si la compu se
+suspende, el teléfono no llega. Para que aguante:
+
+```
+Configuración > Sistema > Energía > pantalla y suspensión > "Nunca" (con el enchufe)
+```
+
+Ojo con la alternativa: **Cloudflare Tunnel** da una URL pública con HTTPS
+(`https://finanzas.tunombre.com`) sin abrir puertos, pero cualquiera que se
+sepa la URL llega al login. Con `FINANZAS_PASSWORD` es aceptable para una app
+de una persona; sin ella, es publicar el historial financiero. Para uso
+personal, Tailscale es la opción más simple y la que menos superficie expone.
+
+### Que arranque solo
+
+`iniciar.bat` en la raíz levanta el server con un doble clic. Si querés que
+levante con la PC sin tocarlo, creá una tarea programada que lo ejecute al
+iniciar sesión:
+
+```powershell
+$accion = New-ScheduledTaskAction -Execute "C:\...\Finanzas\iniciar.bat"
+$al     = New-ScheduledTaskTrigger -AtLogOn
+Register-ScheduledTask -TaskName "Finanzas" -Action $accion -Trigger $al `
+  -Description "Agenda Financiera: API + frontend en el puerto 8000"
+```
 
 ### Después de tocar algo
 
