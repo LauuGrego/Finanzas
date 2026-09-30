@@ -356,7 +356,7 @@ backend/
     schemas/           Contrato de la API (Pydantic)
     routers/           Endpoints
     services/          Lógica financiera
-  tests/               82 tests
+  tests/               88 tests
 frontend/
   src/
     pages/             Dashboard, Agenda, Movimientos, Cuentas, Estadísticas, Config
