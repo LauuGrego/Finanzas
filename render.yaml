@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: finanzas-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      # Supabase > Project Settings > Database > Connection string > URI.
+      # La contraseña debe ir URL-encoded si tiene @ : / u otros caracteres.
+      - key: DATABASE_URL
+        sync: false
+      # Sin esto la app queda abierta a internet. Poné una clave larga.
+      - key: FINANZAS_PASSWORD
+        sync: false
+      # El frontend en Vercel es otro origen, así que CORS tiene que nombrarlo.
+      # Sin esto solo funciona el frontend servido por la propia API.
+      - key: FINANZAS_CORS
+        sync: false
+      - key: FINANZAS_USER
+        value: lautarogrego

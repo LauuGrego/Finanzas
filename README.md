@@ -66,16 +66,58 @@ basta con clonar, `pip install -r requirements.txt` y lo de arriba.
 
 | Variable            | Por defecto            | Para qué sirve                                              |
 | ------------------- | ---------------------- | ----------------------------------------------------------- |
-| `FINANZAS_DB`       | `backend/finance.db`   | Ruta del archivo SQLite. Fuera del repo, en un lugar con backup. |
-| `FINANZAS_PASSWORD` | *(vacío)*              | Si está puesta, exige usuario y contraseña. Vacío = sin auth. |
-| `FINANZAS_USER`     | `lautaro`              | Usuario para la contraseña de arriba.                        |
-| `FINANZAS_STATIC`   | `frontend/dist`        | Dónde está el frontend compilado.                            |
-| `FINANZAS_CORS`     | `localhost:5173`       | Orígenes permitidos. `*` solo si el frontend vive en otro host. |
+| `DATABASE_URL`      | *(vacío)*              | Conexión a PostgreSQL. Vacío = usar el SQLite local.        |
+| `FINANZAS_DB`       | `backend/finance.db`   | Ruta del archivo SQLite, cuando no hay `DATABASE_URL`.      |
+| `FINANZAS_PASSWORD` | *(vacío)*              | La clave de la app. Vacío = sin password, no publiques.     |
+| `FINANZAS_USER`     | `lautaro`              | Usuario para HTTP Basic (curl y `/docs`).                   |
+| `FINANZAS_STATIC`   | `frontend/dist`        | Dónde está el frontend compilado.                           |
+| `FINANZAS_CORS`     | `localhost:5173`       | Orígenes permitidos, separados por coma.                    |
+| `FINANZAS_SESSION_DAYS` | `30`                | Días que dura la sesión iniciada.                           |
 
 Sin `FINANZAS_PASSWORD` la API queda abierta a quien tenga la URL. La app no
 tiene modelo de usuarios, así que **esa variable es lo único que separa tu
 historial financiero del resto de internet**. Sin ella, mantenela en una red
 privada y no la publiques.
+
+### En la nube: Supabase + Render + Vercel
+
+Los tres gratis. La decisión de fondo: **un server free no tiene disco
+persistente**, así que la base no puede ser un archivo local. Va a un PostgreSQL
+administrado y la API se conecta por red.
+
+```
+Vercel   (frontend, estático)  ──HTTPS──>  Render  (FastAPI)  ──>  Supabase  (PostgreSQL)
+```
+
+**1. Supabase** — New project, región cercana (São Paulo). En *Project Settings →
+Database*, activá solo el guard **Password**; los demás déjalos apagados. Copiá
+la *Connection string → URI*.
+
+**2. Render** — conectá el repo con GitHub. `render.yaml` ya está escrito, así
+que toma el plan, el comando de arranque y el health check solo. Completá las
+tres variables que pide:
+
+| Variable            | Valor                                             |
+| ------------------- | ------------------------------------------------- |
+| `DATABASE_URL`      | La connection string de Supabase                  |
+| `FINANZAS_PASSWORD` | Una clave larga que inventes vos                  |
+| `FINANZAS_CORS`     | `https://tu-app.vercel.app`                       |
+
+**3. Vercel** — importá el repo. `vercel.json` ya define el build. Después en
+*Settings → Environment Variables* agregá:
+
+| Nombre           | Valor                              |
+| ---------------- | ---------------------------------- |
+| `VITE_API_URL`   | `https://tu-api.onrender.com`      |
+
+Sin `VITE_API_URL` el frontend busca `/api` en su propio dominio, que es lo
+correcto cuando FastAPI sirve el frontend, pero no cuando la API está en otro
+lado.
+
+**Dos cosas que conviene saber del plan gratis de Render:** el servicio se
+duerme tras 15 minutos sin uso y tarda 30-60 segundos en volver, así que la
+primera apertura del día se demora. Y no tiene disco persistente, que es
+justamente por qué la base está en Supabase.
 
 ### Desde el teléfono
 
@@ -200,6 +242,29 @@ En desarrollo el proxy de Vite reenvía `/api` al backend sin reescribirlo; en
 producción FastAPI responde ahí directamente y sirve el resto de las rutas como
 `index.html` para que funcione el enrutado del lado del cliente.
 
+**Una sola clave, en una cookie firmada.**
+
+No hay tabla de usuarios: una persona, una clave. El login manda la clave al
+API, que devuelve una cookie firmada con HMAC. No hay sesiones guardadas en el
+server, así que reiniciar la app no cierra ninguna sesión, y cambiar la clave
+las cierra todas.
+
+La cookie es `httpOnly`, o sea que JavaScript no la puede leer y un XSS no
+llegaría a robarla. Y va como `SameSite=None` cuando la petición llega por
+HTTPS, porque Vercel y Render son sitios distintos: sin eso el navegador la
+descarta antes de que llegue al API.
+
+**La base se puede cambiar sin tocar el código.**
+
+`DATABASE_URL` decide el motor. Sin la variable, SQLite local. Con ella,
+PostgreSQL. Los tipos, los enums (que son texto, no enums nativos) y las
+consultas son los mismos en los dos, así que no hay dos caminos de código que
+se puedan desincronizar.
+
+Una diferencia que costó un bug: SQLite ignora `VARCHAR(36)` y PostgreSQL no.
+El `transfer_id` se armaba con ids de cuenta y monto, y con montos grandes
+pasaba los 36 caracteres. Ahora es un UUID.
+
 ## API
 
 Todas las rutas cuelgan de `/api`.
@@ -248,7 +313,8 @@ un repo.
 ```
 backend/
   app/
-    main.py            FastAPI, auth opcional, sirve el frontend compilado
+    main.py            FastAPI, login, sirve el frontend compilado
+    auth.py            Cookie firmada con HMAC y HTTP Basic
     config.py          Variables de entorno leídas una vez al arrancar
     database.py        Engine SQLite, PRAGMAs, sesión por request
     money.py           Centavos <-> pesos (el único lugar donde se convierte)
@@ -257,7 +323,7 @@ backend/
     schemas/           Contrato de la API (Pydantic)
     routers/           Endpoints
     services/          Lógica financiera
-  tests/               43 tests
+  tests/               76 tests
 frontend/
   src/
     pages/             Dashboard, Agenda, Movimientos, Cuentas, Estadísticas, Config
