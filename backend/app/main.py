@@ -80,18 +80,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# El frontend corre en otro dominio en el deploy partido, asi que CORS hace
-# falta ahi, no solo en desarrollo. allow_credentials obliga a nombrar los
-# origins explicitos: el navegador rechaza el wildcard en una request que lleva
-# la cookie de sesion.
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=config.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Endpoints that have to answer before you can log in, or to find out that you
 # need to. Everything else waits behind the middleware.
 OPEN_PATHS = frozenset(
@@ -129,6 +117,28 @@ async def require_session(request: Request, call_next):
         status_code=401,
         content={"detail": "Necesitás iniciar sesión."},
     )
+
+
+# El frontend corre en otro dominio en el deploy partido, asi que CORS hace
+# falta ahi, no solo en desarrollo. allow_credentials obliga a nombrar los
+# origins explicitos: el navegador rechaza el wildcard en una request que lleva
+# la cookie de sesion.
+#
+# Esto va despues del middleware de arriba a proposito, y el orden no es
+# cosmetico. Cada add_middleware se inserta al principio de la pila, asi que el
+# ultimo que se registra es el de mas afuera. Con CORS registrado primero,
+# require_session queda por fuera y su 401 se devuelve sin pasar por CORS: la
+# respuesta llega sin access-control-allow-origin y el navegador no la deja
+# leer. Del lado del JS eso se ve como "Fetch failed" y no como un 401, el
+# manejador de sesion vencida nunca se entera y la app se queda mostrando
+# listas vacias en vez de volver al login.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=config.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class LoginRequest(BaseModel):

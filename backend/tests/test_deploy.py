@@ -89,3 +89,40 @@ def test_a_trailing_slash_does_not_break_the_match(monkeypatch):
 def test_an_origin_never_keeps_the_slashes_of_its_path(monkeypatch):
     monkeypatch.setenv("FINANZAS_CORS", "https://a.app/")
     assert config._origins() == ["https://a.app"]
+
+
+def test_a_401_the_gate_raises_still_carries_the_cors_headers(
+    client: TestClient, monkeypatch
+):
+    """The 401 that require_session returns must cross CORSMiddleware.
+
+    CORSMiddleware is registered last so it sits on the outside of the stack. If
+    that ever changes, the gate's own 401 skips CORS, the browser refuses to
+    hand the response to the page, and JS sees "Failed to fetch" instead of a
+    401: the session-expired handler never fires and the app sits on empty
+    lists instead of going back to the login screen.
+
+    The origin used here is one the middleware really has. Patching
+    config.CORS_ORIGINS would not work: the middleware captured the list when
+    it was registered, so the test would pass or fail for the wrong reason.
+    """
+    monkeypatch.setattr(config, "PASSWORD", "secreto")
+    allowed = config.CORS_ORIGINS[0]
+
+    response = client.get("/api/accounts", headers={"Origin": allowed})
+
+    assert response.status_code == 401
+    assert response.headers["access-control-allow-origin"] == allowed
+    assert response.headers["access-control-allow-credentials"] == "true"
+
+
+def test_a_401_reaches_a_foreign_origin_without_permission(client: TestClient, monkeypatch):
+    """The same response, to an origin that is not on the list: CORS is added by
+    the middleware, so it stays absent and the browser blocks it. That is the
+    whole point of naming the origins."""
+    monkeypatch.setattr(config, "PASSWORD", "secreto")
+
+    response = client.get("/api/accounts", headers={"Origin": "https://otro.app"})
+
+    assert response.status_code == 401
+    assert "access-control-allow-origin" not in response.headers
