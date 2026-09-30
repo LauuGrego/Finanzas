@@ -11,9 +11,9 @@ from uuid import uuid4
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session, joinedload
 
-from app.enums import TransactionType, enum_value
+from app.enums import AccountType, TransactionType, enum_value
 from app.models import Account, Category, Transaction
-from app.money import to_cents, to_pesos
+from app.money import format_pesos, to_cents, to_pesos
 from app.schemas.reports import CategoryTotal, PeriodSummary
 from app.schemas.transaction import CategoryRef, TransactionPage, TransactionRead
 
@@ -246,15 +246,47 @@ def resolve_references(
     return account, category
 
 
+def blocks_spending(account: Account) -> bool:
+    """Si esta cuenta es de las que no pueden quedar en negativo.
+
+    Una cuenta de crédito es al revés: su saldo negativo ES la deuda, que es
+    lo que significa una tarjeta. Bloquearle los gastos la volvería inútil.
+    """
+    return account.type != AccountType.CREDIT
+
+
+def ensure_sufficient_funds(
+    db: Session, account: Account, amount: int, *, already_counted: int = 0
+) -> None:
+    """Rechaza un gasto o una salida que la cuenta no puede cubrir.
+
+    `already_counted` es lo que el saldo ya le descontó por el movimiento que se
+    está por guardar. Al editar hay que devolverlo antes de comparar: si no, un
+    gasto que ya estaba guardado no se podría volver a guardar ni igual.
+    """
+    if not blocks_spending(account):
+        return
+    available = account_balance(db, account) + already_counted
+    if amount > available:
+        raise ValueError(
+            f"No hay suficiente dinero en {account.name}: "
+            f"disponible {format_pesos(available)}, "
+            f"necesitás {format_pesos(amount)}"
+        )
+
+
 def create_transaction(db: Session, payload: dict) -> Transaction:
     account, category = resolve_references(
         db, payload["account_id"], payload.get("category_id"), payload["type"]
     )
+    amount = to_cents(payload["amount"])
+    if payload["type"] == EXPENSE:
+        ensure_sufficient_funds(db, account, amount)
     transaction = Transaction(
         account_id=account.id,
         category_id=category.id if category else payload.get("category_id"),
         type=payload["type"],
-        amount=to_cents(payload["amount"]),
+        amount=amount,
         description=payload.get("description"),
         date=payload["date"],
     )
@@ -272,10 +304,25 @@ def apply_update(db: Session, transaction: Transaction, changes: dict) -> Transa
     }
     if "type" in changes and transaction.category_id is None:
         raise ValueError("Un movimiento de tipo ingreso o gasto necesita una categoría")
-    resolve_references(db, merged["account_id"], merged["category_id"], merged["type"])
+    account, _ = resolve_references(
+        db, merged["account_id"], merged["category_id"], merged["type"]
+    )
+
+    amount = to_cents(changes["amount"]) if "amount" in changes else transaction.amount
+    if merged["type"] == EXPENSE:
+        # El saldo que se compara es el de la cuenta de destino. Si el movimiento
+        # no se cambia de cuenta, hay que devolverle lo que este mismo movimiento
+        # ya le habia descontado; si se muda de cuenta, el saldo de la nueva
+        # todavia no lo tiene descontado.
+        already_counted = 0
+        if merged["account_id"] == transaction.account_id:
+            already_counted = (
+                -transaction.amount if transaction.type == INCOME else transaction.amount
+            )
+        ensure_sufficient_funds(db, account, amount, already_counted=already_counted)
 
     if "amount" in changes:
-        transaction.amount = to_cents(changes["amount"])
+        transaction.amount = amount
     if "description" in changes:
         transaction.description = changes["description"]
     if "date" in changes:
@@ -305,6 +352,9 @@ def create_transfer(db: Session, payload: dict) -> tuple[str, list[Transaction]]
     # transfers in a row produced the same value.
     transfer_id = str(uuid4())
     amount = to_cents(payload["amount"])
+    # La pata de salida es un gasto de la cuenta de origen, asi que es el mismo
+    # control que un gasto: no se puede mover dinero que no esta.
+    ensure_sufficient_funds(db, from_account, amount)
     description = payload.get("description") or f"Transferencia {from_account.name} → {to_account.name}"
 
     out = Transaction(

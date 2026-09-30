@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from tests.conftest import expense
+from tests.conftest import expense, fund
 
 
 def _month_ago(day: int) -> str:
@@ -116,6 +116,7 @@ def test_monthly_comparison(client, seed):
 
 
 def test_filter_by_category_and_account(client, seed):
+    fund(client, seed["wallet"]["id"], 50000)
     client.post("/api/transactions", json=expense(seed, 20000))
     client.post("/api/transactions", json=expense(seed, 30000, account_id=seed["wallet"]["id"]))
 

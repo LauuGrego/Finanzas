@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from tests.conftest import fund
+
 
 def test_create_account_with_initial_balance(client):
     response = client.post(
@@ -20,6 +22,7 @@ def test_update_account(client, seed):
 
 
 def test_deleting_an_account_keeps_the_history(client, seed):
+    fund(client, seed["wallet"]["id"], 20000)
     transaction = client.post("/api/transactions", json={
         "account_id": seed["wallet"]["id"],
         "category_id": seed["food"]["id"],

@@ -149,3 +149,127 @@ def test_a_transfer_is_not_spending(client, seed):
     assert day["summary"]["expense"] == 12500
     # ...but the movements themselves are still listed.
     assert len(day["transactions"]) == 3
+
+
+# --------------------------------------------------------------------------- #
+# No gastar más de lo que hay
+# --------------------------------------------------------------------------- #
+# The `seed` fixture leaves Banco with 100000 and Mercado Pago with 0, which is
+# enough to tell "the account is empty" apart from "the account cannot cover
+# this".
+
+
+def test_an_expense_cannot_exceed_the_balance(client, seed):
+    response = client.post("/api/transactions", json=expense(seed, 100001))
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert "suficiente" in detail
+    # The message has to name the account and say how much is actually there,
+    # in the same es-AR shape the rest of the app prints.
+    assert "Banco" in detail and "100.000,00" in detail and "100.001,00" in detail
+
+
+def test_an_expense_can_use_the_whole_balance(client, seed):
+    """The check is `amount > available`, so spending it all is allowed."""
+    assert client.post("/api/transactions", json=expense(seed, 100000)).status_code == 201
+
+    accounts = client.get("/api/accounts").json()
+    assert next(a for a in accounts["accounts"] if a["name"] == "Banco")["balance"] == 0
+
+
+def test_income_is_never_blocked(client, seed):
+    """Only money leaving the account is limited; money coming in always fits."""
+    payload = expense(seed, 99999999, category_id=seed["salary"]["id"], type="INCOME")
+    assert client.post("/api/transactions", json=payload).status_code == 201
+
+
+def test_a_credit_account_is_allowed_to_go_negative(client, seed):
+    """A negative balance on a credit card is the debt, not a mistake."""
+    card = client.post(
+        "/api/accounts", json={"name": "Tarjeta", "type": "CREDIT", "initial_balance": 0}
+    ).json()
+
+    assert client.post("/api/transactions", json=expense(seed, 50000, account_id=card["id"])).status_code == 201
+
+    accounts = client.get("/api/accounts").json()
+    assert next(a for a in accounts["accounts"] if a["name"] == "Tarjeta")["balance"] == -50000
+
+
+def test_a_transfer_cannot_exceed_the_source_balance(client, seed):
+    response = client.post(
+        "/api/transfers",
+        json={
+            "from_account_id": seed["bank"]["id"],
+            "to_account_id": seed["wallet"]["id"],
+            "amount": 100001,
+            "date": seed["today"],
+        },
+    )
+
+    assert response.status_code == 422
+    assert "suficiente" in response.json()["detail"]
+    # Nothing was written: a rejected transfer leaves no half of itself behind.
+    assert client.get("/api/transactions").json()["total"] == 0
+
+
+def test_a_transfer_can_empty_the_source_account(client, seed):
+    response = client.post(
+        "/api/transfers",
+        json={
+            "from_account_id": seed["bank"]["id"],
+            "to_account_id": seed["wallet"]["id"],
+            "amount": 100000,
+            "date": seed["today"],
+        },
+    )
+    assert response.status_code == 201
+
+    accounts = client.get("/api/accounts").json()
+    balances = {a["name"]: a["balance"] for a in accounts["accounts"]}
+    assert balances["Banco"] == 0
+    assert balances["Mercado Pago"] == 100000
+
+
+def test_editing_an_expense_without_touching_the_amount_is_not_blocked(client, seed):
+    """The balance already has this expense subtracted from it.
+
+    Comparing the new amount against the balance as it stands would block every
+    edit, even one that changes nothing. This is the case that the refund of the
+    movement's own amount exists for.
+    """
+    created = client.post("/api/transactions", json=expense(seed, 25000)).json()
+
+    assert client.put(f"/api/transactions/{created['id']}", json={"amount": 25000}).status_code == 200
+    assert client.put(f"/api/transactions/{created['id']}", json={"description": "Otro"}).status_code == 200
+
+
+def test_raising_an_expense_beyond_the_balance_is_blocked(client, seed):
+    """Editing an expense may not leave the account negative.
+
+    The account holds 100000 and the expense is 25000, so raising it to exactly
+    100000 leaves the balance at zero and is fine, while 100001 would take it
+    below zero. The comparison is against `balance + the movement's own amount`,
+    which is why the limit is the original balance and not what is left after it.
+    """
+    created = client.post("/api/transactions", json=expense(seed, 25000)).json()
+    url = f"/api/transactions/{created['id']}"
+
+    assert client.put(url, json={"amount": 100000}).status_code == 200
+    assert client.put(url, json={"amount": 100001}).status_code == 422
+
+    accounts = client.get("/api/accounts").json()
+    assert next(a for a in accounts["accounts"] if a["name"] == "Banco")["balance"] == 0
+
+
+def test_moving_an_expense_checks_the_account_it_moves_to(client, seed):
+    """The balance that matters is the destination's, and the expense does not
+    live there yet, so nothing is refunded into the comparison."""
+    created = client.post("/api/transactions", json=expense(seed, 25000)).json()
+
+    # Mercado Pago is empty and it is not a credit account.
+    response = client.put(
+        f"/api/transactions/{created['id']}", json={"account_id": seed["wallet"]["id"]}
+    )
+    assert response.status_code == 422
+    assert "suficiente" in response.json()["detail"]

@@ -19,6 +19,7 @@ from sqlalchemy.schema import CreateTable
 
 from app.money import CENTS
 from app.models import Account, Category, Transaction
+from tests.conftest import fund
 
 TABLES = [Account.__table__, Category.__table__, Transaction.__table__]
 
@@ -60,6 +61,9 @@ def test_a_big_transfer_still_produces_a_short_id(client, seed):
     """
     from app.models import Transaction as T
 
+    # The account has to be able to cover the biggest amount the schema allows,
+    # or the funds check rejects it before the id ever reaches the column.
+    fund(client, seed["bank"]["id"], 999999999999.99)
     biggest = "999999999999.99"
     created = client.post(
         "/api/transfers",

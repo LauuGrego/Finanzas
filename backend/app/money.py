@@ -30,3 +30,22 @@ def to_cents(amount: Decimal | int | str) -> int:
 def to_pesos(cents: int) -> Decimal:
     """Convert integer centavos to decimal pesos."""
     return (Decimal(cents) / CENTS).quantize(Decimal("0.01"))
+
+
+def format_pesos(cents: int) -> str:
+    """`100.000,00` — the shape the frontend prints with es-AR.
+
+    The separators are the opposite of the default: in es-AR the thousands one
+    is a dot and the decimal one is a comma. Done by hand rather than with
+    `locale` because that depends on what the OS has installed, and a message
+    that changes shape with the server's locale is worse than no grouping.
+    """
+    text = f"{to_pesos(cents):.2f}"
+    sign = "-" if text.startswith("-") else ""
+    whole, _, frac = text.lstrip("-").partition(".")
+    groups = []
+    while len(whole) > 3:
+        groups.insert(0, whole[-3:])
+        whole = whole[:-3]
+    groups.insert(0, whole)
+    return f"{sign}{'.'.join(groups)},{frac}"

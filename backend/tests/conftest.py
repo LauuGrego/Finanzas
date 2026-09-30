@@ -77,6 +77,21 @@ def seed(client: TestClient):
     }
 
 
+def fund(client: TestClient, account_id: int, amount: float) -> None:
+    """Raise an account's starting balance so a test can spend from it.
+
+    Goes through `initial_balance` and not an income movement on purpose: an
+    income would be a transaction, and the tests that need this also assert on
+    how many movements an account has.
+
+    The `seed` fixture leaves Mercado Pago at zero, which is fine right up until
+    a test needs to spend from it. Spending more than the balance is rejected,
+    so the money has to be there first, the same way it would be in real use.
+    """
+    response = client.put(f"/api/accounts/{account_id}", json={"initial_balance": amount})
+    assert response.status_code == 200, response.text
+
+
 def expense(seed, amount: float, **overrides) -> dict:
     payload = {
         "account_id": seed["bank"]["id"],
