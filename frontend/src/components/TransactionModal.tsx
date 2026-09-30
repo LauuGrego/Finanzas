@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../services/api'
 import type { Account, Category, Transaction, TransactionPayload } from '../types'
 import { todayIso } from '../utils/format'
@@ -29,6 +29,23 @@ export function TransactionModal({
 }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [type, setType] = useState<'EXPENSE' | 'INCOME'>(transaction?.type ?? defaultType)
+
+  // El modal queda montado siempre, recibe open en vez de desmontarse. Por eso
+  // el useState de arriba solo corre una vez y el tipo se queda pegado entre
+  // aperturas: en Nuevo tocás "Ingreso" y el modal abre con el EXPENSE de la
+  // apertura anterior, así que el botón deja de mandar. También se arrastraba
+  // el error de un guardado fallido al volver a abrir.
+  //
+  // La dependencia es solo `open` a propósito: interesa leer el default que el
+  // padre pasó en este momento. Si también dependiera de `transaction` y el
+  // padre lo creara inline, cambiaría de identidad en cada render y esto
+  // pisaría lo que la persona eligió con el modal abierto.
+  useEffect(() => {
+    if (open) {
+      setType(transaction?.type ?? defaultType)
+      setError(null)
+    }
+  }, [open])
 
   const editing = Boolean(transaction)
   const relevant = categories.filter((c) => c.type === type)
