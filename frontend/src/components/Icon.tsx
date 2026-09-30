@@ -20,6 +20,7 @@ export type IconName =
   | 'income'
   | 'expense'
   | 'repeat'
+  | 'layers'
   | 'back'
 
 const PATHS: Record<IconName, React.ReactNode> = {
@@ -59,6 +60,13 @@ const PATHS: Record<IconName, React.ReactNode> = {
   repeat: (
     <>
       <path d="M4 10V8a3 3 0 0 1 3-3h13l-3-3M20 14v2a3 3 0 0 1-3 3H4l3 3" />
+    </>
+  ),
+  layers: (
+    <>
+      <path d="M12 3 3 7.5l9 4.5 9-4.5z" />
+      <path d="M3 12l9 4.5 9-4.5" />
+      <path d="M3 16.5 12 21l9-4.5" />
     </>
   ),
   back: <path d="M15 5l-7 7 7 7" />,

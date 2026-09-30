@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { CuotasSection } from '../components/CuotasSection'
 import { FormModal } from '../components/FormModal'
 import { Icon } from '../components/Icon'
 import { EmptyState, StateWrapper } from '../components/States'
@@ -74,8 +75,9 @@ export function Recurrentes() {
       </header>
 
       <p className="text-sm text-muted -mt-2">
-        Lo que se repite solo. Cada vez que abrís la app se registra lo que ya venció, con la fecha
-        que tenía, y pasa a ser un movimiento común que podés editar o borrar.
+        Lo que se cobra solo: lo que se repite sin fin y, más abajo, lo que se paga en cuotas y
+        termina. Cada vez que abrís la app se registra lo que ya venció, con la fecha que tenía, y
+        pasa a ser un movimiento común que podés editar o borrar.
       </p>
 
       <StateWrapper loading={list.loading} error={list.error} onRetry={() => void list.reload()}>
@@ -261,6 +263,13 @@ export function Recurrentes() {
         }}
         onClose={() => setDeleting(null)}
       />
+
+      {/* Las cuotas van abajo y separadas por una línea, no metidas en la misma
+          lista: son hermanas de los recurrentes, no otro tipo de recurrente.
+          Cada bloque tiene su botón y se lee solo. */}
+      <div className="pt-5 border-t border-line">
+        <CuotasSection />
+      </div>
     </div>
   )
 }

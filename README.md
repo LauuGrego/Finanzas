@@ -293,6 +293,30 @@ El día del mes queda anclado aparte de la fecha. Si el alquiler se cobra el 31,
 en febrero cae el 28, y marzo tiene que volver al 31: avanzar desde la fecha
 clampada lo dejaría en el 28 para siempre.
 
+**Una cuota es un recurrente con fin.**
+
+En la misma pantalla, más abajo, se cargan las compras en cuotas: la tele en 12
+de 50.000. Se cobra una vez por mes, como un recurrente, pero se termina sola
+cuando se registra la última, así que no hay una fecha que siga para siempre. No
+tiene pantalla propia justamente por eso: es hermana de los recurrentes, no otra
+sección, y así la barra del teléfono se queda en cinco lugares.
+
+Lo que se carga es **el monto de cada cuota, no el total**: así se lee el resumen
+de la tarjeta y es la única forma exacta, porque un total que no se divide justo
+por la cantidad dejaría centavos que no entran en la cuota. El total y lo que
+falta se calculan y se muestran, no se guardan, igual que el saldo de una cuenta.
+
+No es una columna más en `recurrings` porque agregarle una columna a una tabla
+que ya existe es una migración, y en el tier gratis no hay paso de migración:
+`create_all` crea las tablas que faltan y nada más. Una tabla nueva es gratis.
+
+El bloque de próximos compromisos del dashboard mezcla recurrentes y cuotas en
+una sola lista, ordenada por fecha, y corta después de mezclar: si cortara antes,
+un mes con muchas cuotas podría sacar a todos los recurrentes de la lista.
+
+Una cuota terminada no desaparece ni se da de baja: queda como *terminada*, con
+su historial legible, por si más adelante querés ver cuánto salió la compra.
+
 **Nada se borra de verdad, se da de baja.**
 
 Cuentas y categorías tienen `active`. Al darlas de baja desaparecen de los
@@ -396,6 +420,16 @@ Todas las rutas cuelgan de `/api`.
 | `PUT`    | `/api/transactions/{id}`         | Edita                           |
 | `DELETE` | `/api/transactions/{id}`         | Elimina                         |
 | `POST`   | `/api/transfers`                 | Transfiere entre cuentas        |
+| `GET`    | `/api/recurring`                 | Reglas que se repiten           |
+| `POST`   | `/api/recurring`                 | Crea una regla                  |
+| `PUT`    | `/api/recurring/{id}`            | Edita o pausa                   |
+| `DELETE` | `/api/recurring/{id}`            | Borra                           |
+| `POST`   | `/api/recurring/generate`        | Registra lo que venció          |
+| `GET`    | `/api/installments`              | Cuotas por mes                  |
+| `POST`   | `/api/installments`              | Crea una compra en cuotas       |
+| `PUT`    | `/api/installments/{id}`         | Edita o pausa                   |
+| `DELETE` | `/api/installments/{id}`         | Borra                           |
+| `POST`   | `/api/installments/generate`     | Registra la cuota del mes       |
 | `GET`    | `/api/dashboard?month=YYYY-MM`   | Saldo, resumen, categorías, últimos movimientos |
 | `GET`    | `/api/calendar/month?month=YYYY-MM` | Cada día del mes con su resumen |
 | `GET`    | `/api/calendar/day?day=YYYY-MM-DD`  | Un día en detalle             |
@@ -433,7 +467,7 @@ backend/
     schemas/           Contrato de la API (Pydantic)
     routers/           Endpoints
     services/          Lógica financiera
-  tests/               143 tests
+  tests/               165 tests
 frontend/
   src/
     pages/             Dashboard, Agenda, Movimientos, Cuentas, Recurrentes, Estadísticas, Config
@@ -447,6 +481,6 @@ frontend/
 
 ## Lo que falta (V2 en adelante)
 
-Cuotas, presupuestos, metas, exportación a CSV y backups desde la interfaz. El
-campo `upcoming` del dashboard ya lo usan los recurrentes; las cuotas van a
-ocupar el mismo campo con `kind: "installment"`.
+Presupuestos, metas, exportación a CSV y backups desde la interfaz. El campo
+`upcoming` del dashboard ya lo usan los recurrentes y las cuotas, cada uno con su
+`kind`.

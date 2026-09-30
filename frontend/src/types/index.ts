@@ -162,3 +162,49 @@ export interface RecurringPayload {
   frequency: Frequency
   next_date: string
 }
+
+/**
+ * Una compra en cuotas: "la tele, 12 meses de 50.000 con la tarjeta". Tiene la
+ * misma forma que un recurrente pero con fin, así que se cobra una vez por mes y
+ * se termina sola cuando se registra la última.
+ *
+ * `amount` es lo que se cobra cada mes, no el total. Así es como se lee el
+ * resumen de la tarjeta y es la única forma exacta: un total que no se divide
+ * justo dejaría centavos que no entran en la cuota. El total y lo que falta se
+ * calculan y vienen en la respuesta.
+ */
+export interface Installment {
+  id: number
+  account_id: number
+  category_id: number
+  amount: number
+  description: string | null
+  total_count: number
+  next_date: string
+  active: boolean
+  paid_count: number
+  /** El número de la que viene, empezando en 1, para "cuota 4 de 12". */
+  current_installment: number
+  remaining: number
+  total_amount: number
+  total_pending: number
+  finished: boolean
+  created_at: string
+  category: CategoryRef | null
+  account_name: string | null
+  type: TransactionType
+}
+
+export interface InstallmentList {
+  items: Installment[]
+  total: number
+}
+
+export interface InstallmentPayload {
+  account_id: number
+  category_id: number
+  amount: number
+  description: string | null
+  total_count: number
+  next_date: string
+}

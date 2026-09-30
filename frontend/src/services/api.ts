@@ -6,6 +6,9 @@ import type {
   DayDetail,
   MonthComparison,
   CategoryTotal,
+  Installment,
+  InstallmentList,
+  InstallmentPayload,
   Recurring,
   RecurringList,
   RecurringPayload,
@@ -140,6 +143,23 @@ export const api = {
      * would ever run. Safe to call again, it writes nothing if nothing is due.
      */
     generate: () => request<{ generated: number }>('/recurring/generate', { method: 'POST' }),
+  },
+  installments: {
+    list: (includeInactive = false) =>
+      request<InstallmentList>(`/installments${query({ include_inactive: includeInactive })}`),
+    create: (payload: InstallmentPayload) =>
+      request<Installment>('/installments', { method: 'POST', body: JSON.stringify(payload) }),
+    update: (id: number, payload: Partial<InstallmentPayload> & { active?: boolean }) =>
+      request<Installment>(`/installments/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      }),
+    remove: (id: number) => request<void>(`/installments/${id}`, { method: 'DELETE' }),
+    /**
+     * Same deal as the recurring catch-up: called once when the app opens,
+     * because the server sleeps between uses and nothing else would run it.
+     */
+    generate: () => request<{ generated: number }>('/installments/generate', { method: 'POST' }),
   },
   dashboard: {
     get: (month?: string) => request<Dashboard>(`/dashboard${query({ month })}`),

@@ -185,14 +185,14 @@ export function Dashboard() {
               // única puerta de entrada desde el teléfono.
               action={
                 <Link to="/recurrentes" className="text-sm text-gold hover:underline">
-                  Ver recurrentes
+                  Ver todos
                 </Link>
               }
             >
               {data.upcoming.length === 0 ? (
                 <EmptyState
                   title="Nada programado"
-                  hint="Si el alquiler, Netflix o el sueldo se repiten, agregalos como recurrentes y te van a avisar acá."
+                  hint="Si el alquiler, Netflix o el sueldo se repiten, o si compraste algo en cuotas, cargalo una vez y te van a avisar acá."
                 />
               ) : (
                 <ul className="divide-y divide-line">

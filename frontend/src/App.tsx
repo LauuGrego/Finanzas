@@ -20,7 +20,7 @@ export default function App() {
   // `null` means "still asking", which is not the same as "locked out": showing
   // the login form before the answer arrives would flash it on every reload.
   const [authenticated, setAuthenticated] = useState<boolean | null>(null)
-  // Whether the recurring catch-up already ran this session.
+  // Whether the scheduled catch-up already ran this session.
   const [caughtUp, setCaughtUp] = useState(false)
 
   useEffect(() => {
@@ -54,8 +54,9 @@ export default function App() {
     // first screen would show a balance that is one Netflix out of date.
     if (authenticated !== true || caughtUp) return
     let alive = true
-    api.recurring
-      .generate()
+    // Recurring rules and installments catch up together, so the app waits once
+    // and not twice before the first screen.
+    Promise.all([api.recurring.generate(), api.installments.generate()])
       // A failure here must not keep the app shut. Nothing was lost: the rules
       // are still waiting and the next time the app opens it tries again.
       .catch(() => undefined)

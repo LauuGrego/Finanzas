@@ -1,5 +1,11 @@
 from app.schemas.account import AccountCreate, AccountList, AccountRead, AccountUpdate
 from app.schemas.category import CategoryCreate, CategoryRead, CategoryUpdate
+from app.schemas.installment import (
+    InstallmentCreate,
+    InstallmentList,
+    InstallmentRead,
+    InstallmentUpdate,
+)
 from app.schemas.recurring import (
     RecurringCreate,
     RecurringList,
@@ -30,10 +36,14 @@ __all__ = [
     "AccountUpdate",
     "CategoryCreate",
     "CategoryRead",
-    "CategoryUpdate",
     "CategoryTotal",
+    "CategoryUpdate",
     "DashboardRead",
     "DayDetail",
+    "InstallmentCreate",
+    "InstallmentList",
+    "InstallmentRead",
+    "InstallmentUpdate",
     "MonthComparison",
     "PeriodSummary",
     "RecurringCreate",

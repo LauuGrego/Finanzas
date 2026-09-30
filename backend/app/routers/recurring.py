@@ -16,6 +16,7 @@ from app.schemas.recurring import (
     RecurringUpdate,
 )
 from app.services import recurring_service as rec
+from app.services.scheduling import resolve_references
 
 router = APIRouter(prefix="/recurring", tags=["recurring"])
 
@@ -39,7 +40,7 @@ def list_recurring(
 @router.post("", response_model=RecurringRead, status_code=status.HTTP_201_CREATED)
 def create_recurring(payload: RecurringCreate, db: Session = Depends(get_db)) -> RecurringRead:
     try:
-        rec.resolve_references(db, payload.account_id, payload.category_id)
+        resolve_references(db, payload.account_id, payload.category_id)
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
 
@@ -90,7 +91,7 @@ def update_recurring(
         changes["amount"] = to_cents(changes["amount"])
     if {"account_id", "category_id"} & changes.keys():
         try:
-            rec.resolve_references(
+            resolve_references(
                 db,
                 changes.get("account_id", rule.account_id),
                 changes.get("category_id", rule.category_id),
