@@ -4,10 +4,11 @@ services:
     runtime: python
     plan: free
     rootDir: backend
-    # Fijar la version no es cosmetico. Render por defecto usa la ultima que
-    # exista, y pydantic-core 2.27.2 no tiene wheel para 3.14: sin el, pip cae
-    # a compilar desde fuente con Rust, y el build muere en el sistema de
-    # archivos de solo lectura. 3.13 es la que se usa en desarrollo.
+    # Esto solo aplica si el servicio se crea desde este archivo (Blueprint).
+    # Creado a mano desde el panel, Render ignora el archivo y usa la ultima
+    # Python que tenga, que hoy es 3.14. Por eso los requirements.txt estan
+    # pineados a versiones que tienen wheel para 3.14: el build tiene que
+    # funcionar en las dos, no solo en la que nos gustaria.
     pythonVersion: "3.13"
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT

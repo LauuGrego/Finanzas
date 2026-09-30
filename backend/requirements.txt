@@ -1,9 +1,20 @@
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 sqlalchemy==2.0.36
-pydantic==2.10.4
+
+# pydantic >= 2.13 es lo primero que trae pydantic-core con wheel para Python
+# 3.14. Con 2.10.4 el core era 2.27.2, que no tiene cp314: sin wheel, pip
+# compila desde fuente con Rust, y Render no deja escribir en el cache de
+# cargo. El build moria en "Read-only file system" Error pointing at maturin.
+pydantic==2.13.5
+
 # Driver de PostgreSQL. En la nube la base es Postgres administrada (Supabase);
 # en desarrollo sigue siendo SQLite y este paquete no se usa.
-psycopg[binary]==3.2.3
+# 3.3.6 es el primer psycopg cuyo psycopg-binary trae wheel cp314, por el mismo
+# motivo que el de pydantic. Ojo que el que trae los wheels es el -binary: el
+# metapaquete es puro Python y compila bien en cualquier lado, asi que un audit
+# que mire solo este paquete se dice que todo bien y falla igual.
+psycopg[binary]==3.3.6
+
 pytest==8.3.4
 httpx==0.28.1
