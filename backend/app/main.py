@@ -18,7 +18,7 @@ from app import auth, config
 from app.database import Base, SessionLocal, engine
 from app.enums import AccountType, CategoryType
 from app.models import Account, Category
-from app.routers import accounts, categories, dashboard, transactions, transfers
+from app.routers import accounts, categories, dashboard, recurring, transactions, transfers
 
 # Colours pulled toward the armour palette: copper, steel, arc cyan, gold.
 # Ten hues that stay separable inside a pie chart, none of them neon.
@@ -206,7 +206,7 @@ def session(request: Request) -> dict[str, bool]:
 
 # The API lives under /api so the built frontend can own the root and every
 # other path. The Vite dev server proxies /api to here without rewriting it.
-for router in (accounts, categories, transactions, transfers, dashboard):
+for router in (accounts, categories, transactions, transfers, dashboard, recurring):
     app.include_router(router.router, prefix="/api")
 
 

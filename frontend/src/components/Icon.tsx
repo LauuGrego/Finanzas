@@ -19,6 +19,7 @@ export type IconName =
   | 'transfer'
   | 'income'
   | 'expense'
+  | 'repeat'
   | 'back'
 
 const PATHS: Record<IconName, React.ReactNode> = {
@@ -55,6 +56,11 @@ const PATHS: Record<IconName, React.ReactNode> = {
   transfer: <path d="M4 8h13m0 0-3.5-3.5M17 8l-3.5 3.5M20 16H7m0 0 3.5-3.5M7 16l3.5 3.5" />,
   income: <path d="M3 17l6-6 4 4 8-8M15 7h6v6" />,
   expense: <path d="M3 7l6 6 4-4 8 8M15 17h6v-6" />,
+  repeat: (
+    <>
+      <path d="M4 10V8a3 3 0 0 1 3-3h13l-3-3M20 14v2a3 3 0 0 1-3 3H4l3 3" />
+    </>
+  ),
   back: <path d="M15 5l-7 7 7 7" />,
 }
 

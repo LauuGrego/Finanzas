@@ -13,6 +13,7 @@ const LINKS: NavItem[] = [
   { to: '/agenda', label: 'Agenda', icon: 'calendar' },
   { to: '/movimientos', label: 'Movimientos', icon: 'receipt' },
   { to: '/cuentas', label: 'Cuentas', icon: 'wallet' },
+  { to: '/recurrentes', label: 'Recurrentes', icon: 'repeat' },
   { to: '/estadisticas', label: 'Estadísticas', icon: 'chart' },
   { to: '/config', label: 'Configuración', icon: 'settings' },
 ]
@@ -21,8 +22,8 @@ const LINKS: NavItem[] = [
 const MOBILE_LINKS: NavItem[] = [
   { to: '/', label: 'Inicio', icon: 'home' },
   { to: '/agenda', label: 'Agenda', icon: 'calendar' },
+  { to: '/recurrentes', label: 'Recurrentes', icon: 'repeat' },
   { to: '/nuevo', label: 'Nuevo', icon: 'plus' },
-  { to: '/estadisticas', label: 'Stats', icon: 'chart' },
   { to: '/config', label: 'Config', icon: 'settings' },
 ]
 

@@ -264,6 +264,35 @@ deshabilitan *Guardar* mientras el monto no entre, así que el error se ve antes
 de tocar nada. El backend igual lo rechaza igual: el botón es cortesía, la regla
 está en el servidor.
 
+**Un recurrente es una regla, no un movimiento.**
+
+En `/recurrentes` se cargan las cosas que se repiten: el alquiler, Netflix, el
+sueldo. Frecuencia semanal o mensual, y la fecha del primer cobro. La regla no
+guarda plata: cuando llega el día escribe un `Transaction` común, con la fecha
+que tenía, y de ahí en adelante ese movimiento se edita y se borra como
+cualquier otro.
+
+El tipo (entra o sale) no se elige: lo decide la categoría, que ya tiene que ser
+de ingreso o de gasto. Por eso el sueldo es un recurrente más y no hace falta
+tratarlo aparte.
+
+**Los vencidos se registran al abrir la app.**
+
+El tier gratis apaga el servidor entre usos, así que no hay cron que corra. Por
+eso `POST /api/recurring/generate` lo llama el frontend una vez al abrir, antes
+de renderizar nada. Si no se abrió la app en tres meses, se registran los tres
+cobros perdidos, cada uno con su fecha, y no uno solo con la de hoy.
+
+Un recurrente atrasado no bloquea el registro aunque la cuenta esté en rojo.
+La regla de saldo insuficiente existe para agarrar un monto mal tipeado mientras
+se escribe; una suscripción ya se cobró, así que se registra igual y la cuenta
+queda debiendo, que es la verdad de lo que pasó. Editar el monto de un
+recurrente tampoco toca los movimientos que ya escribió.
+
+El día del mes queda anclado aparte de la fecha. Si el alquiler se cobra el 31,
+en febrero cae el 28, y marzo tiene que volver al 31: avanzar desde la fecha
+clampada lo dejaría en el 28 para siempre.
+
 **Nada se borra de verdad, se da de baja.**
 
 Cuentas y categorías tienen `active`. Al darlas de baja desaparecen de los
@@ -294,6 +323,19 @@ punto de color en la agenda, la lista de movimientos y los gráficos. La
 navegación y las acciones usan SVG en línea (`frontend/src/components/Icon.tsx`),
 así que el ícono hereda el color del texto y no hay que cargar ninguna fuente
 de íconos.
+
+**La barra del teléfono tiene cinco lugares, no siete.**
+
+No entran siete secciones legibles en el ancho de un teléfono, así que hay que
+elegir. Arriba van las siete; abajo, las cinco que se usan a diario: Inicio,
+Agenda, Recurrentes, Nuevo y Configuración. Movimientos y Estadísticas quedan a
+un toque desde Inicio, que es donde se los busca. Los enlaces del dashboard van
+con `<Link>` y no con `<a href>`: un `href` plano recarga la página entera, o
+sea volver a descargar y arrancar la app en el teléfono, cuando alcanza con
+cambiar de pantalla.
+
+Cuando se agregue una sección nueva conviene mirar la barra: el ancho de la
+celda a 360 px es de 72 px, así que una etiqueta de más de ~60 px no entra.
 
 **La API vive bajo `/api`.**
 
@@ -391,10 +433,10 @@ backend/
     schemas/           Contrato de la API (Pydantic)
     routers/           Endpoints
     services/          Lógica financiera
-  tests/               118 tests
+  tests/               143 tests
 frontend/
   src/
-    pages/             Dashboard, Agenda, Movimientos, Cuentas, Estadísticas, Config
+    pages/             Dashboard, Agenda, Movimientos, Cuentas, Recurrentes, Estadísticas, Config
     components/        Modal, FormModal, Card, Button, TransactionItem, Layout, Icon
     hooks/useAsync.ts  Carga de datos con loading/error/reload
     services/api.ts    Cliente HTTP tipado
@@ -405,6 +447,6 @@ frontend/
 
 ## Lo que falta (V2 en adelante)
 
-Gastos recurrentes, cuotas, presupuestos, metas, exportación a CSV y backups
-desde la interfaz. El campo `upcoming` del dashboard ya está en el contrato de
-la API para recibirlos.
+Cuotas, presupuestos, metas, exportación a CSV y backups desde la interfaz. El
+campo `upcoming` del dashboard ya lo usan los recurrentes; las cuotas van a
+ocupar el mismo campo con `kind: "installment"`.

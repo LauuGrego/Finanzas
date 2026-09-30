@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Card } from '../components/Card'
 import { Icon } from '../components/Icon'
 import { MonthStepper } from '../components/MonthStepper'
@@ -14,6 +15,7 @@ import {
   formatDate,
   monthLabel,
   money,
+  relativeDay,
   todayIso,
 } from '../utils/format'
 
@@ -38,11 +40,23 @@ export function Dashboard() {
 
   return (
     <div className="space-y-5">
-      <header className="flex items-center justify-between gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-sm font-medium uppercase tracking-wide text-muted">
           {monthLabel(period)}
         </h1>
-        <MonthStepper period={period} onChange={setPeriod} />
+        {/* La barra de abajo no tiene Estadísticas, así que la home es la
+            puerta de entrada desde el teléfono. El mismo argumento que con
+            Recurrentes, y por el mismo motivo: son pantallas que solo se
+            necesitan a mano, no todo el rato.
+            Va con Link y no con <a href>: un href plano es una navegación de
+            página entera, o sea re-descargar y re-arrancar la app en el
+            teléfono, cuando alcanza con cambiar de pantalla. */}
+        <div className="flex items-center gap-3">
+          <Link to="/estadisticas" className="text-sm text-gold hover:underline">
+            Estadísticas
+          </Link>
+          <MonthStepper period={period} onChange={setPeriod} />
+        </div>
       </header>
 
       <StateWrapper
@@ -138,9 +152,9 @@ export function Dashboard() {
               title="Últimos movimientos"
               action={
                 data.recent_transactions.length > 0 ? (
-                  <a href="/movimientos" className="text-sm text-gold hover:underline">
+                  <Link to="/movimientos" className="text-sm text-gold hover:underline">
                     Ver todos
-                  </a>
+                  </Link>
                 ) : null
               }
             >
@@ -164,11 +178,21 @@ export function Dashboard() {
               )}
             </Card>
 
-            <Card title="Próximos compromisos">
+            <Card
+              title="Próximos compromisos"
+              // Siempre con enlace, incluso sin nada programado: la barra de
+              // abajo en el móvil no tiene esta pantalla, así que la home es la
+              // única puerta de entrada desde el teléfono.
+              action={
+                <Link to="/recurrentes" className="text-sm text-gold hover:underline">
+                  Ver recurrentes
+                </Link>
+              }
+            >
               {data.upcoming.length === 0 ? (
                 <EmptyState
                   title="Nada programado"
-                  hint="Van a aparecer acá los gastos recurrentes y las cuotas."
+                  hint="Si el alquiler, Netflix o el sueldo se repiten, agregalos como recurrentes y te van a avisar acá."
                 />
               ) : (
                 <ul className="divide-y divide-line">
@@ -180,6 +204,7 @@ export function Dashboard() {
                       <span className="text-sm min-w-0 truncate">
                         <span className="text-muted">{formatDate(item.date)}</span>{' '}
                         {item.description}
+                        <span className="text-muted"> · {relativeDay(item.date)}</span>
                       </span>
                       <span className="font-medium tabular-nums shrink-0">
                         {money(item.amount)}

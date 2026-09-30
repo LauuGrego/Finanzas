@@ -8,6 +8,7 @@ import { Calendar } from './pages/Calendar'
 import { Dashboard } from './pages/Dashboard'
 import { Login, LoginLoading } from './pages/Login'
 import { NewMovement } from './pages/NewMovement'
+import { Recurrentes } from './pages/Recurrentes'
 import { Settings } from './pages/Settings'
 import { Transactions } from './pages/Transactions'
 import { api, setUnauthorizedHandler } from './services/api'
@@ -19,6 +20,8 @@ export default function App() {
   // `null` means "still asking", which is not the same as "locked out": showing
   // the login form before the answer arrives would flash it on every reload.
   const [authenticated, setAuthenticated] = useState<boolean | null>(null)
+  // Whether the recurring catch-up already ran this session.
+  const [caughtUp, setCaughtUp] = useState(false)
 
   useEffect(() => {
     // A session can expire while the app is open, from any page. Registering
@@ -44,10 +47,31 @@ export default function App() {
     }
   }, [])
 
+  useEffect(() => {
+    // Register what came due, once, right when the app opens. This is the only
+    // moment it can happen: the free tier sleeps the server between uses, so
+    // there is no cron to fall back on. It runs before anything renders, or the
+    // first screen would show a balance that is one Netflix out of date.
+    if (authenticated !== true || caughtUp) return
+    let alive = true
+    api.recurring
+      .generate()
+      // A failure here must not keep the app shut. Nothing was lost: the rules
+      // are still waiting and the next time the app opens it tries again.
+      .catch(() => undefined)
+      .finally(() => {
+        if (alive) setCaughtUp(true)
+      })
+    return () => {
+      alive = false
+    }
+  }, [authenticated, caughtUp])
+
   const signedIn = useCallback(() => setAuthenticated(true), [])
 
   if (authenticated === null) return <LoginLoading />
   if (!authenticated) return <Login onSignedIn={signedIn} />
+  if (!caughtUp) return <LoginLoading />
 
   return (
     <Layout>
@@ -57,6 +81,7 @@ export default function App() {
         <Route path="/movimientos" element={<Transactions />} />
         <Route path="/cuentas" element={<Accounts />} />
         <Route path="/cuentas/:id" element={<AccountDetail />} />
+        <Route path="/recurrentes" element={<Recurrentes />} />
         <Route
           path="/estadisticas"
           element={

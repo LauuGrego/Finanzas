@@ -73,3 +73,35 @@ export function daysInMonth(period: string): number {
   const [year, month] = period.split('-').map(Number)
   return new Date(year, month, 0).getDate()
 }
+
+/**
+ * "hoy", "mañana", "en 3 días", "hace 2 meses".
+ *
+ * A recurring rule is about when it fires next, so the answer that matters is
+ * how far away that is, not the date again. Parsed at midday so a timezone
+ * either side of midnight cannot shift the day out from under the comparison.
+ */
+export function relativeDay(iso: string, from = todayIso()): string {
+  const target = Date.parse(`${iso.slice(0, 10)}T12:00:00`)
+  const base = Date.parse(`${from.slice(0, 10)}T12:00:00`)
+  const days = Math.round((target - base) / 86400000)
+
+  if (days === 0) return 'hoy'
+  if (days === 1) return 'mañana'
+  if (days === -1) return 'ayer'
+
+  // Days first, up to about a month. Rounding straight to months would call
+  // six days ago "hace un mes", which is the kind of small lie a date is not
+  // supposed to tell.
+  if (days > 0) return days < 31 ? `en ${days} días` : formatDate(iso)
+  const elapsed = -days
+  if (elapsed < 31) return `hace ${elapsed} días`
+  const months = Math.round(elapsed / 30)
+  return months < 2 ? 'hace un mes' : `hace ${months} meses`
+}
+
+/** "Todos los meses" / "Todas las semanas". */
+export const FREQUENCY_LABELS: Record<string, string> = {
+  MONTHLY: 'Todos los meses',
+  WEEKLY: 'Todas las semanas',
+}

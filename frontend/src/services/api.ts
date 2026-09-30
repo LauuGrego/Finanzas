@@ -6,6 +6,9 @@ import type {
   DayDetail,
   MonthComparison,
   CategoryTotal,
+  Recurring,
+  RecurringList,
+  RecurringPayload,
   Transaction,
   TransactionPage,
   TransactionPayload,
@@ -122,6 +125,21 @@ export const api = {
   transfers: {
     create: (payload: TransferPayload) =>
       request<Transfer>('/transfers', { method: 'POST', body: JSON.stringify(payload) }),
+  },
+  recurring: {
+    list: (includeInactive = false) =>
+      request<RecurringList>(`/recurring${query({ include_inactive: includeInactive })}`),
+    create: (payload: RecurringPayload) =>
+      request<Recurring>('/recurring', { method: 'POST', body: JSON.stringify(payload) }),
+    update: (id: number, payload: Partial<RecurringPayload> & { active?: boolean }) =>
+      request<Recurring>(`/recurring/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+    remove: (id: number) => request<void>(`/recurring/${id}`, { method: 'DELETE' }),
+    /**
+     * Catch up on everything that came due. Called once when the app opens:
+     * the server sleeps between uses, so there is no other moment where this
+     * would ever run. Safe to call again, it writes nothing if nothing is due.
+     */
+    generate: () => request<{ generated: number }>('/recurring/generate', { method: 'POST' }),
   },
   dashboard: {
     get: (month?: string) => request<Dashboard>(`/dashboard${query({ month })}`),

@@ -21,6 +21,11 @@ class AccountType(str, Enum):
     OTHER = "OTHER"
 
 
+class Frequency(str, Enum):
+    WEEKLY = "WEEKLY"
+    MONTHLY = "MONTHLY"
+
+
 def enum_value(value) -> str:
     """Read an enum column as a plain string. SQLite hands them back as str."""
     return value.value if isinstance(value, Enum) else str(value)

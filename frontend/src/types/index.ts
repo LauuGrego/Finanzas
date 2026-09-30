@@ -1,6 +1,7 @@
 export type TransactionType = 'EXPENSE' | 'INCOME'
 export type CategoryType = 'EXPENSE' | 'INCOME'
 export type AccountType = 'BANK' | 'WALLET' | 'CASH' | 'CREDIT' | 'OTHER'
+export type Frequency = 'WEEKLY' | 'MONTHLY'
 
 export interface Account {
   id: number
@@ -124,4 +125,40 @@ export interface TransferPayload {
   amount: number
   description: string | null
   date: string
+}
+
+/**
+ * A rule, not a movement: "every month on the 3rd, Netflix, 15.000 from the
+ * bank". It writes real movements when it comes due, and from then on those
+ * are ordinary transactions you can edit or delete on their own.
+ */
+export interface Recurring {
+  id: number
+  account_id: number
+  category_id: number
+  amount: number
+  description: string | null
+  frequency: Frequency
+  next_date: string
+  active: boolean
+  times_charged: number
+  created_at: string
+  category: CategoryRef | null
+  account_name: string | null
+  /** Comes from the category, which is why the payload has no `type`. */
+  type: TransactionType
+}
+
+export interface RecurringList {
+  items: Recurring[]
+  total: number
+}
+
+export interface RecurringPayload {
+  account_id: number
+  category_id: number
+  amount: number
+  description: string | null
+  frequency: Frequency
+  next_date: string
 }

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.money import to_pesos
 from app.schemas.reports import DashboardRead, MonthComparison
-from app.services import transaction_service as tx
+from app.services import recurring_service, transaction_service as tx
 from app.services.periods import current_period, month_bounds, shift_month
 
 
@@ -21,8 +21,7 @@ def dashboard(db: Session, period: str | None = None) -> DashboardRead:
         expenses_by_category=tx.expenses_by_category(db, start, end),
         # filter_transactions already returns TransactionRead objects.
         recent_transactions=tx.filter_transactions(db, limit=8).items,
-        # Populated by the recurring / installments phases.
-        upcoming=[],
+        upcoming=recurring_service.upcoming(db),
     )
 
 
