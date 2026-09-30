@@ -267,8 +267,24 @@ está en el servidor.
 **Nada se borra de verdad, se da de baja.**
 
 Cuentas y categorías tienen `active`. Al darlas de baja desaparecen de los
-selectores pero sus movimientos históricos siguen siendo legibles. Solo se
-pueden editar o borrar los movimientos que no son parte de una transferencia.
+selectores pero sus movimientos históricos siguen siendo legibles. Todo lo que
+se da de baja se puede volver a activar desde la misma pantalla: Cuentas y
+Configuración listan las dadas de baja con un botón *Reactivar*.
+
+**Todo lo que se carga se puede deshacer.**
+
+Un movimiento se borra con `DELETE /api/transactions/{id}`. Si es parte de una
+transferencia, el borrado se lleva **las dos patas**, en el mismo commit: si se
+borrara una sola, la plata aparecería de la nada en la otra cuenta y los saldos
+dejarían de cuadrar sin forma de arreglarlo desde la app. Da igual desde cuál de
+las dos filas se pida, es la misma transferencia.
+
+Lo que **no** se puede es editar una transferencia. Cambiarle el monto a una
+pata sola dejaría la otra desactualizada, así que el camino es borrarla y
+volver a hacerla.
+
+Las cuentas y las categorías nunca se borran de verdad, se dan de baja, así que
+sus movimientos quedan legibles siempre.
 
 **Sin emojis: categorías con color, navegación con íconos.**
 
@@ -375,7 +391,7 @@ backend/
     schemas/           Contrato de la API (Pydantic)
     routers/           Endpoints
     services/          Lógica financiera
-  tests/               112 tests
+  tests/               118 tests
 frontend/
   src/
     pages/             Dashboard, Agenda, Movimientos, Cuentas, Estadísticas, Config

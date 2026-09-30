@@ -87,7 +87,7 @@ def update_transaction(
     if transaction.transfer_id is not None:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "Los movimientos de una transferencia se editan juntos; usá POST /transfers",
+            "Una transferencia no se edita: borrala y volvé a hacerla",
         )
     try:
         transaction = tx.apply_update(db, transaction, payload.model_dump(exclude_unset=True))
@@ -100,13 +100,25 @@ def update_transaction(
 
 @router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 def delete_transaction(transaction_id: int, db: Session = Depends(get_db)) -> None:
+    """Borra un movimiento, y las dos patas de una transferencia si lo es.
+
+    Una transferencia son dos movimientos unidos por el mismo `transfer_id`. Si
+    se borrara solo uno, la plata aparecería de la nada en la otra cuenta: los
+    saldos dejarían de cuadrar y no habría forma de arreglarlo desde la app. Van
+    los dos o no va ninguno, y en el mismo commit para que no quede media
+    transferencia si algo falla en el medio.
+    """
     transaction = db.get(Transaction, transaction_id)
     if transaction is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Movimiento no encontrado")
-    if transaction.transfer_id is not None:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "Para borrar una transferencia eliminá los dos movimientos desde /transfers",
-        )
-    db.delete(transaction)
+
+    if transaction.transfer_id is None:
+        db.delete(transaction)
+    else:
+        for leg in (
+            db.query(Transaction)
+            .filter(Transaction.transfer_id == transaction.transfer_id)
+            .all()
+        ):
+            db.delete(leg)
     db.commit()

@@ -20,13 +20,18 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 export function Accounts() {
-  const list = useAsync(() => api.accounts.list(), [])
+  // Se piden también las dadas de baja: sin esto no hay dónde volver si te
+  // equivocás y la das de baja, porque desaparecen de la lista y no queda
+  // nada detrás para reactivarlas.
+  const list = useAsync(() => api.accounts.list(true), [])
   const [editing, setEditing] = useState<Account | null>(null)
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<Account | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const accounts = list.data?.accounts ?? []
+  const all = list.data?.accounts ?? []
+  const accounts = all.filter((a) => a.active)
+  const inactive = all.filter((a) => !a.active)
   const total = list.data?.total_balance ?? 0
 
   async function handleSave(form: FormData) {
@@ -52,6 +57,11 @@ export function Accounts() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo guardar')
     }
+  }
+
+  async function handleReactivate(account: Account) {
+    await api.accounts.update(account.id, { active: true })
+    void list.reload()
   }
 
   return (
@@ -123,6 +133,30 @@ export function Accounts() {
               <span className="font-bold tabular-nums text-lg text-gold">{money(total)}</span>
             </div>
           </>
+        )}
+
+        {inactive.length > 0 && (
+          <details className="mt-5">
+            <summary className="text-sm text-muted cursor-pointer">
+              {inactive.length} dada{inactive.length === 1 ? '' : 's'} de baja
+            </summary>
+            <ul className="mt-2 space-y-1">
+              {inactive.map((account) => (
+                <li key={account.id} className="flex items-center gap-3 py-1.5">
+                  <span className="text-muted line-through flex-1 text-sm truncate">
+                    {account.name}
+                  </span>
+                  <span className="text-muted tabular-nums text-sm">{money(account.balance)}</span>
+                  <button
+                    onClick={() => void handleReactivate(account)}
+                    className="text-xs text-gold hover:underline"
+                  >
+                    Reactivar
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
       </StateWrapper>
 

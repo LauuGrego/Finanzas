@@ -67,9 +67,12 @@ export function TransactionItem({
         {money(Math.abs(transaction.amount))}
       </p>
 
-      {(onEdit || onDelete) && !isTransfer && (
+      {/* Editar solo para lo que se puede editar de a uno. Borrar se muestra
+          siempre: una transferencia mal hecha tiene que poder deshacerse, y son
+          dos movimientos que el backend borra juntos. */}
+      {(onEdit || onDelete) && (
         <div className="flex gap-0.5 shrink-0">
-          {onEdit && (
+          {onEdit && !isTransfer && (
             <button
               onClick={() => onEdit(transaction)}
               aria-label={`Editar ${transaction.description ?? 'movimiento'}`}

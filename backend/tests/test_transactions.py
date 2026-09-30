@@ -103,6 +103,11 @@ def test_transfer_to_same_account_is_rejected(client, seed):
 
 
 def test_transfer_movements_cannot_be_edited_individually(client, seed):
+    """Editar no: se cambia el monto de una pata sola y la otra se queda vieja.
+
+    Borrar una transferencia sí se puede, y va entera. Eso está en la sección
+    de "Revertir" más abajo.
+    """
     created = client.post(
         "/api/transfers",
         json={
@@ -114,7 +119,6 @@ def test_transfer_movements_cannot_be_edited_individually(client, seed):
     ).json()
 
     assert client.put(f"/api/transactions/{created['movements'][0]['id']}", json={"amount": 1}).status_code == 422
-    assert client.delete(f"/api/transactions/{created['movements'][0]['id']}").status_code == 422
 
 
 def test_a_transfer_is_not_spending(client, seed):
@@ -149,6 +153,114 @@ def test_a_transfer_is_not_spending(client, seed):
     assert day["summary"]["expense"] == 12500
     # ...but the movements themselves are still listed.
     assert len(day["transactions"]) == 3
+
+
+# --------------------------------------------------------------------------- #
+# Revertir
+# --------------------------------------------------------------------------- #
+# Una transferencia mal hecha tiene que poder deshacerse: son dos movimientos
+# y la persona solo ve una fila en la lista.
+
+
+def test_deleting_one_leg_of_a_transfer_deletes_both(client, seed):
+    """Borrar media transferencia hace que la plata aparezca de la nada."""
+    out, income = client.post(
+        "/api/transfers",
+        json={
+            "from_account_id": seed["bank"]["id"],
+            "to_account_id": seed["wallet"]["id"],
+            "amount": 50000,
+            "date": seed["today"],
+        },
+    ).json()["movements"]
+
+    assert client.delete(f"/api/transactions/{out['id']}").status_code == 204
+
+    # No queda ni la pata que se pidio borrar ni la otra.
+    assert client.get(f"/api/transactions/{out['id']}").status_code == 404
+    assert client.get(f"/api/transactions/{income['id']}").status_code == 404
+    assert client.get("/api/transactions").json()["total"] == 0
+
+
+def test_it_works_the_same_from_either_leg(client, seed):
+    """La pata de entrada tambien arrastra a la de salida: es la misma fila vista al reves."""
+    out, income = client.post(
+        "/api/transfers",
+        json={
+            "from_account_id": seed["bank"]["id"],
+            "to_account_id": seed["wallet"]["id"],
+            "amount": 50000,
+            "date": seed["today"],
+        },
+    ).json()["movements"]
+
+    assert client.delete(f"/api/transactions/{income['id']}").status_code == 204
+    assert client.get(f"/api/transactions/{out['id']}").status_code == 404
+    assert client.get("/api/transactions").json()["total"] == 0
+
+
+def test_reverting_a_transfer_puts_the_money_back_where_it_was(client, seed):
+    """Deshacer una transferencia tiene que dejar los saldos como estaban.
+
+    Es lo que hace util el boton: si al borrar quedara la plata en el aire, el
+    arreglo seria volver a cargar la misma transferencia a mano.
+    """
+    def balances():
+        return {
+            a["name"]: a["balance"] for a in client.get("/api/accounts").json()["accounts"]
+        }
+
+    before = balances()
+    out, _income = client.post(
+        "/api/transfers",
+        json={
+            "from_account_id": seed["bank"]["id"],
+            "to_account_id": seed["wallet"]["id"],
+            "amount": 50000,
+            "date": seed["today"],
+        },
+    ).json()["movements"]
+
+    # La plata se movio de verdad.
+    assert balances() == {**before, "Banco": 50000, "Mercado Pago": 50000}
+
+    client.delete(f"/api/transactions/{out['id']}")
+
+    assert balances() == before
+
+
+def test_a_transfer_cannot_be_edited_but_can_be_redone(client, seed):
+    """Editar media transferencia tampoco se puede: se borra y se rehace."""
+    out, _income = client.post(
+        "/api/transfers",
+        json={
+            "from_account_id": seed["bank"]["id"],
+            "to_account_id": seed["wallet"]["id"],
+            "amount": 50000,
+            "date": seed["today"],
+        },
+    ).json()["movements"]
+
+    response = client.put(f"/api/transactions/{out['id']}", json={"amount": 1})
+    assert response.status_code == 422
+    # El mensaje dice lo que hay que hacer, no manda a un endpoint inexistente.
+    assert "borrala" in response.json()["detail"].lower()
+    # Y la transferencia quedo como estaba, no a medias.
+    assert client.get(f"/api/transactions/{out['id']}").json()["amount"] == 50000
+
+
+def test_deleting_a_plain_movement_still_only_deletes_that_one(client, seed):
+    """El caso normal no se entera de que existe el camino de las transferencias."""
+    kept = client.post("/api/transactions", json=expense(seed, 1000)).json()
+    removed = client.post("/api/transactions", json=expense(seed, 2000)).json()
+
+    assert client.delete(f"/api/transactions/{removed['id']}").status_code == 204
+    assert client.get(f"/api/transactions/{kept['id']}").status_code == 200
+    assert client.get("/api/transactions").json()["total"] == 1
+
+
+def test_deleting_a_movement_that_is_not_there_is_a_404(client, seed):
+    assert client.delete("/api/transactions/999999").status_code == 404
 
 
 # --------------------------------------------------------------------------- #
