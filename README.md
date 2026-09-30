@@ -245,6 +245,25 @@ que sale de la cuenta origen y otro que entra en la destino. No llevan categorí
 y **quedan excluidos de los totales de ingresos y gastos**: mover plata entre
 tus propias cuentas no es gastar ni ganar. El saldo total no cambia.
 
+**No se puede gastar ni transferir más de lo que hay.**
+
+Un gasto o una salida que dejaría la cuenta en negativo se rechaza con `422`. El
+ingreso nunca se bloquea y una cuenta de tipo **Crédito** queda exenta: en una
+tarjeta el saldo negativo es la deuda, que es lo que significa una tarjeta, y
+bloquearlo la volvería inútil.
+
+Al editar hay una trampa. El saldo que se compara ya tiene descontado el
+movimiento que se está guardando, así que comparar contra el saldo tal cual
+bloquearía incluso el guardado sin cambios. Se devuelve el aporte del propio
+movimiento antes de comparar, y solo si la cuenta no cambia: si se muda de
+cuenta, el saldo de la nueva todavía no lo tiene descontado. Por eso al editar
+puede guardar un gasto más grande que el saldo de la cuenta.
+
+El modal de movimiento y el de transferencia muestran el disponible y
+deshabilitan *Guardar* mientras el monto no entre, así que el error se ve antes
+de tocar nada. El backend igual lo rechaza igual: el botón es cortesía, la regla
+está en el servidor.
+
 **Nada se borra de verdad, se da de baja.**
 
 Cuentas y categorías tienen `active`. Al darlas de baja desaparecen de los
@@ -356,7 +375,7 @@ backend/
     schemas/           Contrato de la API (Pydantic)
     routers/           Endpoints
     services/          Lógica financiera
-  tests/               88 tests
+  tests/               112 tests
 frontend/
   src/
     pages/             Dashboard, Agenda, Movimientos, Cuentas, Estadísticas, Config

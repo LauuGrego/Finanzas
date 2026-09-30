@@ -6,6 +6,8 @@ interface Props {
   open: boolean
   title: string
   submitLabel?: string
+  /** Set false to block the submit, e.g. while the form is over the limit. */
+  canSubmit?: boolean
   onClose: () => void
   onSubmit: (form: FormData) => Promise<void>
   children: ReactNode
@@ -17,6 +19,7 @@ export function FormModal({
   open,
   title,
   submitLabel = 'Guardar',
+  canSubmit = true,
   onClose,
   onSubmit,
   children,
@@ -52,7 +55,7 @@ export function FormModal({
             className="flex-1"
             type="submit"
             form="modal-form"
-            disabled={saving}
+            disabled={saving || !canSubmit}
           >
             {saving ? 'Guardando…' : submitLabel}
           </Button>

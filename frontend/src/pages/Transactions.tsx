@@ -13,6 +13,7 @@ import { currentPeriod, formatDate, money } from '../utils/format'
 export function Transactions() {
   const [period, setPeriod] = useState(currentPeriod())
   const [categoryId, setCategoryId] = useState('')
+  const [accountId, setAccountId] = useState('')
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [deleting, setDeleting] = useState<Transaction | null>(null)
@@ -24,10 +25,11 @@ export function Transactions() {
       api.transactions.list({
         month: period,
         category_id: categoryId ? Number(categoryId) : undefined,
+        account_id: accountId ? Number(accountId) : undefined,
         search: search || undefined,
         limit: 200,
       }),
-    [period, categoryId, search],
+    [period, categoryId, accountId, search],
   )
 
   const items = page.data?.items ?? []
@@ -54,7 +56,7 @@ export function Transactions() {
         <MonthStepper period={period} onChange={setPeriod} />
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <input
           type="search"
           placeholder="Buscar por descripción"
@@ -63,6 +65,19 @@ export function Transactions() {
           aria-label="Buscar movimientos"
           className="input"
         />
+        <select
+          value={accountId}
+          onChange={(event) => setAccountId(event.target.value)}
+          aria-label="Filtrar por cuenta"
+          className="input"
+        >
+          <option value="">Todas las cuentas</option>
+          {(accounts.data?.accounts ?? []).map((account) => (
+            <option key={account.id} value={account.id}>
+              {account.name}
+            </option>
+          ))}
+        </select>
         <select
           value={categoryId}
           onChange={(event) => setCategoryId(event.target.value)}
