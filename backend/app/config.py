@@ -33,14 +33,22 @@ STATIC_DIR = _path(os.getenv("FINANZAS_STATIC"), REPO_DIR / "frontend" / "dist")
 PASSWORD = os.getenv("FINANZAS_PASSWORD", "")
 USERNAME = os.getenv("FINANZAS_USER", "lautaro")
 
-# The frontend is served from the same origin in production, so CORS is only
-# needed for the Vite dev server. `FINANZAS_CORS=*` opens it up if a separate
-# frontend host is ever used.
+# El frontend puede venir de otro dominio, que es lo que pasa en el deploy
+# partido: Vercel sirve la app y Render solo la API. Son dos orígenes distintos,
+# asi que CORS no es opcional ahi. Sin esto el navegador manda un preflight que
+# Render rechaza con "Disallowed CORS origin" y el fetch falla entero, que es lo
+# que pasa si la variable queda sin poner. Varios origins van separados por coma.
+# `*` abre todo, pero con credenciales el navegador lo va a rechazar igual, asi
+# que conviene poner el origin exacto.
+#
+# La comparacion de CORSMiddleware es de cadena exacta, asi que se saca la barra
+# final: un origin por definicion no la lleva y es el error que mas se cuela al
+# copiar la URL del navegador, que siempre viene con barra.
 def _origins() -> list[str]:
     raw = os.getenv("FINANZAS_CORS")
     if raw is None:
         return ["http://localhost:5173", "http://127.0.0.1:5173"]
-    return [item.strip() for item in raw.split(",") if item.strip()]
+    return [item.strip().rstrip("/") for item in raw.split(",") if item.strip()]
 
 
 CORS_ORIGINS = _origins()

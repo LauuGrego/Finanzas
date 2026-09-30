@@ -61,3 +61,31 @@ def test_without_a_password_everything_is_open(client: TestClient, monkeypatch):
 def test_health_stays_open_so_a_monitor_can_check_it(client: TestClient, monkeypatch):
     monkeypatch.setattr(config, "PASSWORD", "secreto")
     assert client.get("/api/health").status_code == 200
+
+
+# --------------------------------------------------------------------------- #
+# CORS
+# --------------------------------------------------------------------------- #
+
+
+def test_unset_cors_allows_the_dev_server_only(monkeypatch):
+    monkeypatch.delenv("FINANZAS_CORS", raising=False)
+    assert config._origins() == ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+
+def test_several_frontend_origins_can_be_listed(monkeypatch):
+    monkeypatch.setenv("FINANZAS_CORS", "https://a.app,https://b.app")
+    assert config._origins() == ["https://a.app", "https://b.app"]
+
+
+def test_a_trailing_slash_does_not_break_the_match(monkeypatch):
+    """The URL copied out of the browser always carries one, and CORSMiddleware
+    compares origins as exact strings. Without stripping it the preflight is
+    rejected and the whole fetch fails, with no clue why."""
+    monkeypatch.setenv("FINANZAS_CORS", "https://a.app/ , https://b.app/")
+    assert config._origins() == ["https://a.app", "https://b.app"]
+
+
+def test_an_origin_never_keeps_the_slashes_of_its_path(monkeypatch):
+    monkeypatch.setenv("FINANZAS_CORS", "https://a.app/")
+    assert config._origins() == ["https://a.app"]

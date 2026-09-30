@@ -80,10 +80,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# The frontend runs on its own dev server, so it needs CORS during development.
-# In production it is served from this same origin and CORS is inert.
-# allow_credentials has to name the origins explicitly: the browser refuses a
-# wildcard on a request that carries the session cookie.
+# El frontend corre en otro dominio en el deploy partido, asi que CORS hace
+# falta ahi, no solo en desarrollo. allow_credentials obliga a nombrar los
+# origins explicitos: el navegador rechaza el wildcard en una request que lleva
+# la cookie de sesion.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.CORS_ORIGINS,
