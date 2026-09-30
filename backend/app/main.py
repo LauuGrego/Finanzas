@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hmac
+import logging
 import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -95,6 +96,33 @@ def is_secure(request: Request) -> bool:
     the browser then drops on the cross-site call from Vercel.
     """
     return request.headers.get("x-forwarded-proto", request.url.scheme) == "https"
+
+
+logger = logging.getLogger("finanzas")
+
+
+# Se registra PRIMERO a proposito, asi que queda como el middleware mas interno:
+# todo lo que hay del router hacia abajo esta dentro de el, y la respuesta que
+# arma vuelve a salir por require_session y por CORSMiddleware, que es lo que le
+# pone access-control-allow-origin.
+#
+# Sin esto, una excepcion sube hasta ServerErrorMiddleware, que esta por fuera
+# de CORSMiddleware: el 500 vuelve sin cabeceras de CORS, el navegador no se lo
+# entrega a la pagina y del lado del JS lo unico que aparece es "Failed to
+# fetch". Se pierden el status, el path y el tipo de error, que es justo lo que
+# hace que un 500 termine siendo una pregunta en vez de una linea de log.
+@app.middleware("http")
+async def readable_failures(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception:
+        logger.exception("Fallo sin manejar en %s %s", request.method, request.url.path)
+        # El detalle del crash va al log, no a la respuesta: la respuesta la lee
+        # cualquiera que conozca la URL.
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Error interno del servidor."},
+        )
 
 
 @app.middleware("http")

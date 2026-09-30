@@ -126,3 +126,59 @@ def test_a_401_reaches_a_foreign_origin_without_permission(client: TestClient, m
 
     assert response.status_code == 401
     assert "access-control-allow-origin" not in response.headers
+
+
+CRASHING_PAYLOAD = {
+    "account_id": 1,
+    "category_id": None,
+    "type": "EXPENSE",
+    "amount": 10,
+    "date": "2026-09-30",
+}
+
+
+def test_a_crash_still_crosses_cors_so_the_page_can_read_it(client: TestClient, monkeypatch):
+    """A 500 has to reach the browser with its CORS headers, same as the 401.
+
+    An unhandled exception escapes to ServerErrorMiddleware, which sits outside
+    CORSMiddleware, so the response would go back without
+    access-control-allow-origin and the page could only report "Failed to fetch":
+    no status, no path, nothing to search for in the logs. The middleware that
+    turns the crash into a response has to be registered inside CORSMiddleware
+    for this to hold, so this test fails if that order is ever reverted.
+    """
+    from app.services import transaction_service
+
+    def boom(*_args, **_kwargs):
+        raise RuntimeError("se cayo la base")
+
+    monkeypatch.setattr(transaction_service, "create_transaction", boom)
+    allowed = config.CORS_ORIGINS[0]
+
+    response = client.post(
+        "/api/transactions", headers={"Origin": allowed}, json=CRASHING_PAYLOAD
+    )
+
+    assert response.status_code == 500
+    assert response.headers["access-control-allow-origin"] == allowed
+    assert response.headers["access-control-allow-credentials"] == "true"
+    assert response.json()["detail"] == "Error interno del servidor."
+
+
+def test_a_crash_is_logged_but_not_echoed_to_the_page(
+    client: TestClient, monkeypatch, caplog
+):
+    """The traceback belongs in the backend log; the response goes to whoever
+    knows the URL, so it only says that it broke."""
+    from app.services import transaction_service
+
+    def boom(*_args, **_kwargs):
+        raise RuntimeError("se cayo la base con el secreto adentro")
+
+    monkeypatch.setattr(transaction_service, "create_transaction", boom)
+
+    response = client.post("/api/transactions", json=CRASHING_PAYLOAD)
+
+    assert response.status_code == 500
+    assert "se cayo la base" not in response.text
+    assert "se cayo la base" in caplog.text
