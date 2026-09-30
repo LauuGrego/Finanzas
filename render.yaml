@@ -8,8 +8,23 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/health
     envVars:
-      # Supabase > Project Settings > Database > Connection string > URI.
-      # La contraseña debe ir URL-encoded si tiene @ : / u otros caracteres.
+      # Supabase > Project Settings > Database > Connection string > Session pooler.
+      #
+      # Usá el POOLER, no el "Direct connection" que aparece arriba en la misma
+      # pantalla. El directo (db.<ref>.supabase.co) no tiene registro A, solo
+      # AAAA, así que desde una red sin IPv6 no resuelve nunca.
+      #
+      # El pooler además cambia el usuario: lleva el ref del proyecto pegado,
+      #   postgres.<ref>, no solo "postgres".
+      #
+      # La región va en el host (aws-0-<region>.pooler.supabase.com) y tiene que
+      # ser la del proyecto. Se la ves arriba a la derecha en el panel.
+      #
+      # Puerto 5432 = Session pooler. Es el que funciona con SQLAlchemy sin
+      # tocar nada. El 6543 (Transaction pooler) necesita ?pgbouncer=true.
+      #
+      # La contraseña debe ir URL-encoded si tiene @ : / u otros caracteres:
+      #   [uri]::EscapeDataString("tu-clave")
       - key: DATABASE_URL
         sync: false
       # Sin esto la app queda abierta a internet. Poné una clave larga.

@@ -89,9 +89,30 @@ administrado y la API se conecta por red.
 Vercel   (frontend, estático)  ──HTTPS──>  Render  (FastAPI)  ──>  Supabase  (PostgreSQL)
 ```
 
-**1. Supabase** — New project, región cercana (São Paulo). En *Project Settings →
+**1. Supabase** — New project. La región importa, porque después va en el host de
+la URL. En *Project Settings →
 Database*, activá solo el guard **Password**; los demás déjalos apagados. Copiá
-la *Connection string → URI*.
+la *Connection string* de la pestaña **Connection pooler**, en el modo **Session
+pooler**. No la de *Direct connection*.
+
+**Por qué el pooler y no el directo.** El host directo es
+`db.<ref>.supabase.co`, y no tiene registro DNS tipo A: solo AAAA. Desde una red
+sin IPv6 no resuelve nunca, y el error es un `getaddrinfo failed` que no
+menciona bases de datos. El pooler sí tiene IPv4.
+
+Los dos se parecen pero no son intercambiables:
+
+| | Direct connection | Session pooler |
+| --- | --- | --- |
+| Host | `db.<ref>.supabase.co` | `aws-0-<region>.pooler.supabase.com` |
+| Puerto | `5432` | `5432` |
+| Usuario | `postgres` | `postgres.<ref>` |
+
+El pooler además mete el ref del proyecto dentro del usuario. La región va en el
+host y tiene que ser la del proyecto, que se ve arriba a la derecha del panel.
+
+El 5432 del pooler es el que funciona con SQLAlchemy sin tocar nada. El 6543 es
+el *Transaction* pooler y necesita `?pgbouncer=true` al final de la URL.
 
 **2. Render** — conectá el repo con GitHub. `render.yaml` ya está escrito, así
 que toma el plan, el comando de arranque y el health check solo. Completá las
@@ -99,7 +120,7 @@ tres variables que pide:
 
 | Variable            | Valor                                             |
 | ------------------- | ------------------------------------------------- |
-| `DATABASE_URL`      | La connection string de Supabase                  |
+| `DATABASE_URL`      | La del Session pooler de Supabase                  |
 | `FINANZAS_PASSWORD` | Una clave larga que inventes vos                  |
 | `FINANZAS_CORS`     | `https://tu-app.vercel.app`                       |
 
@@ -261,9 +282,18 @@ PostgreSQL. Los tipos, los enums (que son texto, no enums nativos) y las
 consultas son los mismos en los dos, así que no hay dos caminos de código que
 se puedan desincronizar.
 
-Una diferencia que costó un bug: SQLite ignora `VARCHAR(36)` y PostgreSQL no.
-El `transfer_id` se armaba con ids de cuenta y monto, y con montos grandes
-pasaba los 36 caracteres. Ahora es un UUID.
+Dos diferencias que costaron bugs, y que aparecieron recién al probar contra un
+PostgreSQL de verdad:
+
+SQLite ignora `VARCHAR(36)` y PostgreSQL no. El `transfer_id` se armaba con ids
+de cuenta y monto, y con montos grandes pasaba los 36 caracteres. Ahora es un
+UUID, que son 36 exactos.
+
+Y `postgresql://` no significa lo mismo para SQLAlchemy y para nosotros:
+SQLAlchemy lo lee como *psycopg2*, y el driver instalado es *psycopg 3*. La URL
+que copia cualquiera de la consola de Supabase fallaba con
+`ModuleNotFoundError: psycopg2`, un error de imports que no dice nada de bases
+de datos. Ahora `database.normalize_url()` le agrega el `+psycopg` que falta.
 
 ## API
 

@@ -115,3 +115,75 @@ def test_only_one_database_is_configured_at_a_time():
 
     dialect = engine.dialect.name
     assert dialect == ("postgresql" if config.DATABASE_URL else "sqlite")
+
+
+# The connection string people actually paste. Supabase's dashboard hands out the
+# direct host, but that name only has an AAAA record, so from an IPv4-only
+# network it never resolves. The pooler is the one that works, and it needs the
+# project ref in the username.
+SUPABASE_DIRECT = (
+    "postgresql://postgres:secret@db.abcdefghijklmnopqrst.supabase.co:5432/postgres"
+)
+SUPABASE_POOLER = (
+    "postgresql://postgres.abcdefghijklmnopqrst:secret"
+    "@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [SUPABASE_DIRECT, SUPABASE_POOLER],
+    ids=["direct", "pooler"],
+)
+def test_a_supabase_url_resolves_to_the_installed_driver(url):
+    """The URL Supabase hands out has to name a driver we actually have.
+
+    Bare `postgresql://` means psycopg2 in SQLAlchemy, and psycopg2 is not
+    installed. The failure is an import error at connect time, not a config
+    error, which is why it survives a local run against SQLite: nothing local
+    ever parses this string.
+    """
+    from app.database import normalize_url
+
+    assert normalize_url(url).startswith("postgresql+psycopg://")
+
+
+def test_an_explicit_driver_in_the_url_is_left_alone():
+    """Idempotent: normalizing twice, or a URL that already picked a driver."""
+    from app.database import normalize_url
+
+    once = normalize_url(SUPABASE_DIRECT)
+    assert normalize_url(once) == once
+
+    explicit = "postgresql+psycopg2://user:pass@host:5432/db"
+    assert normalize_url(explicit) == explicit
+
+
+def test_the_legacy_postgres_scheme_is_also_translated():
+    """`postgres://` is the older spelling and appears in older docs."""
+    from app.database import normalize_url
+
+    out = normalize_url("postgres://u:p@h:5432/d")
+    assert out == "postgresql+psycopg://u:p@h:5432/d"
+
+
+def test_a_sqlite_url_is_never_rewritten():
+    """The normalizer is about drivers; it must not touch the other engine."""
+    from app.database import normalize_url
+
+    url = "sqlite:///C:/datos/finance.db"
+    assert normalize_url(url) == url
+
+
+def test_the_installed_driver_is_psycopg3():
+    """Guards the assumption the URL rewriting rests on.
+
+    If psycopg2 ever gets installed alongside, this fails and points at the
+    line of code that assumed one driver.
+    """
+    import importlib.util
+
+    assert importlib.util.find_spec("psycopg2") is None, (
+        "psycopg2 is installed, so postgresql:// would stop meaning psycopg3"
+    )
+    assert importlib.util.find_spec("psycopg") is not None
