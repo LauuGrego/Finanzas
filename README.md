@@ -124,8 +124,11 @@ tres variables que pide:
 | `FINANZAS_PASSWORD` | Una clave larga que inventes vos                  |
 | `FINANZAS_CORS`     | `https://tu-app.vercel.app`                       |
 
-**3. Vercel** — importá el repo. `vercel.json` ya define el build. Después en
-*Settings → Environment Variables* agregá:
+**3. Vercel** — importá el repo, pero en *Settings → Build & Deployment* poné
+*Root Directory* en `frontend`. Es el ajuste que más se olvida y sin él el build
+falla con `cd: frontend: No such file or directory`: Vercel entra derecho a esa
+carpeta, y el `vercel.json` que define el build tiene que estar adentro de ella,
+no en la raíz del repo. Después en *Settings → Environment Variables* agregá:
 
 | Nombre           | Valor                              |
 | ---------------- | ---------------------------------- |
@@ -353,7 +356,7 @@ backend/
     schemas/           Contrato de la API (Pydantic)
     routers/           Endpoints
     services/          Lógica financiera
-  tests/               76 tests
+  tests/               82 tests
 frontend/
   src/
     pages/             Dashboard, Agenda, Movimientos, Cuentas, Estadísticas, Config
