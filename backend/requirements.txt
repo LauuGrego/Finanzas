@@ -1,6 +1,11 @@
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
-sqlalchemy==2.0.36
+# 2.0.41 o superior. Antes, make_union_type hacia Union.__getitem__(types), que
+# es llamar al descriptor a mano; en Python 3.14 eso revienta con
+# "descriptor '__getitem__' requires a 'typing.Union' object" apenas se importa
+# un model con una columna Mapped[X | None]. El fix del issue #12405 cambio esa
+# linea a Union[types], que es una suscripcion normal.
+sqlalchemy==2.0.54
 
 # pydantic >= 2.13 es lo primero que trae pydantic-core con wheel para Python
 # 3.14. Con 2.10.4 el core era 2.27.2, que no tiene cp314: sin wheel, pip
