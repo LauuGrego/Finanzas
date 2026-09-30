@@ -28,6 +28,14 @@ export function Settings() {
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<Category | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Only offer the way out when there is a door to close. With no password
+  // configured the app is open and there is no session to end.
+  const cloud = Boolean(import.meta.env.VITE_API_URL)
+
+  async function signOut() {
+    await api.session.logout()
+    window.location.assign('/')
+  }
 
   const items = categories.data ?? []
   const active = items.filter((c) => c.active)
@@ -146,12 +154,28 @@ export function Settings() {
 
       <Card title="Tus datos">
         <p className="text-sm text-muted">
-          Todo vive en un único archivo SQLite en tu computadora. Podés copiarlo como backup
-          cuando quieras, sin necesidad de la app.
+          {cloud ? (
+            <>
+              Todo vive en una base PostgreSQL administrada y sin acceso público. El respaldo
+              lo hace el proveedor; la exportación a CSV llega más adelante.
+            </>
+          ) : (
+            <>
+              Todo vive en un único archivo SQLite en tu computadora. Podés copiarlo como backup
+              cuando quieras, sin necesidad de la app.
+            </>
+          )}
         </p>
-        <p className="text-sm text-muted mt-3">
-          El respaldo automático y la exportación a CSV llegan más adelante.
-        </p>
+        {cloud && (
+          <Button
+            size="sm"
+            variant="secondary"
+            className="mt-4"
+            onClick={() => void signOut()}
+          >
+            Cerrar sesión
+          </Button>
+        )}
       </Card>
 
       <FormModal

@@ -13,7 +13,19 @@ import type {
   TransferPayload,
 } from '../types'
 
-const BASE = '/api'
+const BASE = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : '/api'
+
+/**
+ * Called whenever the API answers 401, so the app can drop back to the login
+ * screen from anywhere without every page having to know about it.
+ */
+let onUnauthorized: (() => void) | null = null
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  onUnauthorized = handler
+}
 
 export class ApiError extends Error {
   status: number
@@ -26,6 +38,9 @@ export class ApiError extends Error {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
+    // The session lives in a cookie. Without this it is not sent to a
+    // different origin, and Vercel is a different origin than Render.
+    credentials: 'include',
     ...init,
   })
 
@@ -37,6 +52,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // The response was not JSON; keep the generic message.
     }
+    // A 401 means the session expired or was never there. That is not a page
+    // error to render, it is a reason to ask for the key again.
+    if (response.status === 401 && !path.startsWith('/login')) onUnauthorized?.()
     throw new ApiError(message, response.status)
   }
 
@@ -119,5 +137,15 @@ export const api = {
   calendar: {
     day: (day: string) => request<DayDetail>(`/calendar/day${query({ day })}`),
     month: (month: string) => request<Record<string, DayDetail>>(`/calendar/month${query({ month })}`),
+  },
+  session: {
+    /** Always answers 200, so this is a question, not an error. */
+    check: () => request<{ authenticated: boolean }>('/session'),
+    login: (password: string) =>
+      request<{ ok: boolean }>('/login', {
+        method: 'POST',
+        body: JSON.stringify({ password }),
+      }),
+    logout: () => request<{ ok: boolean }>('/logout', { method: 'POST' }),
   },
 }
