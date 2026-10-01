@@ -20,16 +20,26 @@ export const LINKS: NavItem[] = [
 ]
 
 /**
- * Las cuatro secciones que viven fijas en la barra del teléfono.
+ * Los tres lugares fijos de la barra del teléfono, más el botón que abre la
+ * hoja. Cuatro celdas: nueve secciones no entran en el ancho de un teléfono.
  *
- * Las otras cinco no están en una lista propia: salen de la hoja que abre el
- * botón dorado, que muestra `LINKS` entera. Así hay una sola lista de secciones
- * en el proyecto —la de arriba—, y agregar una pantalla nueva la hace aparecer
- * sola en la barra de la compu y en la hoja del teléfono, sin tocar dos lados.
+ * `Nuevo` no está en `LINKS` a propósito: no es una sección, es la acción de
+ * siempre.
  */
 export const MOBILE_LINKS: NavItem[] = [
   { to: '/', label: 'Inicio', icon: 'home' },
-  { to: '/agenda', label: 'Agenda', icon: 'calendar' },
-  { to: '/recurrentes', label: 'Recurrentes', icon: 'repeat' },
+  { to: '/nuevo', label: 'Nuevo', icon: 'plus' },
   { to: '/config', label: 'Config', icon: 'settings' },
 ]
+
+/**
+ * Lo que la hoja muestra: todo menos lo que ya está en la barra.
+ *
+ * Por diferencia y no escrita a mano. Las dos listas van a seguir creciendo por
+ * separado y una escrita a mano se queda vieja sin que nada avise; cuando se
+ * agregue una pantalla, o entra en `LINKS` y aparece sola acá, o queda
+ * imposible de abrir desde el teléfono.
+ */
+export const SHEET_LINKS: NavItem[] = LINKS.filter(
+  (link) => !MOBILE_LINKS.some((mobile) => mobile.to === link.to),
+)

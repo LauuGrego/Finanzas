@@ -26,6 +26,7 @@ export type IconName =
   | 'check'
   | 'pause'
   | 'back'
+  | 'grid'
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: <path d="M3 10.2 12 3l9 7.2M5 9.4V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.4" />,
@@ -93,6 +94,14 @@ const PATHS: Record<IconName, React.ReactNode> = {
   /* El botón de la meta pausada: devolverla, no mirarla. */
   check: <path d="M4.5 12.5 9.5 17.5 19.5 7" />,
   back: <path d="M15 5l-7 7 7 7" />,
+  grid: (
+    <>
+      <rect x="3" y="3" width="8" height="8" rx="1.5" />
+      <rect x="13" y="3" width="8" height="8" rx="1.5" />
+      <rect x="3" y="13" width="8" height="8" rx="1.5" />
+      <rect x="13" y="13" width="8" height="8" rx="1.5" />
+    </>
+  ),
 }
 
 interface Props {

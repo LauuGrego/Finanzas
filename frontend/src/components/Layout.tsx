@@ -71,12 +71,15 @@ export function Layout({ children }: { children: ReactNode }) {
       <nav
         aria-label="Navegación principal"
         className="fixed bottom-0 inset-x-0 md:hidden bg-surface/95 backdrop-blur
-                   border-t border-line grid grid-cols-5
+                   border-t border-line grid grid-cols-4
                    pb-[env(safe-area-inset-bottom)]"
       >
         {MOBILE_LINKS.map((link) => {
           const active =
             link.to === '/' ? pathname === '/' : pathname.startsWith(link.to)
+          // `Nuevo` no es una sección: es la acción de siempre, así que lleva el
+          // dorado siempre y no solo cuando estás parado en esa pantalla.
+          const gold = link.to === '/nuevo' ? true : active
           return (
             <NavLink
               key={link.to}
@@ -84,7 +87,7 @@ export function Layout({ children }: { children: ReactNode }) {
               aria-current={active ? 'page' : undefined}
               className={`flex flex-col items-center justify-center gap-1 py-2.5
                           text-[11px] font-medium transition ${
-                            active ? 'text-gold' : 'text-muted'
+                            gold ? 'text-gold' : 'text-muted'
                           }`}
             >
               <Icon name={link.icon} size={21} />
@@ -93,21 +96,19 @@ export function Layout({ children }: { children: ReactNode }) {
           )
         })}
 
-        {/* El dorado abre la hoja con las cinco secciones que no están acá y con
-            la acción de registrar un movimiento. Va último y no primero para que
-            quede del lado del pulgar derecho y no se confunda con una de las
-            secciones fijas. */}
+        {/* Abre la hoja con las secciones que no están en la barra. Va en gris
+            como el resto y no en dorado, porque el dorado quedó para `Nuevo`. */}
         <button
           type="button"
           onClick={() => setMenuOpen(true)}
           aria-expanded={menuOpen}
           aria-label="Más secciones"
-          className="flex flex-col items-center justify-center gap-1 py-2.5
-                     text-[11px] font-medium text-gold transition"
+          className={`flex flex-col items-center justify-center gap-1 py-2.5
+                      text-[11px] font-medium transition ${
+                        menuOpen ? 'text-gold' : 'text-muted'
+                      }`}
         >
-          <span className="w-8 h-8 rounded-full grid place-items-center bg-gold text-gold-ink">
-            <Icon name="plus" size={21} />
-          </span>
+          <Icon name="grid" size={21} />
           Más
         </button>
       </nav>

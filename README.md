@@ -299,7 +299,7 @@ En la misma pantalla, más abajo, se cargan las compras en cuotas: la tele en 12
 de 50.000. Se cobra una vez por mes, como un recurrente, pero se termina sola
 cuando se registra la última, así que no hay una fecha que siga para siempre. No
 tiene pantalla propia justamente por eso: es hermana de los recurrentes, no otra
-sección, y así la barra del teléfono se queda en cinco lugares.
+sección, y así la barra del teléfono se queda en cuatro lugares.
 
 Lo que se carga es **el monto de cada cuota, no el total**: así se lee el resumen
 de la tarjeta y es la única forma exacta, porque un total que no se divide justo
@@ -348,26 +348,30 @@ navegación y las acciones usan SVG en línea (`frontend/src/components/Icon.tsx
 así que el ícono hereda el color del texto y no hay que cargar ninguna fuente
 de íconos.
 
-**La barra del teléfono tiene cinco lugares, no nueve.**
+**La barra del teléfono tiene cuatro lugares, no nueve.**
 
 No entran nueve secciones legibles en el ancho de un teléfono, así que hay que
-elegir. Arriba van las nueve; abajo, las cuatro que se usan a diario —Inicio,
-Agenda, Recurrentes y Config— más un botón dorado, **Más**, que abre una hoja con
-todo: primero *Nuevo movimiento* y después las nueve secciones.
+elegir. Arriba van las nueve; abajo, **Inicio, Nuevo y Config**, más un botón
+gris, **Más**, que abre una hoja con las siete secciones que faltan.
 
-Esa hoja es el único lugar donde vive la lista de secciones del teléfono, y
-muestra `LINKS` entera (`frontend/src/components/navigation.ts`). No hay una
-segunda lista que mantener: si algún día se agrega una pantalla, aparece sola en
-la barra de la compu y en la hoja del teléfono. Por eso el botón dorado va
-último, del lado del pulgar derecho, para que no se confunda con una de las
-secciones fijas.
+Esa hoja no repite lo que ya está en la barra, y por eso muestra `SHEET_LINKS` y
+no `LINKS`: es el complemento de `MOBILE_LINKS` y sale por diferencia, en
+`frontend/src/components/navigation.ts`. No hay una segunda lista que mantener: si
+algún día se agrega una pantalla, aparece sola en la barra de la compu y en la
+hoja del teléfono.
+
+`Nuevo` no está en `LINKS` a propósito: no es una sección, es la acción de
+siempre, y por eso es el único que lleva el dorado fijo —aunque estés parado en
+otra pantalla— mientras que las secciones se encienden solo cuando estás en
+ellas. El botón `Más` va en gris, con un ícono de grilla, para que no se confunda
+con una sección más.
 
 Los enlaces del dashboard y de la hoja van con `<Link>` y no con `<a href>`: un
 `href` plano recarga la página entera, o sea volver a descargar y arrancar la app
 en el teléfono, cuando alcanza con cambiar de pantalla.
 
 Cuando se agregue una sección nueva conviene mirar la barra: el ancho de la
-celda a 360 px es de 72 px, así que una etiqueta de más de ~60 px no entra.
+celda a 360 px es de 80 px, así que una etiqueta de más de ~70 px no entra.
 
 **En pantalla táctil, todo lo pulsable tiene 24 px de alto como piso.**
 

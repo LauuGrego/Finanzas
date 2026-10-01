@@ -135,6 +135,9 @@
  * Sin `main` adentro a propósito: la hoja de secciones y los diálogos se
  * montan en el `Layout`, afuera de `main`, y con el prefijo quedaban sin cubrir.
  * Los puntos de color y los textos no entran porque no son pulsables.
+ *
+ * La barra de abajo queda afuera de la regla porque ya es enorme: sus celdas
+ * miden más de 24 px de alto y sus íconos están a 21.
  */
 @media (pointer: coarse) {
   a[href],
