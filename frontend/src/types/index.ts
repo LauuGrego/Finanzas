@@ -208,3 +208,68 @@ export interface InstallmentPayload {
   total_count: number
   next_date: string
 }
+
+/**
+ * Un límite mensual para una categoría: "en Comida no paso de 200.000 este mes".
+ *
+ * No guarda el gastado ni lo que queda: los dos salen de los movimientos cada
+ * vez que se pide la lista, por la misma razón que un saldo de cuenta no se
+ * guarda. Si se guardaran, habría que mantenerlos al día con cada edición,
+ * cada borrado y cada cuota que se registra sola.
+ */
+export interface Budget {
+  id: number
+  category_id: number
+  /** 'YYYY-MM' */
+  period: string
+  amount: number
+  active: boolean
+  spent: number
+  /** Puede ser negativo cuando ya te pasaste. */
+  remaining: number
+  percentage: number
+  over: boolean
+  created_at: string
+  category: CategoryRef | null
+}
+
+export interface BudgetSummary {
+  amount: number
+  spent: number
+  remaining: number
+  percentage: number
+  count: number
+  over_count: number
+}
+
+export interface BudgetList {
+  items: Budget[]
+  total: number
+  summary: BudgetSummary
+}
+
+export interface BudgetPayload {
+  category_id: number
+  amount: number
+  period: string
+  /** Cuántos meses seguidos se crean; 1 = solo este mes. */
+  repeat_months: number
+}
+
+export interface BudgetCreated {
+  items: Budget[]
+  created: number
+  skipped: number
+}
+
+/** Lo que contesta el modal de movimiento: hay presupuesto o no en esa categoría. */
+export interface BudgetCheck {
+  has_budget: boolean
+  period: string
+  amount: number
+  spent: number
+  remaining: number
+  percentage: number
+  over: boolean
+  category: CategoryRef | null
+}

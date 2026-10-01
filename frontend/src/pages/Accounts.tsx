@@ -76,7 +76,7 @@ export function Accounts() {
 
       <StateWrapper loading={list.loading} error={list.error} onRetry={() => void list.reload()}>
         {accounts.length === 0 ? (
-          <EmptyState title="Todavía no tenés cuentas" hint="Creá una para empezar a registrar movimientos" />
+          <EmptyState title="Todavía no tenés cuentas" hint="Creá una para empezar." />
         ) : (
           <>
             <ul className="space-y-3">
@@ -222,7 +222,7 @@ export function Accounts() {
             />
           </div>
           <p className="text-xs text-muted mt-1.5">
-            La plata que tenías en esta cuenta antes de empezar a usar la app.
+            La plata que tenías antes de usar la app.
           </p>
         </div>
       </FormModal>

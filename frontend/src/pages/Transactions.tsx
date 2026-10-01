@@ -154,7 +154,7 @@ export function Transactions() {
             ? deleting.transfer_id
               ? // Una transferencia son dos filas en el listado, aunque la persona
                 // solo haya tocado una. Decirlo aca evita el "yo borre una sola".
-                `¿Deshacer la transferencia de ${money(deleting.amount)}? Se borran los dos movimientos y el dinero vuelve a las dos cuentas.`
+                `¿Deshacer la transferencia de ${money(deleting.amount)}? Se borran los dos movimientos.`
               : `¿Eliminar "${deleting.description ?? deleting.category?.name ?? 'movimiento'}" por ${money(deleting.amount)}? Esta acción no se puede deshacer.`
             : ''
         }

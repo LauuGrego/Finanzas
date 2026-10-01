@@ -21,6 +21,7 @@ export type IconName =
   | 'expense'
   | 'repeat'
   | 'layers'
+  | 'gauge'
   | 'back'
 
 const PATHS: Record<IconName, React.ReactNode> = {
@@ -67,6 +68,14 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="M12 3 3 7.5l9 4.5 9-4.5z" />
       <path d="M3 12l9 4.5 9-4.5" />
       <path d="M3 16.5 12 21l9-4.5" />
+    </>
+  ),
+  gauge: (
+    <>
+      {/* Un semicírculo con su aguja: un límite, no un gráfico de barras. */}
+      <path d="M4 17a9 9 0 1 1 16 0" />
+      <path d="M12 17l4.2-5" />
+      <path d="M4 17h2M18 17h2M12 8v2" />
     </>
   ),
   back: <path d="M15 5l-7 7 7 7" />,

@@ -8,6 +8,7 @@ import { Calendar } from './pages/Calendar'
 import { Dashboard } from './pages/Dashboard'
 import { Login, LoginLoading } from './pages/Login'
 import { NewMovement } from './pages/NewMovement'
+import { Presupuestos } from './pages/Presupuestos'
 import { Recurrentes } from './pages/Recurrentes'
 import { Settings } from './pages/Settings'
 import { Transactions } from './pages/Transactions'
@@ -83,6 +84,7 @@ export default function App() {
         <Route path="/cuentas" element={<Accounts />} />
         <Route path="/cuentas/:id" element={<AccountDetail />} />
         <Route path="/recurrentes" element={<Recurrentes />} />
+        <Route path="/presupuestos" element={<Presupuestos />} />
         <Route
           path="/estadisticas"
           element={

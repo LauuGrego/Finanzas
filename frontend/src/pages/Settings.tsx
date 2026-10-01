@@ -28,9 +28,13 @@ export function Settings() {
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<Category | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Where the data lives comes from the server. Whether `VITE_API_URL` is set
+  // says who serves the API, not what the data is stored in, so guessing from
+  // that ended up calling a cloud database "un archivo en tu computadora".
+  const session = useAsync(() => api.session.check(), [])
   // Only offer the way out when there is a door to close. With no password
   // configured the app is open and there is no session to end.
-  const cloud = Boolean(import.meta.env.VITE_API_URL)
+  const canSignOut = session.data?.password_required ?? false
 
   async function signOut() {
     await api.session.logout()
@@ -154,19 +158,11 @@ export function Settings() {
 
       <Card title="Tus datos">
         <p className="text-sm text-muted">
-          {cloud ? (
-            <>
-              Todo vive en una base PostgreSQL administrada y sin acceso público. El respaldo
-              lo hace el proveedor; la exportación a CSV llega más adelante.
-            </>
-          ) : (
-            <>
-              Todo vive en un único archivo SQLite en tu computadora. Podés copiarlo como backup
-              cuando quieras, sin necesidad de la app.
-            </>
-          )}
+          {session.data?.storage === 'postgresql'
+            ? 'Todo vive en una base PostgreSQL administrada, sin acceso público.'
+            : 'Todo vive en un archivo SQLite en tu computadora: copialo como backup.'}
         </p>
-        {cloud && (
+        {canSignOut && (
           <Button
             size="sm"
             variant="secondary"
@@ -251,7 +247,7 @@ export function Settings() {
         confirmLabel="Dar de baja"
         message={
           deleting
-            ? `"${deleting.name}" va a dejar de aparecer al registrar movimientos. Los ya registrados la conservan.`
+            ? `"${deleting.name}" deja de aparecer al registrar; los movimientos que ya la usan quedan.`
             : ''
         }
         onConfirm={async () => {

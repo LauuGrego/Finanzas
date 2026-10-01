@@ -37,7 +37,19 @@ export function shortDate(iso: string): string {
   return date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })
 }
 
-/**-septiembre 2026 */
+/**
+ * `72,5%` — un decimal y coma, que es como se lee acá.
+ *
+ * El backend ya redondea a un decimal, así que esto sólo pone el separador y el
+ * signo. `maximumFractionDigits` en 1 y no `minimumFractionDigits`: un 0 entero
+ * se lee "0%", no "0,0%", y un presupuesto recién creado no debería fingir
+ * precisión que no tiene.
+ */
+export function percent(value: number): string {
+  return `${value.toLocaleString('es-AR', { maximumFractionDigits: 1 })}%`
+}
+
+/** Septiembre de 2026 */
 export function monthLabel(period: string): string {
   const [year, month] = period.split('-')
   const date = new Date(Number(year), Number(month) - 1, 1)

@@ -74,17 +74,11 @@ export function Recurrentes() {
         </Button>
       </header>
 
-      <p className="text-sm text-muted -mt-2">
-        Lo que se cobra solo: lo que se repite sin fin y, más abajo, lo que se paga en cuotas y
-        termina. Cada vez que abrís la app se registra lo que ya venció, con la fecha que tenía, y
-        pasa a ser un movimiento común que podés editar o borrar.
-      </p>
-
       <StateWrapper loading={list.loading} error={list.error} onRetry={() => void list.reload()}>
         {active.length === 0 ? (
           <EmptyState
             title="Todavía no tenés recurrentes"
-            hint="Agregá el alquiler, Netflix o el sueldo y no te acordás de cargarlos todos los meses"
+            hint="Cargá el alquiler, Netflix o el sueldo una vez y se registran solos."
           />
         ) : (
           <ul className="space-y-3">
@@ -220,7 +214,7 @@ export function Recurrentes() {
             ))}
           </select>
           <p className="text-xs text-muted mt-1.5">
-            La categoría dice si esto entra o sale, así que no hay que elegirlo aparte.
+            La categoría dice si esto entra o sale.
           </p>
         </div>
 
@@ -250,9 +244,9 @@ export function Recurrentes() {
         confirmLabel="Borrar"
         message={
           deleting
-            ? `Dejará de cobrar ${money(deleting.amount)} ${
+            ? `Deja de cobrar ${money(deleting.amount)} ${
                 deleting.type === 'INCOME' ? 'a favor' : 'de tu bolsillo'
-              }. Los movimientos que ya registró se conservan.`
+              }; los movimientos que ya registró quedan.`
             : ''
         }
         onConfirm={async () => {

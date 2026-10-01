@@ -430,6 +430,11 @@ Todas las rutas cuelgan de `/api`.
 | `PUT`    | `/api/installments/{id}`         | Edita o pausa                   |
 | `DELETE` | `/api/installments/{id}`         | Borra                           |
 | `POST`   | `/api/installments/generate`     | Registra la cuota del mes       |
+| `GET`    | `/api/budgets`                   | Presupuestos del mes            |
+| `POST`   | `/api/budgets`                   | Crea un presupuesto             |
+| `PUT`    | `/api/budgets/{id}`              | Edita un presupuesto            |
+| `DELETE` | `/api/budgets/{id}`              | Borra un presupuesto            |
+| `GET`    | `/api/budgets/check`             | Chequeo rápido para el modal    |
 | `GET`    | `/api/dashboard?month=YYYY-MM`   | Saldo, resumen, categorías, últimos movimientos |
 | `GET`    | `/api/calendar/month?month=YYYY-MM` | Cada día del mes con su resumen |
 | `GET`    | `/api/calendar/day?day=YYYY-MM-DD`  | Un día en detalle             |
@@ -467,10 +472,10 @@ backend/
     schemas/           Contrato de la API (Pydantic)
     routers/           Endpoints
     services/          Lógica financiera
-  tests/               165 tests
+  tests/               191 tests
 frontend/
   src/
-    pages/             Dashboard, Agenda, Movimientos, Cuentas, Recurrentes, Estadísticas, Config
+    pages/             Dashboard, Agenda, Movimientos, Cuentas, Recurrentes, Presupuestos, Estadísticas, Config
     components/        Modal, FormModal, Card, Button, TransactionItem, Layout, Icon
     hooks/useAsync.ts  Carga de datos con loading/error/reload
     services/api.ts    Cliente HTTP tipado

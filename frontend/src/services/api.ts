@@ -1,6 +1,11 @@
 import type {
   Account,
   AccountList,
+  Budget,
+  BudgetCheck,
+  BudgetCreated,
+  BudgetList,
+  BudgetPayload,
   Category,
   Dashboard,
   DayDetail,
@@ -161,6 +166,28 @@ export const api = {
      */
     generate: () => request<{ generated: number }>('/installments/generate', { method: 'POST' }),
   },
+  budgets: {
+    list: (period?: string) => request<BudgetList>(`/budgets${query({ period })}`),
+    create: (payload: BudgetPayload) =>
+      request<BudgetCreated>('/budgets', { method: 'POST', body: JSON.stringify(payload) }),
+    update: (id: number, payload: { amount?: number; apply_forward?: boolean }) =>
+      request<Budget>(`/budgets/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+    remove: (id: number) => request<void>(`/budgets/${id}`, { method: 'DELETE' }),
+    /**
+     * Cuánto del presupuesto de una categoría queda, para el modal de gasto.
+     *
+     * `excludeTransactionId` se pasa al editar: ese movimiento ya está contado en
+     * lo gastado, así que sin esto se leería el doble.
+     */
+    check: (categoryId: number, period?: string, excludeTransactionId?: number) =>
+      request<BudgetCheck>(
+        `/budgets/check${query({
+          category_id: categoryId,
+          period,
+          exclude_transaction_id: excludeTransactionId,
+        })}`,
+      ),
+  },
   dashboard: {
     get: (month?: string) => request<Dashboard>(`/dashboard${query({ month })}`),
   },
@@ -178,7 +205,8 @@ export const api = {
   },
   session: {
     /** Always answers 200, so this is a question, not an error. */
-    check: () => request<{ authenticated: boolean }>('/session'),
+    check: () =>
+      request<{ authenticated: boolean; storage: string; password_required: boolean }>('/session'),
     login: (password: string) =>
       request<{ ok: boolean }>('/login', {
         method: 'POST',

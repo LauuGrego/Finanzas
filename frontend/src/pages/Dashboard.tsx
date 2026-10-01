@@ -51,7 +51,13 @@ export function Dashboard() {
             Va con Link y no con <a href>: un href plano es una navegación de
             página entera, o sea re-descargar y re-arrancar la app en el
             teléfono, cuando alcanza con cambiar de pantalla. */}
+        {/* Presupuestos también se llega desde acá, por el mismo motivo que
+            Estadísticas: la barra de abajo ya tiene sus cinco y no hay lugar
+            para un sexto ícono. */}
         <div className="flex items-center gap-3">
+          <Link to="/presupuestos" className="text-sm text-gold hover:underline">
+            Presupuestos
+          </Link>
           <Link to="/estadisticas" className="text-sm text-gold hover:underline">
             Estadísticas
           </Link>
@@ -192,7 +198,7 @@ export function Dashboard() {
               {data.upcoming.length === 0 ? (
                 <EmptyState
                   title="Nada programado"
-                  hint="Si el alquiler, Netflix o el sueldo se repiten, o si compraste algo en cuotas, cargalo una vez y te van a avisar acá."
+                  hint="Cargá un recurrente o una cuota y te van a avisar acá."
                 />
               ) : (
                 <ul className="divide-y divide-line">

@@ -60,10 +60,7 @@ export function NewMovement() {
       </div>
 
       <Card>
-        <p className="text-sm text-muted">
-          Elegí qué querés registrar. También podés agregar movimientos desde el inicio y desde
-          cualquier cuenta.
-        </p>
+        <p className="text-sm text-muted">Elegí qué querés registrar.</p>
       </Card>
 
       <TransactionModal

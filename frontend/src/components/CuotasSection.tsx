@@ -105,11 +105,6 @@ export function CuotasSection() {
         </Button>
       </header>
 
-      <p className="text-sm text-muted">
-        Una compra partida en meses. Se cobra una vez por mes y se termina sola en la última. Lo que
-        cobró queda como cualquier otro movimiento.
-      </p>
-
       {running.length > 0 && (
         <p className="text-sm text-muted">
           Falta pagar{' '}
@@ -125,7 +120,7 @@ export function CuotasSection() {
         {all.length === 0 ? (
           <EmptyState
             title="Todavía no tenés cuotas"
-            hint="Si compraste algo en 12 cuotas, cargalo una vez y se va cobrando solo todos los meses"
+            hint="Cargala una vez y se cobra sola mes a mes."
           />
         ) : running.length > 0 ? (
           <ul className="space-y-3">
@@ -325,7 +320,7 @@ export function CuotasSection() {
             ))}
           </select>
           <p className="text-xs text-muted mt-1.5">
-            La categoría dice si esto entra o sale, igual que en los recurrentes.
+            La categoría dice si esto entra o sale.
           </p>
         </div>
       </FormModal>
@@ -338,9 +333,9 @@ export function CuotasSection() {
           deleting
             ? deleting.finished
               ? deleting.total_count === 1
-                ? 'Ya se cobró entera. Se deja de ver en la lista, y la cuota que registró queda como movimiento.'
-                : `Ya se cobró entera. Se deja de ver en la lista, y las ${deleting.total_count} cuotas que registró quedan como movimientos.`
-              : `Se deja de cobrar ${money(deleting.amount)} por mes. Las cuotas que ya registró se conservan. Si todavía le falta, pausala en vez de borrarla.`
+                ? 'Ya se cobró entera: desaparece de la lista y queda el movimiento.'
+                : `Ya se cobró entera: desaparece de la lista y quedan los ${deleting.total_count} movimientos.`
+              : `Deja de cobrar ${money(deleting.amount)} por mes; lo ya cobrado queda.`
             : ''
         }
         onConfirm={async () => {

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from '../services/api'
-import type { Account, Category, Transaction, TransactionPayload } from '../types'
-import { todayIso, moneyPrecise } from '../utils/format'
+import type { Account, BudgetCheck, Category, Transaction, TransactionPayload } from '../types'
+import { resolveColor } from '../utils/colors'
+import { todayIso, money, moneyPrecise, percent } from '../utils/format'
 import { FormModal } from './FormModal'
 
 interface Props {
@@ -52,6 +53,18 @@ export function TransactionModal({
     transaction?.account_id ?? defaultAccountId ?? accounts[0]?.id ?? 0
   )
   const [amountText, setAmountText] = useState(transaction ? String(transaction.amount) : '')
+  // La categoría y la fecha van controladas porque de las dos depende el aviso
+  // de presupuesto: sin saber cuál está elegida no hay nada que avisar.
+  const [categoryId, setCategoryId] = useState<number>(transaction?.category_id ?? 0)
+  const [date, setDate] = useState(transaction?.date ?? todayIso())
+  // El aviso viene con la clave de la consulta que lo pidió. Guardarlo con su
+  // clave y compararla al renderizar evita dos cosas: tener que apagarlo a mano
+  // cuando cambia la categoría, y que aparezca por un instante el dato del
+  // presupuesto anterior.
+  const [budgetState, setBudgetState] = useState<{
+    key: string
+    data: BudgetCheck
+  } | null>(null)
 
   // El modal queda montado siempre, recibe open en vez de desmontarse. Por eso
   // el useState de arriba solo corre una vez y el tipo se queda pegado entre
@@ -72,11 +85,28 @@ export function TransactionModal({
       setError(null)
       setAccountId(transaction?.account_id ?? defaultAccountId ?? accounts[0]?.id ?? 0)
       setAmountText(transaction ? String(transaction.amount) : '')
+      setCategoryId(transaction?.category_id ?? 0)
+      setDate(transaction?.date ?? todayIso())
     }
   }, [open])
 
   const editing = Boolean(transaction)
   const relevant = categories.filter((c) => c.type === type)
+  // 0 significa "la primera de las que corresponden a este tipo", que es lo que
+  // muestra el <select> cuando no hay nada elegido. Se resuelve acá y no dentro
+  // del <select> para que el aviso de presupuesto y el select nunca puedan
+  // discrepar sobre cuál es la categoría elegida.
+  const selectedCategoryId = categoryId || relevant[0]?.id || 0
+  const selectedCategory = relevant.find((c) => c.id === selectedCategoryId)
+  // La clave identifica la consulta: sólo se muestra el aviso si es el de la
+  // categoría y el mes que están elegidos ahora.
+  const budgetKey = [
+    selectedCategoryId,
+    date.slice(0, 7),
+    transaction?.id ?? 0,
+    type,
+  ].join('|')
+  const budget = budgetState?.key === budgetKey ? budgetState.data : null
 
   const account = accounts.find((a) => a.id === accountId)
   // Al editar, el saldo que importa es el que queda si se saca este movimiento
@@ -91,6 +121,44 @@ export function TransactionModal({
   const spendable = (account?.balance ?? 0) + alreadyCounted
   const overLimit =
     type === 'EXPENSE' && blocksSpending(account) && exceedsBalance(amountText, account?.balance ?? 0, alreadyCounted)
+
+  // El aviso de presupuesto. No bloquea el guardado: un tope sirve para saber
+  // que te estás yendo, no para fingir que el gasto no pasó.
+  //
+  // Se consulta por separado del resto porque depende de dos cosas que el
+  // formulario va cambiando: la categoría y la fecha. Al editar se le pasa el
+  // movimiento en edición para que no cuente dos veces en lo gastado, igual que
+  // el saldo disponible de arriba le devuelve su propia parte.
+  useEffect(() => {
+    if (!open || type !== 'EXPENSE' || !selectedCategoryId) return
+    const key = budgetKey
+    let alive = true
+    api.budgets
+      .check(selectedCategoryId, date.slice(0, 7), transaction?.id)
+      .then((data) => {
+        if (alive) setBudgetState({ key, data })
+      })
+      .catch(() => {
+        // Si el aviso falla, el modal sigue sirviendo para guardar el gasto.
+        if (alive) setBudgetState(null)
+      })
+    return () => {
+      alive = false
+    }
+  }, [open, type, selectedCategoryId, date, transaction?.id, budgetKey])
+
+  // Lo que el gasto dejaría en el presupuesto. El backend ya sacó de "lo
+  // gastado" el movimiento que se está editando, así que acá sólo hay que
+  // sumarle lo que se está por escribir.
+  const pendingAmount = type === 'EXPENSE' ? Number(amountText.replace(',', '.')) || 0 : 0
+  const budgetProjected = (budget?.spent ?? 0) + pendingAmount
+  const budgetOver = Boolean(
+    budget?.has_budget && budgetProjected > budget.amount,
+  )
+  const budgetPercentage =
+    budget?.has_budget && budget.amount > 0
+      ? Math.round((budgetProjected * 1000) / budget.amount) / 10
+      : 0
 
   async function handleSubmit(form: FormData) {
     setError(null)
@@ -134,7 +202,12 @@ export function TransactionModal({
           <button
             key={option}
             type="button"
-            onClick={() => setType(option)}
+            onClick={() => {
+              setType(option)
+              // Cambiar de Gasto a Ingreso cambia el grupo de categorías, así
+              // que la elegida puede no existir más: se vuelve a la primera.
+              setCategoryId(0)
+            }}
             aria-pressed={type === option}
             className={`py-2.5 rounded-xl font-medium transition border ${
               type === option
@@ -200,8 +273,8 @@ export function TransactionModal({
           id="category_id"
           name="category_id"
           required
-          key={type}
-          defaultValue={transaction?.category_id ?? relevant[0]?.id ?? ''}
+          value={selectedCategoryId || ''}
+          onChange={(event) => setCategoryId(Number(event.target.value))}
           className="input"
         >
           {relevant.map((category) => (
@@ -210,6 +283,28 @@ export function TransactionModal({
             </option>
           ))}
         </select>
+
+        {/* El aviso va debajo de la categoría y no del monto porque es la
+            categoría lo que lo decide; el monto sólo lo corre dentro del rango. */}
+        {budget?.has_budget && (
+          <p
+            className={`text-xs mt-1.5 ${budgetOver ? 'text-expense' : 'text-muted'}`}
+            aria-live="polite"
+          >
+            <span
+              aria-hidden="true"
+              className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle"
+              style={{
+                backgroundColor: resolveColor(selectedCategory?.color, selectedCategoryId),
+              }}
+            />
+            En {selectedCategory?.name ?? 'esta categoría'} vas a{' '}
+            <span className="tabular-nums text-ink">{money(budgetProjected)}</span> de{' '}
+            <span className="tabular-nums">{money(budget.amount)}</span>
+            <span className="tabular-nums"> · {percent(budgetPercentage)}</span>
+            {budgetOver && ' · te pasaste'}
+          </p>
+        )}
       </div>
 
       <div>
@@ -256,7 +351,8 @@ export function TransactionModal({
             name="date"
             type="date"
             required
-            defaultValue={transaction?.date ?? todayIso()}
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
             className="input"
           />
         </div>

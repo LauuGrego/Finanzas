@@ -78,7 +78,7 @@ export function Login({ onSignedIn }: { onSignedIn: () => void }) {
         </form>
 
         <p className="mt-4 text-center text-xs text-muted">
-          Es una app personal. La clave no se guarda en este dispositivo.
+          La clave no se guarda en este dispositivo.
         </p>
       </div>
     </div>

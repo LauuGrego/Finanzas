@@ -20,6 +20,7 @@ from app.enums import AccountType, CategoryType
 from app.models import Account, Category
 from app.routers import (
     accounts,
+    budget,
     categories,
     dashboard,
     installment,
@@ -201,15 +202,23 @@ def logout(request: Request, response: Response) -> dict[str, bool]:
 
 
 @app.get("/api/session", tags=["meta"])
-def session(request: Request) -> dict[str, bool]:
-    """Tell the frontend whether the cookie is still good.
+def session(request: Request) -> dict[str, str | bool]:
+    """Tell the frontend whether the cookie is still good, and where data lives.
 
     Answers 200 either way instead of 401, so the app can decide between the
     login screen and the dashboard without treating "not logged in" as an error.
+
+    `storage` is here because the frontend cannot tell it on its own: whether
+    `VITE_API_URL` is set says who serves the API, not what the data lives in.
+    `password_required` says whether there is a session to end.
     """
-    if not config.PASSWORD:
-        return {"authenticated": True}
-    return {"authenticated": auth.verify(request.cookies.get(auth.COOKIE))}
+    return {
+        "authenticated": (
+            True if not config.PASSWORD else auth.verify(request.cookies.get(auth.COOKIE))
+        ),
+        "storage": engine.dialect.name,
+        "password_required": bool(config.PASSWORD),
+    }
 
 
 # The API lives under /api so the built frontend can own the root and every
@@ -222,6 +231,7 @@ for router in (
     dashboard,
     recurring,
     installment,
+    budget,
 ):
     app.include_router(router.router, prefix="/api")
 

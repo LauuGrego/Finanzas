@@ -96,10 +96,17 @@ def test_over_plain_http_the_cookie_falls_back_to_lax(locked: TestClient):
 
 def test_session_answers_200_whether_or_not_you_are_in(locked: TestClient):
     """The frontend asks this to pick between login and dashboard."""
-    assert locked.get("/api/session").json() == {"authenticated": False}
+    assert locked.get("/api/session").json()["authenticated"] is False
 
     locked.post("/api/login", json={"password": PASSWORD})
-    assert locked.get("/api/session").json() == {"authenticated": True}
+    assert locked.get("/api/session").json()["authenticated"] is True
+
+
+def test_session_says_where_the_data_lives(locked: TestClient):
+    """Settings shows this; the frontend cannot work it out on its own."""
+    body = locked.get("/api/session").json()
+    assert body["storage"] == "sqlite"
+    assert body["password_required"] is True
 
 
 def test_logout_closes_the_door_again(locked: TestClient):
@@ -107,7 +114,7 @@ def test_logout_closes_the_door_again(locked: TestClient):
     assert locked.get("/api/session").json()["authenticated"] is True
 
     locked.post("/api/logout")
-    assert locked.get("/api/session").json() == {"authenticated": False}
+    assert locked.get("/api/session").json()["authenticated"] is False
     assert locked.get("/api/accounts").status_code == 401
 
 
@@ -117,7 +124,9 @@ def test_health_stays_open_for_a_monitor(locked: TestClient):
 
 def test_with_no_password_configured_nothing_is_asked(client: TestClient, monkeypatch):
     monkeypatch.setattr(config, "PASSWORD", "")
-    assert client.get("/api/session").json() == {"authenticated": True}
+    body = client.get("/api/session").json()
+    assert body["authenticated"] is True
+    assert body["password_required"] is False
     assert client.post("/api/login", json={"password": "cualquiera"}).status_code == 200
 
 
