@@ -1,5 +1,5 @@
 # Command to run the API
-run: uvicorn app.main:app --reload --port 8000
+run = "uvicorn app.main:app --reload --port 8000"
 
 # Python
 python-version = "3.13"
