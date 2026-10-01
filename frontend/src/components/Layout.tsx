@@ -1,7 +1,8 @@
+import { useState, type ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import type { ReactNode } from 'react'
 import { Icon } from './Icon'
 import { LINKS, MOBILE_LINKS } from './navigation'
+import { SectionMenu } from './SectionMenu'
 
 /** The arc reactor: a ring with a lit core, used as the app's mark. */
 function Mark() {
@@ -32,6 +33,14 @@ function linkClass({ isActive }: { isActive: boolean }): string {
 
 export function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
+
+  // La hoja tiene que cerrarse sola al cambiar de pantalla: si no, el botón
+  // atrás del teléfono la deja abierta encima de la página nueva. Se guarda
+  // junto con la ruta en la que se abrió y se deriva acá, en vez de corregirlo
+  // con un effect: la de antes ya no aplica y no hace falta otro render.
+  const [menu, setMenu] = useState({ path: pathname, open: false })
+  const menuOpen = menu.path === pathname && menu.open
+  const setMenuOpen = (open: boolean) => setMenu({ path: pathname, open })
 
   return (
     <div className="min-h-dvh md:flex">
@@ -83,7 +92,27 @@ export function Layout({ children }: { children: ReactNode }) {
             </NavLink>
           )
         })}
+
+        {/* El dorado abre la hoja con las cinco secciones que no están acá y con
+            la acción de registrar un movimiento. Va último y no primero para que
+            quede del lado del pulgar derecho y no se confunda con una de las
+            secciones fijas. */}
+        <button
+          type="button"
+          onClick={() => setMenuOpen(true)}
+          aria-expanded={menuOpen}
+          aria-label="Más secciones"
+          className="flex flex-col items-center justify-center gap-1 py-2.5
+                     text-[11px] font-medium text-gold transition"
+        >
+          <span className="w-8 h-8 rounded-full grid place-items-center bg-gold text-gold-ink">
+            <Icon name="plus" size={21} />
+          </span>
+          Más
+        </button>
       </nav>
+
+      <SectionMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
     </div>
   )
 }

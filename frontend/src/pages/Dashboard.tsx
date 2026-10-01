@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from '../components/Card'
 import { Icon } from '../components/Icon'
-import { SECONDARY_LINKS } from '../components/navigation'
 import { MonthStepper } from '../components/MonthStepper'
 import { EmptyState, StateWrapper } from '../components/States'
 import { TransactionItem } from '../components/TransactionItem'
@@ -47,24 +46,6 @@ export function Dashboard() {
         </h1>
         <MonthStepper period={period} onChange={setPeriod} />
       </header>
-
-      {/* La barra de abajo del teléfono tiene cinco lugares y no entran nueve, así
-          que la home es la puerta de entrada de todo lo que falta. La lista es
-          exactamente LINKS menos MOBILE_LINKS: si algún día se agrega una pantalla
-          nueva, tiene que aparecer en uno de los dos lados o queda imposible de
-          abrir en el teléfono. Por eso vive acá y no en cada página.
-          Va con Link y no con <a href>: un href plano es una navegación de
-          página entera, o sea re-descargar y re-arrancar la app. */}
-      <nav
-        aria-label="Resto de las secciones"
-        className="-mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5"
-      >
-        {SECONDARY_LINKS.map((link) => (
-          <Link key={link.to} to={link.to} className="text-sm text-gold hover:underline">
-            {link.label}
-          </Link>
-        ))}
-      </nav>
 
       <StateWrapper
         loading={dashboard.loading}

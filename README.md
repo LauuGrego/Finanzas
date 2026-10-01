@@ -351,18 +351,20 @@ de íconos.
 **La barra del teléfono tiene cinco lugares, no nueve.**
 
 No entran nueve secciones legibles en el ancho de un teléfono, así que hay que
-elegir. Arriba van las nueve; abajo, las cinco que se usan a diario: Inicio,
-Agenda, Recurrentes, Nuevo y Configuración. Las otras cinco —Movimientos,
-Cuentas, Presupuestos, Metas y Estadísticas— quedan a un toque desde Inicio, que
-es donde se las busca.
+elegir. Arriba van las nueve; abajo, las cuatro que se usan a diario —Inicio,
+Agenda, Recurrentes y Config— más un botón dorado, **Más**, que abre una hoja con
+todo: primero *Nuevo movimiento* y después las nueve secciones.
 
-Esa lista no está escrita a mano en ningún lado: sale de restarle a la de arriba
-la de la barra de abajo, en `frontend/src/components/navigation.ts`. Si algún día
-se agrega una pantalla, aparece sola en los dos lugares; si se la agrega solo a un
-lado, en el teléfono queda imposible de abrir. Los enlaces del dashboard van con
-`<Link>` y no con `<a href>`: un `href` plano recarga la página entera, o sea
-volver a descargar y arrancar la app en el teléfono, cuando alcanza con cambiar
-de pantalla.
+Esa hoja es el único lugar donde vive la lista de secciones del teléfono, y
+muestra `LINKS` entera (`frontend/src/components/navigation.ts`). No hay una
+segunda lista que mantener: si algún día se agrega una pantalla, aparece sola en
+la barra de la compu y en la hoja del teléfono. Por eso el botón dorado va
+último, del lado del pulgar derecho, para que no se confunda con una de las
+secciones fijas.
+
+Los enlaces del dashboard y de la hoja van con `<Link>` y no con `<a href>`: un
+`href` plano recarga la página entera, o sea volver a descargar y arrancar la app
+en el teléfono, cuando alcanza con cambiar de pantalla.
 
 Cuando se agregue una sección nueva conviene mirar la barra: el ancho de la
 celda a 360 px es de 72 px, así que una etiqueta de más de ~60 px no entra.

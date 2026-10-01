@@ -131,12 +131,16 @@
  * No se toca `display`: los enlaces que son hijo de un `flex` ya son bloques y
  * el piso se les aplica igual, y forzar `inline-flex` haría que las tarjetas
  * que son un `<a>` dejaran de ocupar todo el ancho.
+ *
+ * Sin `main` adentro a propósito: la hoja de secciones y los diálogos se
+ * montan en el `Layout`, afuera de `main`, y con el prefijo quedaban sin cubrir.
+ * Los puntos de color y los textos no entran porque no son pulsables.
  */
 @media (pointer: coarse) {
-  main a[href],
-  main button,
-  main summary,
-  main label[for] {
+  a[href],
+  button,
+  summary,
+  label[for] {
     min-height: 24px;
   }
 }

@@ -30,9 +30,13 @@ export function Modal({ open, title, onClose, children, footer }: Props) {
   if (!open) return null
 
   return (
+    // En el teléfono esto no es un diálogo centrado sino una hoja pegada abajo,
+    // y abajo está el indicador de inicio del iPhone. El padding va en el
+    // overlay y no en el panel: así la hoja sube lo justo y sigue pegada al
+    // borde, en vez de dejar el último botón debajo del indicador.
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center
-                 bg-black/70 p-0 sm:p-4 backdrop-blur-sm"
+                 bg-black/70 p-0 pb-[env(safe-area-inset-bottom)] sm:p-4 backdrop-blur-sm"
       onClick={onClose}
       role="presentation"
     >

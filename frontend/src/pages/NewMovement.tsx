@@ -12,7 +12,7 @@ const MODES: { value: 'expense' | 'income' | 'transfer'; icon: IconName; label: 
   { value: 'transfer', icon: 'transfer', label: 'Transferir' },
 ]
 
-/** The "quick add" screen reached from the bottom bar on mobile. */
+/** The "quick add" screen, reached from the gold button on the mobile bar. */
 export function NewMovement() {
   const navigate = useNavigate()
   const [mode, setMode] = useState<'expense' | 'income' | 'transfer'>('expense')
