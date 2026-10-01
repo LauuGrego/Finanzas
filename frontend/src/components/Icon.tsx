@@ -22,6 +22,9 @@ export type IconName =
   | 'repeat'
   | 'layers'
   | 'gauge'
+  | 'target'
+  | 'check'
+  | 'pause'
   | 'back'
 
 const PATHS: Record<IconName, React.ReactNode> = {
@@ -78,6 +81,17 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="M4 17h2M18 17h2M12 8v2" />
     </>
   ),
+  /* Diana: dos círculos y el punto del centro, para "meta". */
+  target: (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="3.5" />
+    </>
+  ),
+  /* Pausa en vez de play: la acción es dejar de contar la meta, no la mirar. */
+  pause: <path d="M9.5 5v14M14.5 5v14" />,
+  /* El botón de la meta pausada: devolverla, no mirarla. */
+  check: <path d="M4.5 12.5 9.5 17.5 19.5 7" />,
   back: <path d="M15 5l-7 7 7 7" />,
 }
 

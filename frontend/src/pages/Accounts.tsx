@@ -9,7 +9,7 @@ import { FormModal } from '../components/FormModal'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Account } from '../types'
-import { money } from '../utils/format'
+import { money, parseMoney } from '../utils/format'
 
 const TYPE_LABELS: Record<string, string> = {
   BANK: 'Banco',
@@ -45,7 +45,7 @@ export function Accounts() {
     const payload = {
       name,
       type: ((form.get('type') as string) || 'BANK') as Account['type'],
-      initial_balance: Number(String(form.get('initial_balance') ?? '0').replace(',', '.')) || 0,
+      initial_balance: parseMoney(String(form.get('initial_balance') ?? '0')) || 0,
     }
 
     try {

@@ -20,6 +20,25 @@ export function moneyPrecise(value: number): string {
   return preciseFormatter.format(value)
 }
 
+/**
+ * Lee un monto escrito a mano: `"1.200.000"`, `"1200000"`, `"450.75"` o
+ * `"450,75"`.
+ *
+ * Hace falta porque `Number` no entiende los separadores de miles y el placeholder
+ * de los campos dice `500.000`: la pantalla enseñaba una forma de escribir que
+ * después devolvía `NaN` y el error era "poné un monto mayor a cero", sin decir
+ * que el problema era el punto.
+ *
+ * Se quitan los puntos de miles y recién entonces se cambia la coma por punto,
+ * al revés: `"1.200,50"` tiene que ser 1200.5 y no 1.20050.
+ */
+export function parseMoney(value: string): number {
+  const text = value.trim()
+  if (!text) return 0
+  const cleaned = text.replace(/\./g, '').replace(',', '.')
+  return Number(cleaned)
+}
+
 /** +$1.234.567 / -$1.234.567 */
 export function signedMoney(value: number): string {
   return `${value >= 0 ? '+' : '-'}${formatter.format(Math.abs(value))}`

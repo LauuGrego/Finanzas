@@ -10,7 +10,7 @@ import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Budget, Category } from '../types'
 import { resolveColor } from '../utils/colors'
-import { currentPeriod, money, monthLabel, percent, shiftPeriod } from '../utils/format'
+import { currentPeriod, money, monthLabel, parseMoney, percent, shiftPeriod } from '../utils/format'
 
 /**
  * Presupuestos: un tope por categoría y por mes.
@@ -62,7 +62,7 @@ export function Presupuestos() {
 
   async function handleSave(form: FormData) {
     setError(null)
-    const amount = Number(String(form.get('amount') ?? '').replace(',', '.'))
+    const amount = parseMoney(String(form.get('amount') ?? ''))
     if (!amount || amount <= 0) {
       setError('Poné un monto mayor a cero')
       return

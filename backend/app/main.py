@@ -23,6 +23,7 @@ from app.routers import (
     budget,
     categories,
     dashboard,
+    goal,
     installment,
     recurring,
     transactions,
@@ -232,6 +233,7 @@ for router in (
     recurring,
     installment,
     budget,
+    goal,
 ):
     app.include_router(router.router, prefix="/api")
 

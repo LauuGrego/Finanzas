@@ -15,6 +15,7 @@ const LINKS: NavItem[] = [
   { to: '/cuentas', label: 'Cuentas', icon: 'wallet' },
   { to: '/recurrentes', label: 'Recurrentes', icon: 'repeat' },
   { to: '/presupuestos', label: 'Presupuestos', icon: 'gauge' },
+  { to: '/metas', label: 'Metas', icon: 'target' },
   { to: '/estadisticas', label: 'Estadísticas', icon: 'chart' },
   { to: '/config', label: 'Configuración', icon: 'settings' },
 ]

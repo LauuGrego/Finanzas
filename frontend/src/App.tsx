@@ -7,6 +7,7 @@ import { Accounts } from './pages/Accounts'
 import { Calendar } from './pages/Calendar'
 import { Dashboard } from './pages/Dashboard'
 import { Login, LoginLoading } from './pages/Login'
+import { Metas } from './pages/Metas'
 import { NewMovement } from './pages/NewMovement'
 import { Presupuestos } from './pages/Presupuestos'
 import { Recurrentes } from './pages/Recurrentes'
@@ -85,6 +86,7 @@ export default function App() {
         <Route path="/cuentas/:id" element={<AccountDetail />} />
         <Route path="/recurrentes" element={<Recurrentes />} />
         <Route path="/presupuestos" element={<Presupuestos />} />
+        <Route path="/metas" element={<Metas />} />
         <Route
           path="/estadisticas"
           element={

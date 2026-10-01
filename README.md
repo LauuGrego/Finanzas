@@ -352,8 +352,8 @@ de íconos.
 
 No entran siete secciones legibles en el ancho de un teléfono, así que hay que
 elegir. Arriba van las siete; abajo, las cinco que se usan a diario: Inicio,
-Agenda, Recurrentes, Nuevo y Configuración. Movimientos y Estadísticas quedan a
-un toque desde Inicio, que es donde se los busca. Los enlaces del dashboard van
+Agenda, Recurrentes, Nuevo y Configuración. Movimientos, Presupuestos, Metas y
+Estadísticas quedan a un toque desde Inicio, que es donde se los busca. Los enlaces del dashboard van
 con `<Link>` y no con `<a href>`: un `href` plano recarga la página entera, o
 sea volver a descargar y arrancar la app en el teléfono, cuando alcanza con
 cambiar de pantalla.
@@ -435,6 +435,10 @@ Todas las rutas cuelgan de `/api`.
 | `PUT`    | `/api/budgets/{id}`              | Edita un presupuesto            |
 | `DELETE` | `/api/budgets/{id}`              | Borra un presupuesto            |
 | `GET`    | `/api/budgets/check`             | Chequeo rápido para el modal    |
+| `GET`    | `/api/goals`                     | Metas activas                   |
+| `POST`   | `/api/goals`                     | Crea una meta                   |
+| `PUT`    | `/api/goals/{id}`                | Edita, pausa o reactiva         |
+| `DELETE` | `/api/goals/{id}`                | Borra                           |
 | `GET`    | `/api/dashboard?month=YYYY-MM`   | Saldo, resumen, categorías, últimos movimientos |
 | `GET`    | `/api/calendar/month?month=YYYY-MM` | Cada día del mes con su resumen |
 | `GET`    | `/api/calendar/day?day=YYYY-MM-DD`  | Un día en detalle             |
@@ -472,10 +476,10 @@ backend/
     schemas/           Contrato de la API (Pydantic)
     routers/           Endpoints
     services/          Lógica financiera
-  tests/               191 tests
+  tests/               220 tests
 frontend/
   src/
-    pages/             Dashboard, Agenda, Movimientos, Cuentas, Recurrentes, Presupuestos, Estadísticas, Config
+    pages/             Dashboard, Agenda, Movimientos, Cuentas, Recurrentes, Presupuestos, Metas, Estadísticas, Config
     components/        Modal, FormModal, Card, Button, TransactionItem, Layout, Icon
     hooks/useAsync.ts  Carga de datos con loading/error/reload
     services/api.ts    Cliente HTTP tipado
@@ -486,6 +490,5 @@ frontend/
 
 ## Lo que falta (V2 en adelante)
 
-Presupuestos, metas, exportación a CSV y backups desde la interfaz. El campo
-`upcoming` del dashboard ya lo usan los recurrentes y las cuotas, cada uno con su
-`kind`.
+Exportación a CSV y backups desde la interfaz. El campo `upcoming` del
+dashboard ya lo usan los recurrentes y las cuotas, cada uno con su `kind`.

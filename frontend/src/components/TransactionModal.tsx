@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../services/api'
 import type { Account, BudgetCheck, Category, Transaction, TransactionPayload } from '../types'
 import { resolveColor } from '../utils/colors'
-import { todayIso, money, moneyPrecise, percent } from '../utils/format'
+import { todayIso, money, moneyPrecise, parseMoney, percent } from '../utils/format'
 import { FormModal } from './FormModal'
 
 interface Props {
@@ -32,7 +32,7 @@ function blocksSpending(account: Account | undefined): boolean {
  * expense without changing a single thing would read as over the limit.
  */
 function exceedsBalance(amountText: string, balance: number, alreadyCounted = 0): boolean {
-  const amount = Number(amountText.replace(',', '.'))
+  const amount = parseMoney(amountText)
   if (!Number.isFinite(amount) || amount <= 0) return false
   return Math.round(amount * 100) > Math.round((balance + alreadyCounted) * 100)
 }
@@ -150,7 +150,7 @@ export function TransactionModal({
   // Lo que el gasto dejaría en el presupuesto. El backend ya sacó de "lo
   // gastado" el movimiento que se está editando, así que acá sólo hay que
   // sumarle lo que se está por escribir.
-  const pendingAmount = type === 'EXPENSE' ? Number(amountText.replace(',', '.')) || 0 : 0
+  const pendingAmount = type === 'EXPENSE' ? parseMoney(amountText) || 0 : 0
   const budgetProjected = (budget?.spent ?? 0) + pendingAmount
   const budgetOver = Boolean(
     budget?.has_budget && budgetProjected > budget.amount,
@@ -162,7 +162,7 @@ export function TransactionModal({
 
   async function handleSubmit(form: FormData) {
     setError(null)
-    const amount = Number(String(form.get('amount') ?? '').replace(',', '.'))
+    const amount = parseMoney(String(form.get('amount') ?? ''))
     if (!amount || amount <= 0) {
       setError('El monto tiene que ser mayor a cero')
       return
@@ -391,7 +391,7 @@ export function TransferModal({
 
   async function handleSubmit(form: FormData) {
     setError(null)
-    const amount = Number(String(form.get('amount') ?? '').replace(',', '.'))
+    const amount = parseMoney(String(form.get('amount') ?? ''))
     if (!amount || amount <= 0) {
       setError('El monto tiene que ser mayor a cero')
       return

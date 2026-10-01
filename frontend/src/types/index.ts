@@ -262,6 +262,42 @@ export interface BudgetCreated {
   skipped: number
 }
 
+/**
+ * Una meta de ahorro.
+ *
+ * `current_amount` lo carga la persona a mano y no sale de ningún movimiento:
+ * una meta es un compromiso, no una transacción.
+ */
+export interface Goal {
+  id: number
+  name: string
+  target_amount: number
+  current_amount: number
+  /** 'YYYY-MM-DD'; puede venir null, y entonces no hay fecha. */
+  deadline: string | null
+  active: boolean
+  /** Porcentaje juntado, un decimal. Puede pasar de 100. */
+  progress: number
+  /** Nunca negativo: si ya se pasó, queda en 0. */
+  remaining: number
+  /** Negativo si la fecha ya pasó; null si no hay fecha. */
+  days_left: number | null
+  status: 'en_progreso' | 'cumplida' | 'vencida'
+  created_at: string
+}
+
+export interface GoalList {
+  items: Goal[]
+  total: number
+}
+
+export interface GoalPayload {
+  name: string
+  target_amount: number
+  current_amount: number
+  deadline: string | null
+}
+
 /** Lo que contesta el modal de movimiento: hay presupuesto o no en esa categoría. */
 export interface BudgetCheck {
   has_budget: boolean

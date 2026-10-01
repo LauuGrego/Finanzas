@@ -51,12 +51,16 @@ export function Dashboard() {
             Va con Link y no con <a href>: un href plano es una navegación de
             página entera, o sea re-descargar y re-arrancar la app en el
             teléfono, cuando alcanza con cambiar de pantalla. */}
-        {/* Presupuestos también se llega desde acá, por el mismo motivo que
+        {/* Presupuestos y Metas también se llegan desde acá, por el mismo motivo que
             Estadísticas: la barra de abajo ya tiene sus cinco y no hay lugar
-            para un sexto ícono. */}
-        <div className="flex items-center gap-3">
+            para un sexto ícono. Con wrap porque tres enlaces más el mes ya no
+            entran en una línea a 320 px. */}
+        <div className="flex flex-wrap items-center gap-3">
           <Link to="/presupuestos" className="text-sm text-gold hover:underline">
             Presupuestos
+          </Link>
+          <Link to="/metas" className="text-sm text-gold hover:underline">
+            Metas
           </Link>
           <Link to="/estadisticas" className="text-sm text-gold hover:underline">
             Estadísticas

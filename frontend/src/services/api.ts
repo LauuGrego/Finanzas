@@ -11,6 +11,9 @@ import type {
   DayDetail,
   MonthComparison,
   CategoryTotal,
+  Goal,
+  GoalList,
+  GoalPayload,
   Installment,
   InstallmentList,
   InstallmentPayload,
@@ -187,6 +190,19 @@ export const api = {
           exclude_transaction_id: excludeTransactionId,
         })}`,
       ),
+  },
+  goals: {
+    list: (includeInactive = false) =>
+      request<GoalList>(`/goals${query({ include_inactive: includeInactive })}`),
+    create: (payload: GoalPayload) =>
+      request<Goal>('/goals', { method: 'POST', body: JSON.stringify(payload) }),
+    /**
+     * Parcial a propósito: mandar sólo el nombre no debe pisar los montos.
+     * La fecha se va con `deadline: null`, que es distinto de no mandarla.
+     */
+    update: (id: number, payload: Partial<GoalPayload> & { active?: boolean }) =>
+      request<Goal>(`/goals/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+    remove: (id: number) => request<void>(`/goals/${id}`, { method: 'DELETE' }),
   },
   dashboard: {
     get: (month?: string) => request<Dashboard>(`/dashboard${query({ month })}`),

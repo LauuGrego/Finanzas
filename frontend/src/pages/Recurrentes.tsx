@@ -9,7 +9,14 @@ import { EmptyState, StateWrapper } from '../components/States'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Category, Frequency, Recurring } from '../types'
-import { FREQUENCY_LABELS, money, relativeDay, shortDate, todayIso } from '../utils/format'
+import {
+  FREQUENCY_LABELS,
+  money,
+  parseMoney,
+  relativeDay,
+  shortDate,
+  todayIso,
+} from '../utils/format'
 
 export function Recurrentes() {
   // Las dadas de baja se piden también: una regla que pausaste vuelve con un
@@ -37,7 +44,7 @@ export function Recurrentes() {
     const payload = {
       account_id: Number(form.get('account_id')),
       category_id: Number(form.get('category_id')),
-      amount: Number(String(form.get('amount') ?? '').replace(',', '.')),
+      amount: parseMoney(String(form.get('amount') ?? '')),
       description: ((form.get('description') as string) ?? '').trim() || null,
       frequency: (form.get('frequency') as Frequency) ?? 'MONTHLY',
       next_date: (form.get('next_date') as string) ?? todayIso(),

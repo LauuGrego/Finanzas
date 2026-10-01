@@ -1375,9 +1375,9 @@ días**.
 ---
 ---
 
-# Estado real (marzo 2026)
+# Estado real (octubre 2026)
 
-Lo que pasó después de escribir el plan. **FASES 1 a 8 completas**, más un
+Lo que pasó después de escribir el plan. **FASES 1 a 13 completas**, más un
 montón de cosas que el plan no pedía.
 
 ## Desvíos
@@ -1405,20 +1405,35 @@ montón de cosas que el plan no pedía.
 - **Todo bajo `/api`**, en un solo proceso: FastAPI sirve la API y el frontend
   compilado. También soporta deploy partido (Vercel + Render).
 - **Deploy gratuito**: Supabase + Render + Vercel, en el tier gratis.
-- **Tests**: 118, cuando el plan hablaba de "no exagerar".
+- **Tests**: 220, cuando el plan hablaba de "no exagerar".
+- **Los montos se leen con `parseMoney`**, no con `Number(x.replace(',', '.'))`.
+  Los campos dicen `placeholder="500.000"` y `Number('500.000')` es `NaN`: el
+  parseo estaba mal en los siete lugares donde se repetía y el error que
+  llegaba era "poné un monto mayor a cero", sin decir que el problema era el punto.
 
 ## Fases 9 a 14
 
-Las seis siguen sin empezar, en el orden del plan:
+Cinco de seis completas, en el orden del plan:
 
 | Fase | Qué | Estado |
 | --- | --- | --- |
-| 9 | Recurrentes | No empezada |
-| 10 | Cuotas | No empezada |
-| 11 | Estadísticas | **Ya existe** (se adelantó) |
-| 12 | Presupuestos | No empezada |
-| 13 | Metas | No empezada |
+| 9 | Recurrentes | Completa |
+| 10 | Cuotas | Completa |
+| 11 | Estadísticas | **Ya existía** (se adelantó) |
+| 12 | Presupuestos | Completa |
+| 13 | Metas | Completa |
 | 14 | Backup / CSV | No empezada |
+
+Sobre las tres últimas, que contradicen el plan en algún punto:
+
+- **Presupuestos** avisan, no frenan. Un límite que no se puede pasar de largo
+  miente sobre lo que ya pasó, así que el aviso va adentro del modal de
+  movimiento y el botón Guardar sigue habilitado.
+- **Metas** llevan el monto juntado cargado a mano, no enlazado a movimientos. Es
+  lo que dice el plan y además lo correcto: una meta no sabe de qué cuenta sale
+  la plata. La fecha es opcional y vencida no bloquea nada; sólo cambia el color.
+  Se puede juntar más que la meta: frenarlo obligaría a sacar plata de la meta
+  para poder guardar la cifra.
 
 Sobre el backup: el plan lo marcaba importante en §21 pero lo dejaba para el
 final. En producción sigue siendo el agujero más grande — la base vive en

@@ -9,6 +9,7 @@ from app.schemas.budget import (
     BudgetUpdate,
 )
 from app.schemas.category import CategoryCreate, CategoryRead, CategoryUpdate
+from app.schemas.goal import GoalCreate, GoalList, GoalRead, GoalUpdate
 from app.schemas.installment import (
     InstallmentCreate,
     InstallmentList,
@@ -54,6 +55,10 @@ __all__ = [
     "CategoryRead",
     "CategoryTotal",
     "CategoryUpdate",
+    "GoalCreate",
+    "GoalList",
+    "GoalRead",
+    "GoalUpdate",
     "DashboardRead",
     "DayDetail",
     "InstallmentCreate",

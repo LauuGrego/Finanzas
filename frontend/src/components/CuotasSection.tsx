@@ -8,7 +8,7 @@ import { EmptyState, StateWrapper } from './States'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Category, Installment } from '../types'
-import { money, relativeDay, shortDate, todayIso } from '../utils/format'
+import { money, parseMoney, relativeDay, shortDate, todayIso } from '../utils/format'
 
 /**
  * Las cuotas en curso, dentro de la pantalla de programados.
@@ -65,7 +65,7 @@ export function CuotasSection() {
     const payload = {
       account_id: Number(form.get('account_id')),
       category_id: Number(form.get('category_id')),
-      amount: Number(String(form.get('amount') ?? '').replace(',', '.')),
+      amount: parseMoney(String(form.get('amount') ?? '')),
       description: ((form.get('description') as string) ?? '').trim() || null,
       total_count: Number(form.get('total_count')),
       next_date: (form.get('next_date') as string) ?? todayIso(),
@@ -227,7 +227,7 @@ export function CuotasSection() {
                 // en el render siguiente, y para entonces `currentTarget` ya es
                 // null.
                 onInput={(event) => {
-                  const amount = Number(event.currentTarget.value.replace(',', '.')) || 0
+                  const amount = parseMoney(event.currentTarget.value) || 0
                   setPreview((prev) => ({ ...prev, amount }))
                 }}
                 className="input no-spinner pl-8"
