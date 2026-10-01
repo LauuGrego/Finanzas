@@ -87,7 +87,8 @@ export function Accounts() {
                       <div className="min-w-0">
                         <Link
                           to={`/cuentas/${account.id}`}
-                          className="font-semibold hover:text-gold transition"
+                          className="font-semibold hover:text-gold transition
+                                     inline-block py-0.5"
                         >
                           {account.name}
                         </Link>

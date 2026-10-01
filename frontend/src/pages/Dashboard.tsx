@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from '../components/Card'
 import { Icon } from '../components/Icon'
+import { SECONDARY_LINKS } from '../components/navigation'
 import { MonthStepper } from '../components/MonthStepper'
 import { EmptyState, StateWrapper } from '../components/States'
 import { TransactionItem } from '../components/TransactionItem'
@@ -44,30 +45,26 @@ export function Dashboard() {
         <h1 className="text-sm font-medium uppercase tracking-wide text-muted">
           {monthLabel(period)}
         </h1>
-        {/* La barra de abajo no tiene Estadísticas, así que la home es la
-            puerta de entrada desde el teléfono. El mismo argumento que con
-            Recurrentes, y por el mismo motivo: son pantallas que solo se
-            necesitan a mano, no todo el rato.
-            Va con Link y no con <a href>: un href plano es una navegación de
-            página entera, o sea re-descargar y re-arrancar la app en el
-            teléfono, cuando alcanza con cambiar de pantalla. */}
-        {/* Presupuestos y Metas también se llegan desde acá, por el mismo motivo que
-            Estadísticas: la barra de abajo ya tiene sus cinco y no hay lugar
-            para un sexto ícono. Con wrap porque tres enlaces más el mes ya no
-            entran en una línea a 320 px. */}
-        <div className="flex flex-wrap items-center gap-3">
-          <Link to="/presupuestos" className="text-sm text-gold hover:underline">
-            Presupuestos
-          </Link>
-          <Link to="/metas" className="text-sm text-gold hover:underline">
-            Metas
-          </Link>
-          <Link to="/estadisticas" className="text-sm text-gold hover:underline">
-            Estadísticas
-          </Link>
-          <MonthStepper period={period} onChange={setPeriod} />
-        </div>
+        <MonthStepper period={period} onChange={setPeriod} />
       </header>
+
+      {/* La barra de abajo del teléfono tiene cinco lugares y no entran nueve, así
+          que la home es la puerta de entrada de todo lo que falta. La lista es
+          exactamente LINKS menos MOBILE_LINKS: si algún día se agrega una pantalla
+          nueva, tiene que aparecer en uno de los dos lados o queda imposible de
+          abrir en el teléfono. Por eso vive acá y no en cada página.
+          Va con Link y no con <a href>: un href plano es una navegación de
+          página entera, o sea re-descargar y re-arrancar la app. */}
+      <nav
+        aria-label="Resto de las secciones"
+        className="-mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5"
+      >
+        {SECONDARY_LINKS.map((link) => (
+          <Link key={link.to} to={link.to} className="text-sm text-gold hover:underline">
+            {link.label}
+          </Link>
+        ))}
+      </nav>
 
       <StateWrapper
         loading={dashboard.loading}

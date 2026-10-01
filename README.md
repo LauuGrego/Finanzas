@@ -348,18 +348,33 @@ navegación y las acciones usan SVG en línea (`frontend/src/components/Icon.tsx
 así que el ícono hereda el color del texto y no hay que cargar ninguna fuente
 de íconos.
 
-**La barra del teléfono tiene cinco lugares, no siete.**
+**La barra del teléfono tiene cinco lugares, no nueve.**
 
-No entran siete secciones legibles en el ancho de un teléfono, así que hay que
-elegir. Arriba van las siete; abajo, las cinco que se usan a diario: Inicio,
-Agenda, Recurrentes, Nuevo y Configuración. Movimientos, Presupuestos, Metas y
-Estadísticas quedan a un toque desde Inicio, que es donde se los busca. Los enlaces del dashboard van
-con `<Link>` y no con `<a href>`: un `href` plano recarga la página entera, o
-sea volver a descargar y arrancar la app en el teléfono, cuando alcanza con
-cambiar de pantalla.
+No entran nueve secciones legibles en el ancho de un teléfono, así que hay que
+elegir. Arriba van las nueve; abajo, las cinco que se usan a diario: Inicio,
+Agenda, Recurrentes, Nuevo y Configuración. Las otras cinco —Movimientos,
+Cuentas, Presupuestos, Metas y Estadísticas— quedan a un toque desde Inicio, que
+es donde se las busca.
+
+Esa lista no está escrita a mano en ningún lado: sale de restarle a la de arriba
+la de la barra de abajo, en `frontend/src/components/navigation.ts`. Si algún día
+se agrega una pantalla, aparece sola en los dos lugares; si se la agrega solo a un
+lado, en el teléfono queda imposible de abrir. Los enlaces del dashboard van con
+`<Link>` y no con `<a href>`: un `href` plano recarga la página entera, o sea
+volver a descargar y arrancar la app en el teléfono, cuando alcanza con cambiar
+de pantalla.
 
 Cuando se agregue una sección nueva conviene mirar la barra: el ancho de la
 celda a 360 px es de 72 px, así que una etiqueta de más de ~60 px no entra.
+
+**En pantalla táctil, todo lo pulsable tiene 24 px de alto como piso.**
+
+WCAG 2.2 (2.5.8) pide 24×24 CSS px, y varios controles quedaban por debajo: los
+botones de icono miden 27, el *Pausar* de los recurrentes 16 y los enlaces de
+texto 20. Con el mouse eso no molesta; con el dedo, sí. Por eso la regla está en
+un solo lugar, `frontend/src/index.css`, bajo `@media (pointer: coarse)`: usa
+`min-height` y no padding, así que estira lo que estaba corto sin correr ninguna
+fila, y el escritorio queda exactamente igual.
 
 **La API vive bajo `/api`.**
 

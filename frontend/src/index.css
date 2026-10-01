@@ -113,3 +113,30 @@
     -moz-appearance: textfield;
   }
 }
+
+/*
+ * Piso del area sensible.
+ *
+ * Con el dedo, 24 px es el minimo que pide la norma (WCAG 2.2, 2.5.8) y hay
+ * controles que quedan por debajo: los botones de icono miden 27, el "Pausar"
+ * de los recurrentes 16 y los enlaces de texto 20. En la compu esos 16 px los
+ * llega el mouse sin problema, asi que la regla va bajo `pointer: coarse` y no
+ * por ancho de ventana: el escritorio queda exactamente como estaba.
+ *
+ * `min-height` y no padding a propósito. Padding suma espacio de verdad y
+ * corría las filas; `min-height` no empuja a nadie, solo estira lo que ya era
+ * más bajo que el piso. Los botones grandes, las tarjetas y la barra de abajo
+ * ya miden más, así que esta regla no los toca.
+ *
+ * No se toca `display`: los enlaces que son hijo de un `flex` ya son bloques y
+ * el piso se les aplica igual, y forzar `inline-flex` haría que las tarjetas
+ * que son un `<a>` dejaran de ocupar todo el ancho.
+ */
+@media (pointer: coarse) {
+  main a[href],
+  main button,
+  main summary,
+  main label[for] {
+    min-height: 24px;
+  }
+}

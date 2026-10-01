@@ -1,33 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
-import { Icon, type IconName } from './Icon'
-
-interface NavItem {
-  to: string
-  label: string
-  icon: IconName
-}
-
-const LINKS: NavItem[] = [
-  { to: '/', label: 'Inicio', icon: 'home' },
-  { to: '/agenda', label: 'Agenda', icon: 'calendar' },
-  { to: '/movimientos', label: 'Movimientos', icon: 'receipt' },
-  { to: '/cuentas', label: 'Cuentas', icon: 'wallet' },
-  { to: '/recurrentes', label: 'Recurrentes', icon: 'repeat' },
-  { to: '/presupuestos', label: 'Presupuestos', icon: 'gauge' },
-  { to: '/metas', label: 'Metas', icon: 'target' },
-  { to: '/estadisticas', label: 'Estadísticas', icon: 'chart' },
-  { to: '/config', label: 'Configuración', icon: 'settings' },
-]
-
-/** The same routes, trimmed, for the mobile bottom bar. */
-const MOBILE_LINKS: NavItem[] = [
-  { to: '/', label: 'Inicio', icon: 'home' },
-  { to: '/agenda', label: 'Agenda', icon: 'calendar' },
-  { to: '/recurrentes', label: 'Recurrentes', icon: 'repeat' },
-  { to: '/nuevo', label: 'Nuevo', icon: 'plus' },
-  { to: '/config', label: 'Config', icon: 'settings' },
-]
+import { Icon } from './Icon'
+import { LINKS, MOBILE_LINKS } from './navigation'
 
 /** The arc reactor: a ring with a lit core, used as the app's mark. */
 function Mark() {
