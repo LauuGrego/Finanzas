@@ -32,13 +32,59 @@ const BASE = import.meta.env.VITE_API_URL
   : '/api'
 
 /**
- * Called whenever the API answers 401, so the app can drop back to the login
- * screen from anywhere without every page having to know about it.
+ * Called whenever the API confirms the session is over, so the app can drop back
+ * to the login screen from anywhere without every page having to know about it.
  */
 let onUnauthorized: (() => void) | null = null
 
 export function setUnauthorizedHandler(handler: (() => void) | null): void {
   onUnauthorized = handler
+}
+
+/**
+ * The paths the backend leaves outside the session gate. A 401 from one of these
+ * is not an expired session, so it must never lock the door — in particular a
+ * rejected key has to stay a rejected key and not become a logout.
+ */
+function isOpenPath(path: string): boolean {
+  const clean = path.split('?')[0]
+  return clean === '/session' || clean === '/login' || clean === '/logout' || clean === '/health'
+}
+
+/** One verification at a time: several requests can fail in the same tick. */
+let verifying: Promise<void> | null = null
+
+/**
+ * A 401 does not, on its own, prove the session is over.
+ *
+ * Locking the door straight away turns any single rejected request into a trap:
+ * the user types the key, the app replays the very request that failed, gets the
+ * same 401 and throws them back to the login screen — for as long as they keep
+ * trying, because nothing ever changed on the other side. That is a loop with a
+ * password box at both ends of it.
+ *
+ * So before locking, ask the backend, which is the only one that knows. If it
+ * says the session is alive, the request was what failed, not the key, and the
+ * page reports it like any other error instead of demanding the key again.
+ */
+function lockTheDoor(): void {
+  if (verifying) return
+  verifying = (async () => {
+    try {
+      const response = await fetch(`${BASE}/session`, {
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      })
+      const session = response.ok ? await response.json() : null
+      if (session?.authenticated !== true) onUnauthorized?.()
+    } catch {
+      // The API could not be reached, so there is no evidence the session ended.
+      // Unreachable is not the same as closed: locking here is what turns an
+      // outage into a door that does not open.
+    } finally {
+      verifying = null
+    }
+  })()
 }
 
 export class ApiError extends Error {
@@ -66,9 +112,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // The response was not JSON; keep the generic message.
     }
-    // A 401 means the session expired or was never there. That is not a page
-    // error to render, it is a reason to ask for the key again.
-    if (response.status === 401 && !path.startsWith('/login')) onUnauthorized?.()
+    // A 401 means the request was refused. Whether that is an expired session or
+    // just this call failing is not something the response tells us, so it gets
+    // checked against the backend before the door is closed.
+    if (response.status === 401 && !isOpenPath(path)) lockTheDoor()
     throw new ApiError(message, response.status)
   }
 

@@ -275,6 +275,12 @@ saldo de una cuenta = saldo inicial + ingresos - gastos
 Esto evita que el saldo se desincronice de los movimientos. Cambiar o borrar un
 movimiento actualiza el saldo solo.
 
+El saldo inicial además cuenta como ingreso **del mes en que se creó la cuenta**,
+para que Ingresos, Gastos y Balance del mes se puedan reconciliar con el dinero
+disponible. No se crea ningún movimiento nuevo: sigue siendo un campo de la cuenta
+y no aparece en la lista. Por día no cuenta, porque un saldo inicial no llegó
+ningún día, siempre estuvo ahí.
+
 **El dinero se guarda como enteros de centavos.**
 
 Un `float` de plata pierde centavos, así que la columna es un `BIGINT` de centavos
@@ -469,6 +475,12 @@ La cookie es `httpOnly`, o sea que JavaScript no la puede leer y un XSS no
 llegaría a robarla. Y va como `SameSite=None` cuando la petición llega por
 HTTPS, porque Vercel y Render son sitios distintos: sin eso el navegador la
 descarta antes de que llegue al API.
+
+Un `401` no cierra la puerta por sí solo. Antes de volver al login la app le
+pregunta al API si la sesión sigue viva, porque si no, una sola petición
+rechazada se convierte en un bucle: escribís la clave, la app reintenta lo mismo,
+recibe el mismo `401` y te devuelve al login. Si la API no se puede alcanzar, no
+se cierra nada: caída no es lo mismo que sesión cerrada.
 
 **Una sola URL decide dónde viven los datos.**
 
