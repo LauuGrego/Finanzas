@@ -80,7 +80,7 @@ def calendar_day(day: date, db: Session = Depends(get_db)) -> DayDetail:
     page = tx.filter_transactions(db, start=day, end=day, limit=200)
     return DayDetail(
         date=day,
-        summary=tx.summarize(db, day, day),
+        summary=tx.summarize(db, day, day, include_initial=False),
         transactions=page.items,
     )
 
@@ -100,7 +100,7 @@ def calendar_month(month: str, db: Session = Depends(get_db)) -> dict[str, DayDe
         items = by_day.get(cursor.isoformat(), [])
         days[cursor.isoformat()] = DayDetail(
             date=cursor,
-            summary=tx.summarize(db, cursor, cursor),
+            summary=tx.summarize(db, cursor, cursor, include_initial=False),
             transactions=items,
         )
         cursor += timedelta(days=1)

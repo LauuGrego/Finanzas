@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
+
+from sqlalchemy import text
 
 from tests.conftest import expense, fund
 
@@ -44,9 +46,13 @@ def test_monthly_summary(client, seed):
     assert summary["total"] == 3
 
     dashboard = client.get(f"/api/dashboard?month={month}").json()
-    assert dashboard["month_summary"]["income"] == 100000
+    # The seed account's 100000 starting balance counts as income of its month, on
+    # top of the 100000 salary: without it the month would report 100000 income
+    # next to an available balance that includes the starting money, and the two
+    # could not be reconciled.
+    assert dashboard["month_summary"]["income"] == 200000
     assert dashboard["month_summary"]["expense"] == 35000
-    assert dashboard["month_summary"]["balance"] == 65000
+    assert dashboard["month_summary"]["balance"] == 165000
     # The available balance is all-time, so it also includes last month's 99999:
     # 100000 initial + 100000 income - 35000 - 99999
     assert dashboard["available_balance"] == 65001
@@ -79,7 +85,7 @@ def test_income_and_expense_in_the_same_period_are_counted_separately(client, se
 
     month = date.today().strftime("%Y-%m")
     dashboard = client.get(f"/api/dashboard?month={month}").json()
-    assert dashboard["month_summary"]["income"] == 100000
+    assert dashboard["month_summary"]["income"] == 200000
     assert dashboard["month_summary"]["expense"] == 25000
 
     accounts = client.get("/api/accounts").json()
@@ -113,6 +119,78 @@ def test_monthly_comparison(client, seed):
     assert len(rows) == 2
     assert rows[-1]["expense"] == 25000
     assert rows[0]["expense"] == 10000
+
+
+def test_the_balance_evolution_counts_the_starting_balance_only_once(client, seed):
+    """The running balance must not add the same starting balance twice.
+
+    It arrives through two doors: as the seed of the running total and as income
+    of the month the account was created. Counting it in both is what a naive
+    implementation does, and the curve ends up double the real money.
+    """
+    client.post("/api/transactions", json=expense(seed, 25000))
+
+    rows = client.get("/api/reports/balance-evolution?months=2").json()
+    assert len(rows) == 2
+
+    # 100000 initial - 25000 spent. The earlier month was 100000 too, so a double
+    # count would end at 249999 instead of 75000.
+    assert rows[-1]["balance"] == 75000
+    assert rows[-1]["balance"] == client.get("/api/accounts").json()["total_balance"]
+
+
+def test_a_starting_balance_from_before_the_window_is_not_counted_twice(
+    client, seed, session
+):
+    """The same trap, in the shape that actually triggers it.
+
+    The previous test cannot catch this: its account is created today, so it lands
+    inside the window and only ever goes through one of the two doors. A balance
+    that predates the window is the case where both are open at once — the seed of
+    the running total reaches for it, and so does the summary of everything before
+    the window.
+    """
+    # Two months back, so it is outside the two-month window the chart asks for.
+    old = datetime.combine(date.today().replace(day=1) - timedelta(days=60), time(12, 0))
+    session.execute(
+        text("update accounts set created_at = :when where id = :id"),
+        {"when": old, "id": seed["bank"]["id"]},
+    )
+    session.commit()
+    client.post("/api/transactions", json=expense(seed, 25000))
+
+    rows = client.get("/api/reports/balance-evolution?months=2").json()
+
+    # The curve has to land on the real balance. Counting the 100000 twice would
+    # put it at 175000 and the two figures would agree with nothing.
+    assert rows[-1]["balance"] == 75000
+    assert rows[-1]["balance"] == client.get("/api/accounts").json()["total_balance"]
+
+    # And the balance of that earlier month has to be the 100000 it really was,
+    # not 200000.
+    assert rows[0]["balance"] == 100000
+
+
+def test_the_starting_balance_belongs_to_the_month_the_account_was_created(client, seed):
+    """It counts in the creation month and not in every month on request."""
+    month = date.today().strftime("%Y-%m")
+    assert client.get(f"/api/dashboard?month={month}").json()["month_summary"]["income"] == 100000
+
+    # The account was created today, so an earlier month must not carry it. If it
+    # did, every month in every report would inherit today's money.
+    previous = (date.today().replace(day=1) - timedelta(days=5)).strftime("%Y-%m")
+    assert client.get(f"/api/dashboard?month={previous}").json()["month_summary"]["income"] == 0
+
+
+def test_the_starting_balance_is_invisible_on_a_single_day(client, seed):
+    """A starting balance did not arrive on any one day.
+
+    Counting it on the creation day would paint the agenda with a big income and
+    an empty list of movements to explain it.
+    """
+    day = client.get(f"/api/calendar/day?day={date.today().isoformat()}").json()
+    assert day["summary"]["income"] == 0
+    assert day["transactions"] == []
 
 
 def test_filter_by_category_and_account(client, seed):

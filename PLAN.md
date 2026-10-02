@@ -1392,6 +1392,7 @@ montón de cosas que el plan no pedía.
 | FASE 11 Estadísticas = V2 | **Estadísticas está dentro del MVP** | Son tres gráficos y ya usaban los datos que existían. |
 | FASE 8 "formato de moneda" | Pesos argentinos, `es-AR` | — |
 | Sin refuerzos de saldo | **No se puede gastar ni transferir más de lo que hay** | Pedido posterior. Bloquea en 422; las cuentas de tipo Crédito quedan exentas porque su saldo negativo es la deuda. |
+| "Ingresos del mes" son los movimientos de ingreso | **El saldo inicial cuenta como ingreso del mes en que se creó la cuenta** | El dashboard mostraba "Dinero disponible $540.000" al lado de "Ingresos $0": dos números que no se podían reconciliar sin saber que había un tercer dato escondido. No se crea ningún movimiento nuevo, así que la lista sigue igual. Por día no cuenta, porque un saldo inicial no llegó ningún día. |
 | Sin thinking en transferencias | **Una transferencia mal hecha se puede deshacer**, y van las dos patas | Antes quedaban clavadas: la UI escondía el botón de borrar y la API mandaba a un endpoint inexistente. |
 
 ## Decisiones que el plan no anticipó

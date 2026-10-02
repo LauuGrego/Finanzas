@@ -5,7 +5,7 @@ All arithmetic happens on integer centavos so it stays exact.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, time, timedelta
 from uuid import uuid4
 
 from sqlalchemy import Select, func, select
@@ -45,24 +45,60 @@ def total_balance(db: Session) -> int:
     return sum(account_balance(db, account) for account in accounts)
 
 
-def initial_balances_total(db: Session) -> int:
-    return db.scalar(
-        select(func.coalesce(func.sum(Account.initial_balance), 0)).where(
-            Account.active.is_(True)
-        )
-    ) or 0
+def initial_balances_total(db: Session, created_before: date | None = None) -> int:
+    """Suma de los saldos iniciales, opcionalmente solo los anteriores a una fecha.
+
+    El filtro por fecha es lo que permite que `summarize_cents` cuente el saldo
+    inicial de una cuenta como ingreso en el mes en que se creo, sin que el
+    grafico de evolucion lo sume dos veces: la semilla de ese grafico usa
+    `created_before` para traer solo lo que ya existia antes de la ventana.
+    """
+    query = select(func.coalesce(func.sum(Account.initial_balance), 0)).where(
+        Account.active.is_(True)
+    )
+    if created_before is not None:
+        # `created_at` is a timestamp and the range is over dates, so the
+        # comparison has to be made against the following midnight or an account
+        # created on the last day of the period would fall outside.
+        query = query.where(Account.created_at < datetime.combine(created_before, time.min))
+    return db.scalar(query) or 0
 
 
 # --------------------------------------------------------------------------- #
 # Summaries
 # --------------------------------------------------------------------------- #
-def summarize_cents(
+def _initial_balances_in_period(
     db: Session, start: date, end: date, account_id: int | None = None
+) -> int:
+    """Saldos iniciales de las cuentas creadas dentro del período."""
+    query = select(func.coalesce(func.sum(Account.initial_balance), 0)).where(
+        Account.active.is_(True),
+        Account.created_at >= datetime.combine(start, time.min),
+        Account.created_at < datetime.combine(end + timedelta(days=1), time.min),
+    )
+    if account_id is not None:
+        query = query.where(Account.id == account_id)
+    return db.scalar(query) or 0
+
+
+def summarize_cents(
+    db: Session,
+    start: date,
+    end: date,
+    account_id: int | None = None,
+    include_initial: bool = True,
 ) -> tuple[int, int]:
     """Return (income, expense) in centavos for a date range.
 
     Transfer movements are excluded: moving money between your own accounts is
     not income or spending, even though they are stored as two movements.
+
+    `include_initial` adds the starting balances of the accounts created inside the
+    range, in the month of their creation. Without it, "Ingresos" shows 0 next to a
+    "Dinero disponible" that does include them, and the two figures cannot be
+    reconciled. Callers that render a single day turn it off: an initial balance
+    did not arrive on any particular day — it was always there — so charging it to
+    one would paint a day with a big income and no movement to explain it.
     """
     query = select(Transaction.type, func.sum(Transaction.amount)).where(
         Transaction.date >= start,
@@ -81,13 +117,20 @@ def summarize_cents(
             income += amount
         else:
             expense += amount
+
+    if include_initial:
+        income += _initial_balances_in_period(db, start, end, account_id)
     return income, expense
 
 
 def summarize(
-    db: Session, start: date, end: date, account_id: int | None = None
+    db: Session,
+    start: date,
+    end: date,
+    account_id: int | None = None,
+    include_initial: bool = True,
 ) -> PeriodSummary:
-    income, expense = summarize_cents(db, start, end, account_id)
+    income, expense = summarize_cents(db, start, end, account_id, include_initial)
     return PeriodSummary(
         income=to_pesos(income),
         expense=to_pesos(expense),

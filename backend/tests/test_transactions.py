@@ -139,7 +139,9 @@ def test_a_transfer_is_not_spending(client, seed):
 
     # Only the 12500 grocery counts as spending.
     assert dashboard["month_summary"]["expense"] == 12500
-    assert dashboard["month_summary"]["income"] == 0
+    # No income movement was created, but the seed account's starting balance is
+    # income of its month.
+    assert dashboard["month_summary"]["income"] == 100000
     # Transfers leave the overall total untouched: 100000 - 12500.
     assert dashboard["available_balance"] == 87500
 
