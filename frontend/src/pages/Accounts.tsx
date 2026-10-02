@@ -6,6 +6,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Icon } from '../components/Icon'
 import { EmptyState, StateWrapper } from '../components/States'
 import { FormModal } from '../components/FormModal'
+import { MoneyInput } from '../components/MoneyInput'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Account } from '../types'
@@ -210,18 +211,13 @@ export function Accounts() {
           <label className="label" htmlFor="initial_balance">
             Saldo inicial
           </label>
-          <div className="relative">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">$</span>
-            <input
-              id="initial_balance"
-              name="initial_balance"
-              type="text"
-              inputMode="decimal"
-              placeholder="0"
-              defaultValue={editing?.initial_balance ?? ''}
-              className="input no-spinner pl-8"
-            />
-          </div>
+          <MoneyInput
+            id="initial_balance"
+            name="initial_balance"
+            placeholder="0"
+            defaultValue={editing?.initial_balance ?? ''}
+            className="input no-spinner pl-8"
+          />
           <p className="text-xs text-muted mt-1.5">
             La plata que tenías antes de usar la app.
           </p>

@@ -4,6 +4,7 @@ import { Card } from './Card'
 import { ConfirmDialog } from './ConfirmDialog'
 import { FormModal } from './FormModal'
 import { Icon } from './Icon'
+import { MoneyInput } from './MoneyInput'
 import { EmptyState, StateWrapper } from './States'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
@@ -213,26 +214,17 @@ export function CuotasSection() {
             <label className="label" htmlFor="installment-amount">
               Cada cuota
             </label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">$</span>
-              <input
-                id="installment-amount"
-                name="amount"
-                type="text"
-                inputMode="decimal"
-                required
-                placeholder="50000"
-                defaultValue={editing?.amount ?? ''}
-                // El valor se lee acá y no adentro del updater: React lo evalúa
-                // en el render siguiente, y para entonces `currentTarget` ya es
-                // null.
-                onInput={(event) => {
-                  const amount = parseMoney(event.currentTarget.value) || 0
-                  setPreview((prev) => ({ ...prev, amount }))
-                }}
-                className="input no-spinner pl-8"
-              />
-            </div>
+            <MoneyInput
+              id="installment-amount"
+              name="amount"
+              required
+              placeholder="50000"
+              defaultValue={editing?.amount ?? ''}
+              onChange={(text) =>
+                setPreview((prev) => ({ ...prev, amount: parseMoney(text) || 0 }))
+              }
+              className="input no-spinner pl-8"
+            />
           </div>
           <div>
             <label className="label" htmlFor="installment-count">

@@ -4,6 +4,7 @@ import { Card } from '../components/Card'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { FormModal } from '../components/FormModal'
 import { Icon } from '../components/Icon'
+import { MoneyInput } from '../components/MoneyInput'
 import { EmptyState, StateWrapper } from '../components/States'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
@@ -173,37 +174,27 @@ export function Metas() {
           <label className="label" htmlFor="goal-target">
             Cuánto necesitás
           </label>
-          <div className="relative">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">$</span>
-            <input
-              id="goal-target"
-              name="target_amount"
-              type="text"
-              inputMode="decimal"
-              required
-              defaultValue={editing?.target_amount ?? ''}
-              placeholder="500.000"
-              className="input no-spinner pl-8 text-lg font-semibold"
-            />
-          </div>
+          <MoneyInput
+            id="goal-target"
+            name="target_amount"
+            required
+            defaultValue={editing?.target_amount ?? ''}
+            placeholder="500.000"
+            className="input no-spinner pl-8 text-lg font-semibold"
+          />
         </div>
 
         <div>
           <label className="label" htmlFor="goal-current">
             Cuánto llevás
           </label>
-          <div className="relative">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">$</span>
-            <input
-              id="goal-current"
-              name="current_amount"
-              type="text"
-              inputMode="decimal"
-              defaultValue={editing?.current_amount ?? ''}
-              placeholder="0"
-              className="input no-spinner pl-8"
-            />
-          </div>
+          <MoneyInput
+            id="goal-current"
+            name="current_amount"
+            defaultValue={editing?.current_amount ?? ''}
+            placeholder="0"
+            className="input no-spinner pl-8"
+          />
         </div>
 
         <div>

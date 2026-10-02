@@ -5,6 +5,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog'
 import { CuotasSection } from '../components/CuotasSection'
 import { FormModal } from '../components/FormModal'
 import { Icon } from '../components/Icon'
+import { MoneyInput } from '../components/MoneyInput'
 import { EmptyState, StateWrapper } from '../components/States'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
@@ -155,19 +156,14 @@ export function Recurrentes() {
           <label className="label" htmlFor="recurring-amount">
             Monto
           </label>
-          <div className="relative">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">$</span>
-            <input
-              id="recurring-amount"
-              name="amount"
-              type="text"
-              inputMode="decimal"
-              required
-              placeholder="15000"
-              defaultValue={editing?.amount ?? ''}
-              className="input no-spinner pl-8"
-            />
-          </div>
+          <MoneyInput
+            id="recurring-amount"
+            name="amount"
+            required
+            placeholder="15000"
+            defaultValue={editing?.amount ?? ''}
+            className="input no-spinner pl-8"
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-3">

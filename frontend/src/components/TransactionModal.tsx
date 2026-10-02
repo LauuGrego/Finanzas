@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { api } from '../services/api'
 import type { Account, BudgetCheck, Category, Transaction, TransactionPayload } from '../types'
 import { resolveColor } from '../utils/colors'
-import { todayIso, money, moneyPrecise, parseMoney, percent } from '../utils/format'
+import { todayIso, money, moneyEditable, moneyPrecise, parseMoney, percent } from '../utils/format'
 import { FormModal } from './FormModal'
+import { MoneyInput } from './MoneyInput'
 
 interface Props {
   open: boolean
@@ -52,7 +53,13 @@ export function TransactionModal({
   const [accountId, setAccountId] = useState<number>(
     transaction?.account_id ?? defaultAccountId ?? accounts[0]?.id ?? 0
   )
-  const [amountText, setAmountText] = useState(transaction ? String(transaction.amount) : '')
+  // `moneyEditable` y no `String(...)`: el API devuelve pesos, así que un gasto de
+  // 450,75 llega como 450.75 y con un punto. Ese punto es decimal, no separador de
+  // miles, y por eso el texto inicial tiene que pasar por el formateador de
+  // valores y no por el de tecleo.
+  const [amountText, setAmountText] = useState(
+    transaction ? moneyEditable(transaction.amount) : ''
+  )
   // La categoría y la fecha van controladas porque de las dos depende el aviso
   // de presupuesto: sin saber cuál está elegida no hay nada que avisar.
   const [categoryId, setCategoryId] = useState<number>(transaction?.category_id ?? 0)
@@ -84,7 +91,7 @@ export function TransactionModal({
       setType(transaction?.type ?? defaultType)
       setError(null)
       setAccountId(transaction?.account_id ?? defaultAccountId ?? accounts[0]?.id ?? 0)
-      setAmountText(transaction ? String(transaction.amount) : '')
+      setAmountText(transaction ? moneyEditable(transaction.amount) : '')
       setCategoryId(transaction?.category_id ?? 0)
       setDate(transaction?.date ?? todayIso())
     }
@@ -226,21 +233,16 @@ export function TransactionModal({
         <label className="label" htmlFor="amount">
           Monto
         </label>
-        <div className="relative">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">$</span>
-          <input
-            id="amount"
-            name="amount"
-            type="text"
-            inputMode="decimal"
-            required
-            autoFocus
-            placeholder="25.000"
-            value={amountText}
-            onChange={(event) => setAmountText(event.target.value)}
-            className="input no-spinner pl-8 text-lg font-semibold"
-          />
-        </div>
+        <MoneyInput
+          id="amount"
+          name="amount"
+          required
+          autoFocus
+          placeholder="25.000"
+          value={amountText}
+          onChange={setAmountText}
+          className="input no-spinner pl-8 text-lg font-semibold"
+        />
       </div>
 
       {account && type === 'EXPENSE' && blocksSpending(account) && (
@@ -470,21 +472,16 @@ export function TransferModal({
         <label className="label" htmlFor="transfer-amount">
           Monto
         </label>
-        <div className="relative">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">$</span>
-          <input
-            id="transfer-amount"
-            name="amount"
-            type="text"
-            inputMode="decimal"
-            required
-            autoFocus
-            placeholder="50.000"
-            value={amountText}
-            onChange={(event) => setAmountText(event.target.value)}
-            className="input no-spinner pl-8 text-lg font-semibold"
-          />
-        </div>
+        <MoneyInput
+          id="transfer-amount"
+          name="amount"
+          required
+          autoFocus
+          placeholder="50.000"
+          value={amountText}
+          onChange={setAmountText}
+          className="input no-spinner pl-8 text-lg font-semibold"
+        />
       </div>
 
       {overLimit && (

@@ -4,6 +4,7 @@ import { Card } from '../components/Card'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { FormModal } from '../components/FormModal'
 import { Icon } from '../components/Icon'
+import { MoneyInput } from '../components/MoneyInput'
 import { MonthStepper } from '../components/MonthStepper'
 import { EmptyState, StateWrapper } from '../components/States'
 import { useAsync } from '../hooks/useAsync'
@@ -180,18 +181,13 @@ export function Presupuestos() {
             <label className="label" htmlFor="budget-edit-amount">
               Tope para {editing.category?.name ?? 'la categoría'}
             </label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">$</span>
-              <input
-                id="budget-edit-amount"
-                name="amount"
-                type="text"
-                inputMode="decimal"
-                required
-                defaultValue={editing.amount}
-                className="input no-spinner pl-8"
-              />
-            </div>
+            <MoneyInput
+              id="budget-edit-amount"
+              name="amount"
+              required
+              defaultValue={editing.amount}
+              className="input no-spinner pl-8"
+            />
             <p className="text-xs text-muted mt-1.5">
               Vas gastado {money(editing.spent)} de {money(editing.amount)} ({percent(editing.percentage)}).
             </p>
@@ -230,19 +226,14 @@ export function Presupuestos() {
               <label className="label" htmlFor="budget-amount">
                 Tope del mes
               </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">$</span>
-                <input
-                  id="budget-amount"
-                  name="amount"
-                  type="text"
-                  inputMode="decimal"
-                  required
-                  autoFocus
-                  placeholder="200.000"
-                  className="input no-spinner pl-8 text-lg font-semibold"
-                />
-              </div>
+              <MoneyInput
+                id="budget-amount"
+                name="amount"
+                required
+                autoFocus
+                placeholder="200.000"
+                className="input no-spinner pl-8 text-lg font-semibold"
+              />
             </div>
 
             <label className="flex items-start gap-2.5 cursor-pointer">
