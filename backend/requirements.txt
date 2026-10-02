@@ -13,8 +13,8 @@ sqlalchemy==2.0.54
 # cargo. El build moria en "Read-only file system" Error pointing at maturin.
 pydantic==2.13.5
 
-# Driver de PostgreSQL. En la nube la base es Postgres administrada (Supabase);
-# en desarrollo sigue siendo SQLite y este paquete no se usa.
+# Driver de PostgreSQL. La base es Postgres en todos lados: administrada
+# (Supabase) en la nube y el contenedor de `docker compose up -d` en desarrollo.
 # 3.3.6 es el primer psycopg cuyo psycopg-binary trae wheel cp314, por el mismo
 # motivo que el de pydantic. Ojo que el que trae los wheels es el -binary: el
 # metapaquete es puro Python y compila bien en cualquier lado, asi que un audit

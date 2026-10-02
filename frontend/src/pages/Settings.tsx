@@ -160,7 +160,7 @@ export function Settings() {
         <p className="text-sm text-muted">
           {session.data?.storage === 'postgresql'
             ? 'Todo vive en una base PostgreSQL administrada, sin acceso público.'
-            : 'Todo vive en un archivo SQLite en tu computadora: copialo como backup.'}
+            : 'No se pudo leer dónde están los datos.'}
         </p>
         {canSignOut && (
           <Button

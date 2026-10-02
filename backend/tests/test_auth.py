@@ -105,7 +105,7 @@ def test_session_answers_200_whether_or_not_you_are_in(locked: TestClient):
 def test_session_says_where_the_data_lives(locked: TestClient):
     """Settings shows this; the frontend cannot work it out on its own."""
     body = locked.get("/api/session").json()
-    assert body["storage"] == "sqlite"
+    assert body["storage"] == "postgresql"
     assert body["password_required"] is True
 
 

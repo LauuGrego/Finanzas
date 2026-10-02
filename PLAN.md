@@ -1385,7 +1385,7 @@ montón de cosas que el plan no pedía.
 | Plan decía | Realidad | Por qué |
 | --- | --- | --- |
 | "Sin login, sin usuarios" (§1, §22, §41) | **Login con contraseña**, cookie firmada HMAC-SHA256 | La app pasó a estar en la nube para abrirse desde el celular. Una agenda financiera sin contraseña en internet es una cuenta bancaria al aire. Sigue siendo single-user: no hay usuarios ni roles. |
-| SQLite (§2) | **PostgreSQL** en producción (Supabase), SQLite en dev y tests | Render free tier no tiene disco persistente: con SQLite el archivo se perdía en cada redeploy. |
+| SQLite (§2) | **PostgreSQL en todos lados**: Supabase en la nube, un contenedor de Docker en dev y en tests | Render free tier no tiene disco persistente, así que el archivo se perdía en cada redeploy. Y después salió caro: correr con dos motores dejó pasar un bug de secuencias que en la nube reventaba al guardar una cuenta y que ningún test podía ver, porque en SQLite ese estado no existe. |
 | `Category.icon` (§5) | `Category.color` | No emojis en la interfaz. El color reemplaza al ícono y se elige de una paleta de diez. |
 | Categorías aparte en el frontend (§31) | Mergen en **Configuración** | Dos pantallas para lo mismo. |
 | Sin navbar de recurrentes/cuotas (§25) | No están, así que no hay links muertos | — |
@@ -1405,7 +1405,17 @@ montón de cosas que el plan no pedía.
 - **Todo bajo `/api`**, en un solo proceso: FastAPI sirve la API y el frontend
   compilado. También soporta deploy partido (Vercel + Render).
 - **Deploy gratuito**: Supabase + Render + Vercel, en el tier gratis.
-- **Tests**: 223, cuando el plan hablaba de "no exagerar".
+- **Un solo motor, PostgreSQL.** El plan (§2) defendía SQLite porque no necesita
+  un servidor. La nube lo dejó sin opción, pero el workaround de correr SQLite en
+  la compu y Postgres arriba salió caro: los dos motores se portan distinto y la
+  diferencia se paga en producción. Pasó con el `transfer_id` (SQLite ignora
+  `VARCHAR(36)`, Postgres no) y con las secuencias de `id` (SQLite da
+  `MAX(id) + 1` y no se puede desincronizar). En el segundo caso ningún test podía
+  ver el bug, justamente porque corría en el motor que no lo sufre. Ahora
+  desarrollo y tests usan el mismo Postgres que la nube, así que la suite incluye
+  lo que antes era invisible: cada test crea su propio schema y lo borra al
+  terminar. `DATABASE_URL` no tiene valor por omisión, a propósito.
+- **Tests**: 233, cuando el plan hablaba de "no exagerar".
 - **Los montos se leen con `parseMoney`**, no con `Number(x.replace(',', '.'))`.
   Los campos dicen `placeholder="500.000"` y `Number('500.000')` es `NaN`: el
   parseo estaba mal en los siete lugares donde se repetía y el error que

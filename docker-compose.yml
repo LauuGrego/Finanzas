@@ -1,0 +1,41 @@
+# La base de desarrollo.
+#
+# Antes esto era un archivo SQLite y no hacía falta nada. Ahora es un Postgres en
+# un contenedor, y hay una razón que no es la moda: la app corría en SQLite en la
+# compu y en PostgreSQL en la nube, y los dos motores se portan distinto. Eso ya
+# costó un error en producción —una secuencia de ids que quedó desincronizada y
+# ningún test lo podía ver, porque en SQLite eso no existe—. Con el mismo motor en
+# todos lados, lo que pasa en la compu pasa en la nube.
+#
+#   docker compose up -d      levantar
+#   docker compose down       parar (dentro el volumen)
+#   docker compose down -v    parar y borrar los datos
+#
+# El puerto es 5434 y no el 5432 a propósito: si tenés otro Postgres en la máquina
+# no se chocan. Y tampoco el 5433, que en esta compu ya lo tenía el relay de WSL.
+# La contraseña es de mentira y está acá en claro, porque la base nunca sale de tu
+# compu.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: finanzas-postgres
+    environment:
+      POSTGRES_USER: finanzas
+      POSTGRES_PASSWORD: finanzas
+      POSTGRES_DB: finanzas
+    ports:
+      - "5434:5432"
+    volumes:
+      - finanzas-datos:/var/lib/postgresql/data
+    healthcheck:
+      # `pg_isready` solo dice que el servidor acepta conexiones; hasta que no
+      # termina el initdb no hay donde conectarse, y eso se ve como un fallo de
+      # conexión en vez de "todavía está arrancando".
+      test: ["CMD-SHELL", "pg_isready -U finanzas -d finanzas"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  finanzas-datos:

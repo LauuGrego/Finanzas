@@ -6,23 +6,30 @@ payer y cómo venés administrando la plata.
 Single-user, sin cuentas ni login, corriendo íntegramente en tu computadora.
 
 ```
-React + TypeScript  ─HTTP─>  FastAPI  ─>  SQLite (un solo archivo)
+React + TypeScript  ─HTTP─>  FastAPI  ─>  PostgreSQL
 ```
 
 ## Arranque (desarrollo)
 
 Dos terminales, desde la raíz del proyecto.
 
-**1. Backend** (puerto 8000)
+**1. Base de datos** (una vez por sesión, o cuando la apagás)
+
+```bash
+docker compose up -d
+```
+
+**2. Backend** (puerto 8000)
 
 ```bash
 cd backend
 python -m venv ../.venv          # solo la primera vez
 ../.venv/Scripts/pip install -r requirements.txt
+export DATABASE_URL="postgresql+psycopg://finanzas:finanzas@127.0.0.1:5434/finanzas"
 ../.venv/Scripts/python -m uvicorn app.main:app --reload
 ```
 
-**2. Frontend** (puerto 5173)
+**3. Frontend** (puerto 5173)
 
 ```bash
 cd frontend
@@ -36,9 +43,39 @@ Abrí <http://localhost:5173>. La API queda documentada en
 En el primer arranque se crean las tablas, 10 categorías con su color y las tres
 cuentas donde vive la plata: **Banco**, **Billetera virtual** y **Efectivo**.
 
+## La base de datos
+
+PostgreSQL, siempre. En desarrollo es un contenedor; en la nube, Supabase.
+
+```bash
+docker compose up -d        # levantar (desde la raíz del repo)
+docker compose down         # parar
+docker compose down -v      # parar y borrar los datos
+```
+
+El puerto es **5434**, no el 5432, para no chocar con otro Postgres que tengas en
+la máquina. La contraseña está en el `docker-compose.yml` en claro y es de
+mentira: la base nunca sale de tu compu.
+
+```bash
+export DATABASE_URL="postgresql+psycopg://finanzas:finanzas@127.0.0.1:5434/finanzas"
+```
+
+**Antes esto era un archivo SQLite y no hacía falta nada.** El cambio no es por la
+moda: la app corría con un motor en la compu y con otro en la nube, y los dos se
+portan distinto. Ya costó un error en producción —una secuencia de ids
+desincronizada que reventaba al guardar una cuenta, y que ningún test local podía
+ver porque en SQLite ese estado no existe—. Con un solo motor, lo que pasa en la
+compu pasa en la nube.
+
+El precio es que hay que levantar Docker antes de trabajar. Es el mismo motor que
+corre arriba, y el `healthcheck` del compose espera a que la base acepte
+conexiones de verdad, no solo a que el contenedor exista.
+
 ## Tests
 
 ```bash
+docker compose up -d        # los tests también necesitan la base
 cd backend
 ../.venv/Scripts/python -m pytest tests -q
 ```
@@ -54,7 +91,7 @@ cd frontend && npm run build
 
 # 2. Arrancar el servidor
 cd ../backend
-FINANZAS_DB=/var/lib/finanzas/finance.db \
+DATABASE_URL=postgresql+psycopg://usuario:clave@host:5432/finanzas \
 FINANZAS_PASSWORD=una-clave-larga \
 ../.venv/Scripts/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
@@ -62,17 +99,23 @@ FINANZAS_PASSWORD=una-clave-larga \
 El frontend ya está incluido en el repo como build, así que en el servidor
 basta con clonar, `pip install -r requirements.txt` y lo de arriba.
 
+En Render la base es Supabase y **no hay disco**: por eso es una base de datos y
+no un archivo. `DATABASE_URL` ya está puesta en el panel de Render.
+
 ### Variables de entorno
 
 | Variable            | Por defecto            | Para qué sirve                                              |
 | ------------------- | ---------------------- | ----------------------------------------------------------- |
-| `DATABASE_URL`      | *(vacío)*              | Conexión a PostgreSQL. Vacío = usar el SQLite local.        |
-| `FINANZAS_DB`       | `backend/finance.db`   | Ruta del archivo SQLite, cuando no hay `DATABASE_URL`.      |
+| `DATABASE_URL`      | **sin defecto**        | Conexión a PostgreSQL. Obligatoria: si falta, la app no arranca. |
 | `FINANZAS_PASSWORD` | *(vacío)*              | La clave de la app. Vacío = sin password, no publiques.     |
 | `FINANZAS_USER`     | `lautaro`              | Usuario para HTTP Basic (curl y `/docs`).                   |
 | `FINANZAS_STATIC`   | `frontend/dist`        | Dónde está el frontend compilado.                           |
 | `FINANZAS_CORS`     | `localhost:5173`       | Orígenes permitidos, separados por coma.                    |
 | `FINANZAS_SESSION_DAYS` | `30`                | Días que dura la sesión iniciada.                           |
+
+`DATABASE_URL` no tiene defecto a propósito: un valor por omisión sería peor que
+ninguno, porque conectaría en silencio a un lado que no elegiste. En desarrollo es
+el contenedor de `docker compose up -d`; en la nube ya está puesta en Render.
 
 Sin `FINANZAS_PASSWORD` la API queda abierta a quien tenga la URL. La app no
 tiene modelo de usuarios, así que **esa variable es lo único que separa tu
@@ -234,9 +277,9 @@ movimiento actualiza el saldo solo.
 
 **El dinero se guarda como enteros de centavos.**
 
-SQLite no maneja `Decimal` de forma confiable, así que la columna es un
-`BIGINT` de centavos y la API habla pesos decimales. La conversión ocurre en los
-bordes (`backend/app/money.py`). Nunca se usa `float` para plata.
+Un `float` de plata pierde centavos, así que la columna es un `BIGINT` de centavos
+y la API habla pesos decimales. La conversión ocurre en los bordes
+(`backend/app/money.py`). Nunca se usa `float` para plata.
 
 **Una transferencia no es un gasto.**
 
@@ -322,19 +365,20 @@ cuenta nueva no se podía guardar en producción.
 
 `create_all` no lo arregla, porque no toca las tablas que ya existen. Así que
 `sync_sequences` (`backend/app/database.py`) se adelanta al `MAX(id)` de cada tabla
-en cada arranque, una consulta por tabla, solo en Postgres, y solo si la secuencia
-quedó atrás: nunca la retrocede. Corre antes de `seed_defaults` porque los defaults
-también son inserts, y con la secuencia atrás el arranque se caería solo.
+en cada arranque, una consulta por tabla, y solo si la secuencia quedó atrás: nunca
+la retrocede. Corre antes de `seed_defaults` porque los defaults también son
+inserts, y con la secuencia atrás el arranque se caería solo.
 
 Va envuelta en un `try`: que la reparación falle no puede dejar la API sin
 levantar. Se avisa con el traceback entero en el log y se sigue, que es
 exactamente el estado de antes de que existiera.
 
-SQLite no tiene secuencias —da `MAX(id) + 1` y no se puede desincronizar—, así que
-`tests/test_sequences.py` no simula el Desincronizado: prueba lo que sí es
-observable sin servidor, que es el orden del arranque, que un fallo no lo frena, y
-que en SQLite la función no hace nada. El SQL se compila contra el dialecto de
-Postgres sin conectarse, igual que el resto de `test_postgres.py`.
+`tests/test_sequences.py` reproduce el desincronizado de verdad: inserta filas con
+el `id` puesto a mano, rebobina la secuencia y comprueba que el insert revienta con
+`accounts_pkey`, que la reparación lo destraba, que no retrocede, que no gasta un id
+de más y que repetirla no cambia nada. Esto **no se podía testear antes**: la suite
+corría en SQLite, que da `MAX(id) + 1` y no tiene forma de quedar desincronizado. Por
+eso el error llegó a producción sin que ningún test lo viera.
 
 El bloque de próximos compromisos del dashboard mezcla recurrentes y cuotas en
 una sola lista, ordenada por fecha, y corta después de mezclar: si cortara antes,
@@ -426,17 +470,16 @@ llegaría a robarla. Y va como `SameSite=None` cuando la petición llega por
 HTTPS, porque Vercel y Render son sitios distintos: sin eso el navegador la
 descarta antes de que llegue al API.
 
-**La base se puede cambiar sin tocar el código.**
+**Una sola URL decide dónde viven los datos.**
 
-`DATABASE_URL` decide el motor. Sin la variable, SQLite local. Con ella,
-PostgreSQL. Los tipos, los enums (que son texto, no enums nativos) y las
-consultas son los mismos en los dos, así que no hay dos caminos de código que
-se puedan desincronizar.
+`DATABASE_URL` es obligatoria y no tiene defecto. Apunta al Postgres del
+contenedor en desarrollo y al de Supabase en la nube; el código no sabe cuál de
+los dos es, y por eso no hay dos caminos que se puedan desincronizar.
 
-Dos diferencias que costaron bugs, y que aparecieron recién al probar contra un
-PostgreSQL de verdad:
+Las diferencias entre motores que costaron bugs están todas resueltas, y
+`test_postgres.py` las sigue cubriendo como alerta sobre los modelos:
 
-SQLite ignora `VARCHAR(36)` y PostgreSQL no. El `transfer_id` se armaba con ids
+SQLite ignoraba `VARCHAR(36)` y PostgreSQL no. El `transfer_id` se armaba con ids
 de cuenta y monto, y con montos grandes pasaba los 36 caracteres. Ahora es un
 UUID, que son 36 exactos.
 
@@ -445,6 +488,10 @@ SQLAlchemy lo lee como *psycopg2*, y el driver instalado es *psycopg 3*. La URL
 que copia cualquiera de la consola de Supabase fallaba con
 `ModuleNotFoundError: psycopg2`, un error de imports que no dice nada de bases
 de datos. Ahora `database.normalize_url()` le agrega el `+psycopg` que falta.
+
+Y las secuencias: SQLite da `MAX(id) + 1` y no se puede desincronizar, Postgres
+sí, y esa diferencia costó un error en producción. Está abajo, en
+`sync_sequences`.
 
 ## API
 
@@ -495,18 +542,29 @@ Todas las rutas cuelgan de `/api`.
 
 ## Tus datos
 
-Todo vive en un archivo SQLite. En desarrollo es `backend/finance.db`; en un
-deploy, donde apunte `FINANZAS_DB`.
+Todo vive en un PostgreSQL. En desarrollo es el contenedor de Docker; en la nube,
+Supabase. Ninguna de las dos es accesible desde internet.
 
-Como el servidor usa WAL, el backup se hace copiando los tres archivos juntos
-o, mejor, con el comando de SQLite que baja el checkpoint:
+El backup lo hace Supabase solo: en el plan gratis guarda copias por un tiempo y
+te deja bajar un dump desde el panel. Para bajar una copia a tu compu:
 
 ```bash
-sqlite3 /var/lib/finanzas/finance.db ".backup '/var/lib/finanzas/backup-2026-09-29.db'"
+docker run --rm -e PGPASSWORD=clave -e PGHOST=host -e PGUSER=usuario \
+  -e PGDATABASE=postgres postgres:16-alpine pg_dump > finanzas-2026-10-01.sql
 ```
 
-El archivo está en `.gitignore` justamente para que tus datos nunca terminen en
-un repo.
+El `pg_dump` es un `.sql` con texto adentro, que se lee y se versiona. Se
+restaura con `psql`. Para una copia rápida de la base de desarrollo, el volumen
+de Docker alcanza:
+
+```bash
+docker compose down
+docker run --rm -v finanzas_finanzas-datos:/datos -v ${PWD}:/salida \
+  alpine tar czf /salida/finanzas-dev-2026-10-01.tar.gz -C /datos .
+```
+
+Ningún archivo de datos está en el repo: `.gitignore` los tapa, y con una base
+adentro ya no hay archivo que pueda terminar en un commit por accidente.
 
 ## Estructura
 
@@ -516,14 +574,14 @@ backend/
     main.py            FastAPI, login, sirve el frontend compilado
     auth.py            Cookie firmada con HMAC y HTTP Basic
     config.py          Variables de entorno leídas una vez al arrancar
-    database.py        Engine SQLite/Postgres, PRAGMAs, sesión por request, sync_sequences
+    database.py        Engine de PostgreSQL, sesión por request, sync_sequences
     money.py           Centavos <-> pesos (el único lugar donde se convierte)
     enums.py           Tipos de movimiento, categoría y cuenta
     models/            Tablas SQLAlchemy
     schemas/           Contrato de la API (Pydantic)
     routers/           Endpoints
     services/          Lógica financiera
-  tests/               223 tests
+  tests/               233 tests, contra PostgreSQL de verdad
 frontend/
   src/
     pages/             Dashboard, Agenda, Movimientos, Cuentas, Recurrentes, Presupuestos, Metas, Estadísticas, Config
@@ -533,6 +591,7 @@ frontend/
     utils/format.ts    Moneda y fechas en es-AR
     utils/colors.ts    Paleta de categorías y resolución de colores
     types/             Tipos compartidos con la API
+docker-compose.yml     La base de desarrollo (PostgreSQL)
 ```
 
 ## Lo que falta (V2 en adelante)

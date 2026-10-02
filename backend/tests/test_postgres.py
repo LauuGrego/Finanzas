@@ -1,14 +1,16 @@
-"""PostgreSQL compatibility.
+"""PostgreSQL is the only engine, so these tests no longer check compatibility.
 
-The app runs on SQLite in development and on PostgreSQL in the cloud, and the
-two engines disagree in ways that only show up at runtime. SQLite ignores
-`VARCHAR(36)` entirely while PostgreSQL raises on anything longer; SQLite is
-loose about boolean and date coercion where PostgreSQL is strict.
+They used to be the reason a set of schema decisions got made, because the app
+ran on SQLite in development and PostgreSQL in the cloud and the two disagreed at
+runtime: SQLite ignores `VARCHAR(36)` while PostgreSQL raises on anything longer,
+and SQLite is loose about boolean and date coercion where PostgreSQL is strict.
+That is the transfer id becoming a UUID, caught here as a derived id that would
+have worked forever in SQLite and failed on the first large transfer in production.
 
-None of that needs a live database to catch, because SQLAlchemy can compile the
-DDL for a dialect without connecting. These tests are the reason the transfer
-id became a UUID: a derived id like "tr_1_2_100000" is fine in SQLite forever
-and fails on the first large transfer in production.
+Now that there is a real PostgreSQL for development and for the test suite, the
+schema assertions below are worth keeping as a cheap tripwire on the models, but
+they are no longer standing in for the engine. The dialect-specific behaviour is
+covered by running against PostgreSQL itself.
 """
 
 from __future__ import annotations
@@ -95,7 +97,7 @@ def test_enums_are_stored_as_plain_strings():
 
 
 def test_foreign_keys_carry_an_ondelete_rule():
-    """PostgreSQL enforces these; SQLite only does it because of the PRAGMA."""
+    """PostgreSQL enforces these; SQLite only did it because of a PRAGMA."""
     for column in (Transaction.account_id, Transaction.category_id):
         assert column.foreign_keys, column
         assert column.foreign_keys.pop().ondelete is not None
@@ -112,13 +114,51 @@ def test_boolean_and_timestamp_defaults_are_server_side():
     assert Account.active.default is not None
 
 
-def test_only_one_database_is_configured_at_a_time():
-    """SQLite for development, PostgreSQL for the cloud, never both."""
-    from app import config
+def test_the_app_only_ever_talks_to_postgres():
+    """One engine, everywhere.
+
+    It used to be able to run on SQLite, and that is exactly what hid bugs that
+    only showed up in the cloud: a desynchronised id sequence broke account
+    creation in production and no local test could have seen it, because SQLite
+    hands out `MAX(id) + 1` and cannot get into that state. With SQLite gone there
+    is no second engine to fall into.
+    """
     from app.database import engine
 
-    dialect = engine.dialect.name
-    assert dialect == ("postgresql" if config.DATABASE_URL else "sqlite")
+    assert engine.dialect.name == "postgresql"
+
+
+def test_a_missing_database_url_says_what_to_do(monkeypatch):
+    """No default, so the failure has to explain itself.
+
+    A default URL would be worse than none: it would silently connect somewhere
+    the developer did not choose.
+    """
+    monkeypatch.setattr("app.config.DATABASE_URL", "")
+
+    from app.config import _database_url
+
+    with pytest.raises(RuntimeError) as exc:
+        _database_url()
+
+    assert "docker compose up -d" in str(exc.value)
+
+
+def test_a_local_url_does_not_demand_ssl():
+    """`sslmode=require` stops the container from starting.
+
+    It has no certificate to offer. It is kept for anything remote, where it is
+    what makes the Supabase connection survive the pooler reconnecting.
+    """
+    from app.database import _is_remote
+
+    local = "postgresql+psycopg://finanzas:finanzas@127.0.0.1:5434/finanzas"
+    pooler = "postgresql+psycopg://postgres.abc:secret@aws-0.pooler.supabase.com:5432/db"
+
+    assert _is_remote(local) is False
+    assert _is_remote("postgresql+psycopg://u:p@localhost:5432/d") is False
+    assert _is_remote("postgresql+psycopg://u:p@db.abc.supabase.co:5432/postgres") is True
+    assert _is_remote(pooler) is True
 
 
 # The connection string people actually paste. Supabase's dashboard hands out the
@@ -144,8 +184,7 @@ def test_a_supabase_url_resolves_to_the_installed_driver(url):
 
     Bare `postgresql://` means psycopg2 in SQLAlchemy, and psycopg2 is not
     installed. The failure is an import error at connect time, not a config
-    error, which is why it survives a local run against SQLite: nothing local
-    ever parses this string.
+    error, and the only place these strings appear is the Render dashboard.
     """
     from app.database import normalize_url
 
@@ -171,11 +210,16 @@ def test_the_legacy_postgres_scheme_is_also_translated():
     assert out == "postgresql+psycopg://u:p@h:5432/d"
 
 
-def test_a_sqlite_url_is_never_rewritten():
-    """The normalizer is about drivers; it must not touch the other engine."""
+def test_an_unknown_scheme_is_left_alone():
+    """The normalizer only knows how to spell PostgreSQL.
+
+    It has to pass anything else through untouched rather than guessing: a URL it
+    misreads is a connection to the wrong place, and there is no second engine
+    left for it to be useful about.
+    """
     from app.database import normalize_url
 
-    url = "sqlite:///C:/datos/finance.db"
+    url = "postgresql+asyncpg://user:pass@host:5432/db"
     assert normalize_url(url) == url
 
 

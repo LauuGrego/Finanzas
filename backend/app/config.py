@@ -1,9 +1,9 @@
 """Runtime settings, read once from the environment.
 
-Everything has a development default so `uvicorn app.main:app` keeps working
-with no setup. In a deployment the three variables that matter are:
+Everything but the database has a development default so `uvicorn app.main:app`
+keeps working with no setup. In a deployment the variables that matter are:
 
-    FINANZAS_DB        where the SQLite file lives
+    DATABASE_URL       PostgreSQL. Required: no default, on purpose.
     FINANZAS_PASSWORD  turns on HTTP Basic auth (leave unset to disable it)
     FINANZAS_STATIC    where the built frontend lives
 """
@@ -20,10 +20,6 @@ REPO_DIR = BACKEND_DIR.parent
 def _path(value: str | None, default: Path) -> Path:
     return Path(value).expanduser().resolve() if value else default
 
-
-# The database is a single file. On a server it belongs outside the repo, in a
-# directory that gets backed up, hence the env var.
-DB_PATH = _path(os.getenv("FINANZAS_DB"), BACKEND_DIR / "finance.db")
 
 # Where `npm run build` puts the frontend. If it is missing the API still
 # serves; only the browser UI is unavailable.
@@ -53,10 +49,31 @@ def _origins() -> list[str]:
 
 CORS_ORIGINS = _origins()
 
-# The database connection. Leave it unset to keep using the local SQLite file,
-# which is what development and the test suite do. In the cloud it points at the
-# managed PostgreSQL, because a free-tier app host has no persistent disk.
+# The database connection. Required: there is no default, because a wrong default
+# is worse than a clear failure. In development it is the container from
+# `docker compose up -d`; in the cloud, the managed PostgreSQL.
+#
+#   docker compose up -d
+#   DATABASE_URL=postgresql+psycopg://finanzas:finanzas@127.0.0.1:5434/finanzas uvicorn app.main:app
 DATABASE_URL = os.getenv("DATABASE_URL", "")
+
+
+def _database_url() -> str:
+    """The connection string, or a message that says what to do.
+
+    Read at call time rather than at import: `config` is imported by everything,
+    and a missing variable should point at the one thing to fix instead of taking
+    the whole process down with a bare `AttributeError` deep inside the engine.
+    """
+    if not DATABASE_URL:
+        raise RuntimeError(
+            "Falta DATABASE_URL.\n\n"
+            "  En desarrollo:  docker compose up -d\n"
+            "                  y exportá "
+            "DATABASE_URL=postgresql+psycopg://finanzas:finanzas@127.0.0.1:5434/finanzas\n"
+            "  En la nube:      la variable ya está puesta en Render."
+        )
+    return DATABASE_URL
 
 # Render and Vercel are different sites, so the session cookie has to be
 # SameSite=None to survive the cross-origin call. Browsers only accept that

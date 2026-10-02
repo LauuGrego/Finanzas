@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 
-from sqlalchemy import create_engine, event, func, select, text
+from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app import config
@@ -25,36 +25,30 @@ def normalize_url(url: str) -> str:
     return url
 
 
-if config.DATABASE_URL:
-    url = normalize_url(config.DATABASE_URL)
+def _is_remote(url: str) -> bool:
+    """Whether the server is not on this machine.
 
-    # PostgreSQL en la nube. `pre_ping` evita que una conexión muerta por el
-    # pooler de Supabase se convierta en un error 500 para el usuario.
-    engine = create_engine(
-        url,
-        pool_pre_ping=True,
-        pool_size=5,
-        max_overflow=5,
-        # El pooler de Supabase corta conexiones ociosas; al reconectar hay que
-        # renegociar TLS o el servidor rechaza la sesión.
-        connect_args={"sslmode": "require"} if "sslmode=" not in url else {},
-    )
-else:
-    # SQLite local. El path sale de config para que un deploy pueda apuntarlo
-    # a un disco persistente.
-    config.DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    engine = create_engine(
-        f"sqlite:///{config.DB_PATH}", connect_args={"check_same_thread": False}
-    )
+    `sslmode=require` against the container refuses to start, because it has no
+    certificate to offer. It is what makes the Supabase connection survive the
+    pooler reconnecting, so it stays on for anything that is not localhost.
+    """
+    return not any(host in url for host in ("localhost", "127.0.0.1", "::1"))
 
-    @event.listens_for(engine, "connect")
-    def _configure_sqlite(dbapi_connection, _connection_record) -> None:
-        # foreign_keys no viene activado en SQLite, y sin esto el ON DELETE
-        # CASCADE de los models no existe.
-        cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.execute("PRAGMA journal_mode=WAL")
-        cursor.close()
+
+url = normalize_url(config._database_url())
+
+# `pre_ping` evita que una conexión muerta por el pooler de Supabase se convierta
+# en un error 500 para el usuario. El pool chico es por lo mismo: Supabase corta
+# conexiones ociosas y hay que poder reconectar sin comerse el límite.
+engine = create_engine(
+    url,
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=5,
+    # Al reconectar hay que renegociar TLS o el servidor rechaza la sesión. Solo
+    # en la nube: el Postgres local no lo pide y con `require` no arranca.
+    connect_args={"sslmode": "require"} if "sslmode=" not in url and _is_remote(url) else {},
+)
 
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
@@ -76,17 +70,19 @@ def sync_sequences(db: Session) -> None:
 
     `create_all` no lo arregla: no toca las tablas que ya existen. Y el plan no
     tiene paso de migración, así que la reparación va en el arranque: una consulta
-    por tabla, solo en Postgres, y solo si la secuencia quedó atrás.
+    por tabla, y solo si la secuencia quedó atrás.
 
     `setval(..., false)` para que el próximo `nextval` devuelva exactamente el
     valor puesto: con el default `true` devolvería `max + 2` y se saltaría un id.
+    Como esto corre en cada arranque, perder un id por tabla por arranque sería
+    perderlos para siempre.
 
     Nunca retrocede. Adelantarla es lo que arregla; bajarla podría regalar un id
-    que otra sesión ya tiene asignado y el problema volvería.
+    que otra sesión ya tiene asignado y el problema volvería. El `last_value` de
+    `pg_sequences` es NULL mientras la secuencia no entregó ningún valor, y en
+    ese estado bajarla es inofensivo por definición: si no entregó nada, no hay
+    id que regalar.
     """
-    if engine.dialect.name != "postgresql":
-        return
-
     for tabla in Base.metadata.sorted_tables:
         secuencia = db.scalar(
             text("SELECT pg_get_serial_sequence(:tabla, 'id')"), {"tabla": tabla.name}
