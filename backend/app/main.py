@@ -15,7 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import auth, config
-from app.database import Base, SessionLocal, engine
+from app.database import Base, SessionLocal, engine, sync_sequences
 from app.enums import AccountType, CategoryType
 from app.models import Account, Category
 from app.routers import (
@@ -80,6 +80,16 @@ def seed_defaults(db: Session, *, with_accounts: bool = True) -> None:
 async def lifespan(_app: FastAPI):
     Base.metadata.create_all(bind=engine)
     with SessionLocal() as db:
+        # Antes de la siembra: los defaults también son inserts, y con la
+        # secuencia atrás el arranque se caería solo. Va envuelta porque que la
+        # reparación falle no puede dejar la API sin levantar: se avisa en el log
+        # con el traceback entero y se sigue, que es el estado de antes del
+        # arreglo. `Exception` y no `SQLAlchemyError` porque el objetivo es que
+        # nada de lo que salga de ahí tumbe el arranque.
+        try:
+            sync_sequences(db)
+        except Exception:
+            logger.exception("No se pudieron sincronizar las secuencias de Postgres")
         seed_defaults(db)
     yield
 

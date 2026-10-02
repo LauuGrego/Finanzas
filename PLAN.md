@@ -1405,7 +1405,7 @@ montón de cosas que el plan no pedía.
 - **Todo bajo `/api`**, en un solo proceso: FastAPI sirve la API y el frontend
   compilado. También soporta deploy partido (Vercel + Render).
 - **Deploy gratuito**: Supabase + Render + Vercel, en el tier gratis.
-- **Tests**: 220, cuando el plan hablaba de "no exagerar".
+- **Tests**: 223, cuando el plan hablaba de "no exagerar".
 - **Los montos se leen con `parseMoney`**, no con `Number(x.replace(',', '.'))`.
   Los campos dicen `placeholder="500.000"` y `Number('500.000')` es `NaN`: el
   parseo estaba mal en los siete lugares donde se repetía y el error que

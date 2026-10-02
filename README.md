@@ -310,6 +310,32 @@ No es una columna más en `recurrings` porque agregarle una columna a una tabla
 que ya existe es una migración, y en el tier gratis no hay paso de migración:
 `create_all` crea las tablas que faltan y nada más. Una tabla nueva es gratis.
 
+**Sin migraciones hay que reparar, y por eso el arranque repara.**
+
+Postgres numera los `id` con una secuencia que vive aparte de la tabla, y las dos
+se desincronizan en silencio: si alguna vez se insertó una fila con el `id` puesto a
+mano —un `INSERT` en la consola de Supabase, un dump restaurado sobre una base que
+ya tenía datos— la secuencia sigue creyendo que la tabla está vacía y el primer
+insert real revienta con
+`duplicate key value violates unique constraint "accounts_pkey"`. Le pasó: una
+cuenta nueva no se podía guardar en producción.
+
+`create_all` no lo arregla, porque no toca las tablas que ya existen. Así que
+`sync_sequences` (`backend/app/database.py`) se adelanta al `MAX(id)` de cada tabla
+en cada arranque, una consulta por tabla, solo en Postgres, y solo si la secuencia
+quedó atrás: nunca la retrocede. Corre antes de `seed_defaults` porque los defaults
+también son inserts, y con la secuencia atrás el arranque se caería solo.
+
+Va envuelta en un `try`: que la reparación falle no puede dejar la API sin
+levantar. Se avisa con el traceback entero en el log y se sigue, que es
+exactamente el estado de antes de que existiera.
+
+SQLite no tiene secuencias —da `MAX(id) + 1` y no se puede desincronizar—, así que
+`tests/test_sequences.py` no simula el Desincronizado: prueba lo que sí es
+observable sin servidor, que es el orden del arranque, que un fallo no lo frena, y
+que en SQLite la función no hace nada. El SQL se compila contra el dialecto de
+Postgres sin conectarse, igual que el resto de `test_postgres.py`.
+
 El bloque de próximos compromisos del dashboard mezcla recurrentes y cuotas en
 una sola lista, ordenada por fecha, y corta después de mezclar: si cortara antes,
 un mes con muchas cuotas podría sacar a todos los recurrentes de la lista.
@@ -490,14 +516,14 @@ backend/
     main.py            FastAPI, login, sirve el frontend compilado
     auth.py            Cookie firmada con HMAC y HTTP Basic
     config.py          Variables de entorno leídas una vez al arrancar
-    database.py        Engine SQLite, PRAGMAs, sesión por request
+    database.py        Engine SQLite/Postgres, PRAGMAs, sesión por request, sync_sequences
     money.py           Centavos <-> pesos (el único lugar donde se convierte)
     enums.py           Tipos de movimiento, categoría y cuenta
     models/            Tablas SQLAlchemy
     schemas/           Contrato de la API (Pydantic)
     routers/           Endpoints
     services/          Lógica financiera
-  tests/               220 tests
+  tests/               223 tests
 frontend/
   src/
     pages/             Dashboard, Agenda, Movimientos, Cuentas, Recurrentes, Presupuestos, Metas, Estadísticas, Config
