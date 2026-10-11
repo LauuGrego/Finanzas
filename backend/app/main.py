@@ -248,7 +248,7 @@ for router in (
     app.include_router(router.router, prefix="/api")
 
 
-@app.get("/api/health", tags=["meta"])
+@app.api_route("/api/health", methods=["GET", "HEAD"], tags=["meta"])
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
