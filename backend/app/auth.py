@@ -65,10 +65,26 @@ def issue_cookie(response: Response, *, secure: bool) -> None:
         secure=secure,
         path="/",
     )
+    if secure:
+        _add_partitioned(response)
 
 
 def clear_cookie(response: Response, *, secure: bool) -> None:
     response.delete_cookie(COOKIE, path="/", samesite="none" if secure else "lax", secure=secure)
+    if secure:
+        _add_partitioned(response)
+
+
+def _add_partitioned(response: Response) -> None:
+    """Add CHIPS (Partitioned) attribute for cross-site cookies in modern Chrome/Android.
+
+    Chrome restricts third-party cookies unless they have Partitioned set.
+    Starlette does not yet expose partitioned=True on set_cookie, so append it to
+    the Set-Cookie header when secure is on.
+    """
+    cookie_header = response.headers.get("set-cookie")
+    if cookie_header and "Partitioned" not in cookie_header:
+        response.headers["set-cookie"] = f"{cookie_header}; Partitioned"
 
 
 def verify(token: str | None) -> bool:

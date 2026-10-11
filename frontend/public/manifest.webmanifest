@@ -1,0 +1,19 @@
+{
+  "name": "Agenda Financiera",
+  "short_name": "Finanzas",
+  "description": "Agenda financiera personal: cuentas, movimientos y saldos.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c0b0a",
+  "theme_color": "#0c0b0a",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -67,13 +67,37 @@ let verifying: Promise<void> | null = null
  * says the session is alive, the request was what failed, not the key, and the
  * page reports it like any other error instead of demanding the key again.
  */
+function withTimeout(
+  init?: RequestInit,
+  timeoutMs = 30_000,
+): { init: RequestInit; cleanup: () => void } {
+  const controller = new AbortController()
+  const timer = setTimeout(() => {
+    controller.abort(new Error('Tiempo de espera agotado'))
+  }, timeoutMs)
+
+  if (init?.signal) {
+    init.signal.addEventListener('abort', () => {
+      clearTimeout(timer)
+      controller.abort(init.signal?.reason)
+    })
+  }
+
+  return {
+    init: { ...init, signal: controller.signal },
+    cleanup: () => clearTimeout(timer),
+  }
+}
+
 function lockTheDoor(): void {
   if (verifying) return
   verifying = (async () => {
+    const { init, cleanup } = withTimeout(undefined, 15_000)
     try {
       const response = await fetch(`${BASE}/session`, {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        ...init,
       })
       const session = response.ok ? await response.json() : null
       if (session?.authenticated !== true) onUnauthorized?.()
@@ -82,6 +106,7 @@ function lockTheDoor(): void {
       // Unreachable is not the same as closed: locking here is what turns an
       // outage into a door that does not open.
     } finally {
+      cleanup()
       verifying = null
     }
   })()
@@ -95,14 +120,28 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    // The session lives in a cookie. Without this it is not sent to a
-    // different origin, and Vercel is a different origin than Render.
-    credentials: 'include',
-    ...init,
-  })
+async function request<T>(path: string, init?: RequestInit, timeoutMs = 30_000): Promise<T> {
+  const { init: reqInit, cleanup } = withTimeout(init, timeoutMs)
+  let response: Response
+  try {
+    response = await fetch(`${BASE}${path}`, {
+      headers: { 'Content-Type': 'application/json' },
+      // The session lives in a cookie. Without this it is not sent to a
+      // different origin, and Vercel is a different origin than Render.
+      credentials: 'include',
+      ...reqInit,
+    })
+  } catch (err: unknown) {
+    if (
+      err instanceof Error &&
+      (err.name === 'AbortError' || err.message === 'Tiempo de espera agotado')
+    ) {
+      throw new ApiError('El servidor tardó demasiado en responder (tiempo de espera agotado)', 408)
+    }
+    throw err
+  } finally {
+    cleanup()
+  }
 
   if (!response.ok) {
     let message = 'Ocurrió un error'
@@ -197,7 +236,8 @@ export const api = {
      * the server sleeps between uses, so there is no other moment where this
      * would ever run. Safe to call again, it writes nothing if nothing is due.
      */
-    generate: () => request<{ generated: number }>('/recurring/generate', { method: 'POST' }),
+    generate: () =>
+      request<{ generated: number }>('/recurring/generate', { method: 'POST' }, 15_000),
   },
   installments: {
     list: (includeInactive = false) =>
@@ -214,7 +254,8 @@ export const api = {
      * Same deal as the recurring catch-up: called once when the app opens,
      * because the server sleeps between uses and nothing else would run it.
      */
-    generate: () => request<{ generated: number }>('/installments/generate', { method: 'POST' }),
+    generate: () =>
+      request<{ generated: number }>('/installments/generate', { method: 'POST' }, 15_000),
   },
   budgets: {
     list: (period?: string) => request<BudgetList>(`/budgets${query({ period })}`),
@@ -267,14 +308,22 @@ export const api = {
     month: (month: string) => request<Record<string, DayDetail>>(`/calendar/month${query({ month })}`),
   },
   session: {
-    /** Always answers 200, so this is a question, not an error. */
+    /** Always answers 200, so this is a question, not an error. Allowed 75s to tolerate Render cold start. */
     check: () =>
-      request<{ authenticated: boolean; storage: string; password_required: boolean }>('/session'),
+      request<{ authenticated: boolean; storage: string; password_required: boolean }>(
+        '/session',
+        undefined,
+        75_000,
+      ),
     login: (password: string) =>
-      request<{ ok: boolean }>('/login', {
-        method: 'POST',
-        body: JSON.stringify({ password }),
-      }),
-    logout: () => request<{ ok: boolean }>('/logout', { method: 'POST' }),
+      request<{ ok: boolean }>(
+        '/login',
+        {
+          method: 'POST',
+          body: JSON.stringify({ password }),
+        },
+        45_000,
+      ),
+    logout: () => request<{ ok: boolean }>('/logout', { method: 'POST' }, 15_000),
   },
 }

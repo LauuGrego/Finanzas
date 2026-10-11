@@ -24,6 +24,8 @@ export default function App() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null)
   // Whether the scheduled catch-up already ran this session.
   const [caughtUp, setCaughtUp] = useState(false)
+  const [sessionError, setSessionError] = useState<string | null>(null)
+  const [checkKey, setCheckKey] = useState(0)
 
   useEffect(() => {
     // A session can expire while the app is open, from any page. Registering
@@ -39,15 +41,16 @@ export default function App() {
       .then((session) => {
         if (alive) setAuthenticated(session.authenticated)
       })
-      .catch(() => {
-        // The API is unreachable or refused the call. Either way there is
-        // nothing to show but the door.
-        if (alive) setAuthenticated(false)
+      .catch((err: unknown) => {
+        if (!alive) return
+        const message =
+          err instanceof Error ? err.message : 'No pudimos verificar la conexión con el servidor'
+        setSessionError(message)
       })
     return () => {
       alive = false
     }
-  }, [])
+  }, [checkKey])
 
   useEffect(() => {
     // Register what came due, once, right when the app opens. This is the only
@@ -56,6 +59,11 @@ export default function App() {
     // first screen would show a balance that is one Netflix out of date.
     if (authenticated !== true || caughtUp) return
     let alive = true
+    // Safety timeout: catch-up generation must never hold the app hostage forever.
+    const timer = setTimeout(() => {
+      if (alive) setCaughtUp(true)
+    }, 8_000)
+
     // Recurring rules and installments catch up together, so the app waits once
     // and not twice before the first screen.
     Promise.all([api.recurring.generate(), api.installments.generate()])
@@ -63,18 +71,47 @@ export default function App() {
       // are still waiting and the next time the app opens it tries again.
       .catch(() => undefined)
       .finally(() => {
+        clearTimeout(timer)
         if (alive) setCaughtUp(true)
       })
     return () => {
       alive = false
+      clearTimeout(timer)
     }
   }, [authenticated, caughtUp])
 
   const signedIn = useCallback(() => setAuthenticated(true), [])
+  const retrySession = useCallback(() => {
+    setSessionError(null)
+    setCheckKey((k) => k + 1)
+  }, [])
+  const goToLogin = useCallback(() => {
+    setSessionError(null)
+    setAuthenticated(false)
+  }, [])
 
-  if (authenticated === null) return <LoginLoading />
+  if (authenticated === null) {
+    return (
+      <LoginLoading
+        label="Verificando la sesión"
+        onRetry={retrySession}
+        onSkip={goToLogin}
+        skipLabel="Ingresar con clave"
+        error={sessionError}
+      />
+    )
+  }
   if (!authenticated) return <Login onSignedIn={signedIn} />
-  if (!caughtUp) return <LoginLoading />
+  if (!caughtUp) {
+    return (
+      <LoginLoading
+        label="Sincronizando movimientos…"
+        sublabel="Actualizando movimientos recurrentes y cuotas pendientes"
+        onSkip={() => setCaughtUp(true)}
+        skipLabel="Continuar a la app"
+      />
+    )
+  }
 
   return (
     <Layout>
