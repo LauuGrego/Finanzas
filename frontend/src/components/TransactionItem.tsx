@@ -27,7 +27,6 @@ export function TransactionItem({
       ? 'text-income'
       : 'text-expense'
 
-  // Only spend the second line on details that are actually shown.
   const meta = [
     showDate ? formatDate(transaction.date) : null,
     transaction.category?.name,
@@ -67,9 +66,6 @@ export function TransactionItem({
         {money(Math.abs(transaction.amount))}
       </p>
 
-      {/* Editar solo para lo que se puede editar de a uno. Borrar se muestra
-          siempre: una transferencia mal hecha tiene que poder deshacerse, y son
-          dos movimientos que el backend borra juntos. */}
       {(onEdit || onDelete) && (
         <div className="flex gap-0.5 shrink-0">
           {onEdit && !isTransfer && (

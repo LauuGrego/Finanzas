@@ -17,8 +17,8 @@ from sqlalchemy.orm import Session
 from app.enums import TransactionType
 from app.models import Account, Category, Transaction
 
-# How many future commitments the dashboard shows. The plan drew three.
 UPCOMING_LIMIT = 5
+
 
 
 def advance_month(day: date, anchor_day: int) -> date:

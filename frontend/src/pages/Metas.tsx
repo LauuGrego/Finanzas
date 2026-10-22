@@ -61,7 +61,6 @@ export function Metas() {
       setError('Poné un monto mayor a cero')
       return
     }
-    // Vacio es cero y no un error: casi toda meta arranca en cero.
     const current = parseMoney(String(form.get('current_amount') ?? ''))
     if (Number.isNaN(current) || current < 0) {
       setError('Lo juntado no puede ser negativo')
@@ -132,8 +131,6 @@ export function Metas() {
         )}
       </StateWrapper>
 
-      {/* Sólo tiene sentido offercerlo cuando hay algo pausado: con la lista
-          llena de metas activas es un control que no hace nada. */}
       {!showPaused && (
         <label className="flex items-center gap-2.5 cursor-pointer">
           <input

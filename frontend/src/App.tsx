@@ -15,21 +15,15 @@ import { Settings } from './pages/Settings'
 import { Transactions } from './pages/Transactions'
 import { api, setUnauthorizedHandler } from './services/api'
 
-// Recharts is only needed here, so the charting code stays out of the first load.
 const Stats = lazy(() => import('./pages/Stats').then((module) => ({ default: module.Stats })))
 
 export default function App() {
-  // `null` means "still asking", which is not the same as "locked out": showing
-  // the login form before the answer arrives would flash it on every reload.
   const [authenticated, setAuthenticated] = useState<boolean | null>(null)
-  // Whether the scheduled catch-up already ran this session.
   const [caughtUp, setCaughtUp] = useState(false)
   const [sessionError, setSessionError] = useState<string | null>(null)
   const [checkKey, setCheckKey] = useState(0)
 
   useEffect(() => {
-    // A session can expire while the app is open, from any page. Registering
-    // this once means no screen has to handle the 401 itself.
     setUnauthorizedHandler(() => setAuthenticated(false))
     return () => setUnauthorizedHandler(null)
   }, [])
@@ -53,22 +47,13 @@ export default function App() {
   }, [checkKey])
 
   useEffect(() => {
-    // Register what came due, once, right when the app opens. This is the only
-    // moment it can happen: the free tier sleeps the server between uses, so
-    // there is no cron to fall back on. It runs before anything renders, or the
-    // first screen would show a balance that is one Netflix out of date.
     if (authenticated !== true || caughtUp) return
     let alive = true
-    // Safety timeout: catch-up generation must never hold the app hostage forever.
     const timer = setTimeout(() => {
       if (alive) setCaughtUp(true)
     }, 8_000)
 
-    // Recurring rules and installments catch up together, so the app waits once
-    // and not twice before the first screen.
     Promise.all([api.recurring.generate(), api.installments.generate()])
-      // A failure here must not keep the app shut. Nothing was lost: the rules
-      // are still waiting and the next time the app opens it tries again.
       .catch(() => undefined)
       .finally(() => {
         clearTimeout(timer)

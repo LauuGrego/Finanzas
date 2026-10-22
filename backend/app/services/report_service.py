@@ -21,7 +21,6 @@ def dashboard(db: Session, period: str | None = None) -> DashboardRead:
         available_balance=to_pesos(tx.total_balance(db)),
         month_summary=tx.summarize(db, start, end),
         expenses_by_category=tx.expenses_by_category(db, start, end),
-        # filter_transactions already returns TransactionRead objects.
         recent_transactions=tx.filter_transactions(db, limit=8).items,
         upcoming=_upcoming(db),
     )
@@ -64,16 +63,11 @@ def balance_evolution(db: Session, period: str, months: int) -> list[MonthCompar
     periods = [shift_month(period, -offset) for offset in range(months - 1, -1, -1)]
 
     first_start, _ = month_bounds(periods[0])
-    # Solo los movimientos de antes de la ventana: los saldos iniciales de ese
-    # tramo los trae la linea siguiente. Si este resumen los incluyera, cada peso
-    # de arranque de las cuentas viejas se sumaria dos veces y la curva terminaria
-    # en el doble del saldo real.
     before, _ = tx.summarize_cents(
         db, date.min, first_start - timedelta(days=1), include_initial=False
     )
-    # Y solo los de las cuentas que ya existian: las que se crean dentro de la
-    # ventana entran por `summarize_cents` como ingreso de su mes.
     running = tx.initial_balances_total(db, created_before=first_start) + before
+
 
     rows = []
     for item in periods:

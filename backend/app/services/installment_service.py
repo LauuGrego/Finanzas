@@ -37,8 +37,6 @@ def generate_due(db: Session, today: date | None = None) -> int:
             .where(
                 Installment.active.is_(True),
                 Installment.next_date <= today,
-                # A finished plan stays in the table so the purchase is still
-                # readable, but it is not due for anything ever again.
                 Installment.paid_count < Installment.total_count,
             )
             .order_by(Installment.next_date)
@@ -49,10 +47,6 @@ def generate_due(db: Session, today: date | None = None) -> int:
 
     written = 0
     for plan in due:
-        # Four months without opening the app means four charges, each on the
-        # day it fell due. The count is what ends the plan; the loop condition
-        # carries it so the limit holds on its own, not only because the query
-        # kept finished plans out of the way.
         while plan.next_date <= today and plan.paid_count < plan.total_count:
             write_occurrence(
                 db,
@@ -102,8 +96,6 @@ def upcoming(
         label = plan.description or (category.name if category else "Cuota")
         items.append(
             UpcomingItem(
-                # Which installment it is belongs in the description: "la TV" is
-                # not the news, "la TV, cuota 7 de 12" is.
                 date=plan.next_date,
                 description=f"{label} · cuota {plan.paid_count + 1} de {plan.total_count}",
                 amount=to_pesos(plan.amount),
@@ -133,8 +125,6 @@ def to_read(plan: Installment) -> InstallmentRead:
         paid_count=plan.paid_count,
         current_installment=min(plan.paid_count + 1, plan.total_count),
         remaining=remaining,
-        # The whole purchase and what is still owed, both derived. Not stored,
-        # for the same reason an account balance is not.
         total_amount=to_pesos(plan.amount * plan.total_count),
         total_pending=to_pesos(plan.amount * remaining),
         finished=plan.paid_count >= plan.total_count,

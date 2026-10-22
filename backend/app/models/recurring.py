@@ -33,23 +33,15 @@ class Recurring(Base, TimestampMixin):
         ForeignKey("categories.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     description: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    # Integer centavos, always positive. See app/money.py
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
     frequency: Mapped[Frequency] = mapped_column(String(10), nullable=False)
-    # The day the next one is due. Generation moves this forward as it goes, so
-    # after a run it is always in the future.
     next_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
-    # The day of the month the rule was set up for, kept separately so a short
-    # month does not drag the rule with it. Set on the 31st, February clamps to
-    # the 28th, and March has to go back to the 31st: advancing straight from
-    # `next_date` would settle on the 28th forever.
     anchor_day: Mapped[int] = mapped_column(nullable=False)
-    # How many movements this rule has produced. Kept so the UI can say "van 14"
-    # without counting the table, and to spot a rule that stopped firing.
     times_charged: Mapped[int] = mapped_column(nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )
+
 
     account = relationship("Account")
     category = relationship("Category")

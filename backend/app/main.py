@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hmac
 import logging
 import secrets
@@ -29,9 +30,9 @@ from app.routers import (
     transactions,
     transfers,
 )
+from app.services import reminder_service
 
-# Colours pulled toward the armour palette: copper, steel, arc cyan, gold.
-# Ten hues that stay separable inside a pie chart, none of them neon.
+# Categorías y cuentas por defecto
 DEFAULT_CATEGORIES: list[tuple[str, CategoryType, str]] = [
     ("Comida", CategoryType.EXPENSE, "#d98c2b"),
     ("Transporte", CategoryType.EXPENSE, "#8b98a5"),
@@ -45,14 +46,12 @@ DEFAULT_CATEGORIES: list[tuple[str, CategoryType, str]] = [
     ("Otros ingresos", CategoryType.INCOME, "#c9707f"),
 ]
 
-# The three places money actually sits: physical, bank and virtual wallet.
-# Starting balances are zero on purpose: whatever was there before the app
-# existed belongs in `initial_balance` the first time the user touches it.
 DEFAULT_ACCOUNTS: list[tuple[str, AccountType]] = [
     ("Banco", AccountType.BANK),
     ("Billetera virtual", AccountType.WALLET),
     ("Efectivo", AccountType.CASH),
 ]
+
 
 
 def seed_defaults(db: Session, *, with_accounts: bool = True) -> None:
@@ -80,18 +79,32 @@ def seed_defaults(db: Session, *, with_accounts: bool = True) -> None:
 async def lifespan(_app: FastAPI):
     Base.metadata.create_all(bind=engine)
     with SessionLocal() as db:
-        # Antes de la siembra: los defaults también son inserts, y con la
-        # secuencia atrás el arranque se caería solo. Va envuelta porque que la
-        # reparación falle no puede dejar la API sin levantar: se avisa en el log
-        # con el traceback entero y se sigue, que es el estado de antes del
-        # arreglo. `Exception` y no `SQLAlchemyError` porque el objetivo es que
-        # nada de lo que salga de ahí tumbe el arranque.
         try:
             sync_sequences(db)
         except Exception:
             logger.exception("No se pudieron sincronizar las secuencias de Postgres")
         seed_defaults(db)
-    yield
+        try:
+            reminder_service.check_and_send_reminders(db)
+        except Exception:
+            logger.exception("No se pudieron verificar los recordatorios en el arranque")
+
+    async def _periodic_reminders_worker():
+        while True:
+            try:
+                await asyncio.sleep(3600)
+                with SessionLocal() as db:
+                    reminder_service.check_and_send_reminders(db)
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                logger.exception("Error en la verificación periódica de recordatorios")
+
+    worker_task = asyncio.create_task(_periodic_reminders_worker())
+    try:
+        yield
+    finally:
+        worker_task.cancel()
 
 
 app = FastAPI(
@@ -101,8 +114,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Endpoints that have to answer before you can log in, or to find out that you
-# need to. Everything else waits behind the middleware.
 OPEN_PATHS = frozenset(
     {"/api/health", "/api/login", "/api/logout", "/api/session", "/docs", "/openapi.json"}
 )
@@ -121,24 +132,13 @@ def is_secure(request: Request) -> bool:
 logger = logging.getLogger("finanzas")
 
 
-# Se registra PRIMERO a proposito, asi que queda como el middleware mas interno:
-# todo lo que hay del router hacia abajo esta dentro de el, y la respuesta que
-# arma vuelve a salir por require_session y por CORSMiddleware, que es lo que le
-# pone access-control-allow-origin.
-#
-# Sin esto, una excepcion sube hasta ServerErrorMiddleware, que esta por fuera
-# de CORSMiddleware: el 500 vuelve sin cabeceras de CORS, el navegador no se lo
-# entrega a la pagina y del lado del JS lo unico que aparece es "Failed to
-# fetch". Se pierden el status, el path y el tipo de error, que es justo lo que
-# hace que un 500 termine siendo una pregunta en vez de una linea de log.
+# Middleware
 @app.middleware("http")
 async def readable_failures(request: Request, call_next):
     try:
         return await call_next(request)
     except Exception:
         logger.exception("Fallo sin manejar en %s %s", request.method, request.url.path)
-        # El detalle del crash va al log, no a la respuesta: la respuesta la lee
-        # cualquiera que conozca la URL.
         return JSONResponse(
             status_code=500,
             content={"detail": "Error interno del servidor."},
@@ -156,6 +156,11 @@ async def require_session(request: Request, call_next):
     if not config.PASSWORD or request.url.path in OPEN_PATHS:
         return await call_next(request)
 
+    if config.CRON_SECRET:
+        token = request.headers.get("x-cron-secret") or request.query_params.get("cron_secret")
+        if token and hmac.compare_digest(token, config.CRON_SECRET):
+            return await call_next(request)
+
     if auth.verify(request.cookies.get(auth.COOKIE)) or auth.check_basic(
         request.headers.get("authorization", "")
     ):
@@ -167,19 +172,7 @@ async def require_session(request: Request, call_next):
     )
 
 
-# El frontend corre en otro dominio en el deploy partido, asi que CORS hace
-# falta ahi, no solo en desarrollo. allow_credentials obliga a nombrar los
-# origins explicitos: el navegador rechaza el wildcard en una request que lleva
-# la cookie de sesion.
-#
-# Esto va despues del middleware de arriba a proposito, y el orden no es
-# cosmetico. Cada add_middleware se inserta al principio de la pila, asi que el
-# ultimo que se registra es el de mas afuera. Con CORS registrado primero,
-# require_session queda por fuera y su 401 se devuelve sin pasar por CORS: la
-# respuesta llega sin access-control-allow-origin y el navegador no la deja
-# leer. Del lado del JS eso se ve como "Fetch failed" y no como un 401, el
-# manejador de sesion vencida nunca se entera y la app se queda mostrando
-# listas vacias en vez de volver al login.
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.CORS_ORIGINS,
@@ -187,6 +180,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 
 class LoginRequest(BaseModel):
@@ -232,8 +226,7 @@ def session(request: Request) -> dict[str, str | bool]:
     }
 
 
-# The API lives under /api so the built frontend can own the root and every
-# other path. The Vite dev server proxies /api to here without rewriting it.
+# Routers
 for router in (
     accounts,
     categories,
@@ -253,10 +246,7 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-# --------------------------------------------------------------------------- #
 # The frontend
-# --------------------------------------------------------------------------- #
-
 STATIC = config.STATIC_DIR
 
 
@@ -277,17 +267,15 @@ def _spa_response(request: Request) -> Response:
 
     relative = request.path_params.get("path", "")
     candidate = (STATIC / relative).resolve()
-    # Refuse anything that escapes the build directory via ../.
     if relative and candidate.is_relative_to(STATIC) and candidate.is_file():
         return FileResponse(candidate)
 
-    # The one file that must never be cached: it points at the hashed assets.
     return FileResponse(index, headers={"Cache-Control": "no-cache"})
 
 
 if (STATIC / "assets").is_dir():
-    # Hashed filenames, so they can be cached hard.
     app.mount("/assets", StaticFiles(directory=STATIC / "assets"), name="assets")
+
 
 
 @app.get("/{path:path}", include_in_schema=False)

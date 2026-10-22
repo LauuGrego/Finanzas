@@ -4,6 +4,16 @@ from app.models.category import Category
 from app.models.goal import Goal
 from app.models.installment import Installment
 from app.models.recurring import Recurring
+from app.models.recurring_reminder import RecurringReminder
 from app.models.transaction import Transaction
 
-__all__ = ["Account", "Budget", "Category", "Goal", "Installment", "Recurring", "Transaction"]
+__all__ = [
+    "Account",
+    "Budget",
+    "Category",
+    "Goal",
+    "Installment",
+    "Recurring",
+    "RecurringReminder",
+    "Transaction",
+]

@@ -26,8 +26,6 @@ EXPENSE = TransactionType.EXPENSE
 # --------------------------------------------------------------------------- #
 def account_balance(db: Session, account: Account) -> int:
     """Saldo = saldo inicial + ingresos - gastos."""
-    # GROUP BY is required: without it the aggregate collapses every row into one
-    # and `type` would take an arbitrary value.
     movements = db.execute(
         select(Transaction.type, func.sum(Transaction.amount))
         .where(Transaction.account_id == account.id)
@@ -57,9 +55,6 @@ def initial_balances_total(db: Session, created_before: date | None = None) -> i
         Account.active.is_(True)
     )
     if created_before is not None:
-        # `created_at` is a timestamp and the range is over dates, so the
-        # comparison has to be made against the following midnight or an account
-        # created on the last day of the period would fall outside.
         query = query.where(Account.created_at < datetime.combine(created_before, time.min))
     return db.scalar(query) or 0
 
@@ -107,8 +102,6 @@ def summarize_cents(
     )
     if account_id is not None:
         query = query.where(Transaction.account_id == account_id)
-    # GROUP BY keeps incomes and expenses apart; without it SQL would merge every
-    # row into a single one and report a meaningless type.
     query = query.group_by(Transaction.type)
 
     income = expense = 0
@@ -154,7 +147,6 @@ def expenses_by_category(
             Transaction.type == EXPENSE,
             Transaction.date >= start,
             Transaction.date <= end,
-            # A transfer out of an account is not a category expense.
             Transaction.transfer_id.is_(None),
         )
         .group_by(Transaction.category_id, Category.name, Category.color)
@@ -353,10 +345,6 @@ def apply_update(db: Session, transaction: Transaction, changes: dict) -> Transa
 
     amount = to_cents(changes["amount"]) if "amount" in changes else transaction.amount
     if merged["type"] == EXPENSE:
-        # El saldo que se compara es el de la cuenta de destino. Si el movimiento
-        # no se cambia de cuenta, hay que devolverle lo que este mismo movimiento
-        # ya le habia descontado; si se muda de cuenta, el saldo de la nueva
-        # todavia no lo tiene descontado.
         already_counted = 0
         if merged["account_id"] == transaction.account_id:
             already_counted = (
@@ -389,14 +377,8 @@ def create_transfer(db: Session, payload: dict) -> tuple[str, list[Transaction]]
     )
     to_account, _ = resolve_references(db, payload["to_account_id"], None, INCOME)
 
-    # A UUID, not something derived from the account ids and the amount. The
-    # derived version could exceed the 36 characters of the column on large
-    # amounts, which SQLite ignored but PostgreSQL rejects, and two identical
-    # transfers in a row produced the same value.
     transfer_id = str(uuid4())
     amount = to_cents(payload["amount"])
-    # La pata de salida es un gasto de la cuenta de origen, asi que es el mismo
-    # control que un gasto: no se puede mover dinero que no esta.
     ensure_sufficient_funds(db, from_account, amount)
     description = payload.get("description") or f"Transferencia {from_account.name} → {to_account.name}"
 

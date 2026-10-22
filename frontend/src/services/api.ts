@@ -102,9 +102,6 @@ function lockTheDoor(): void {
       const session = response.ok ? await response.json() : null
       if (session?.authenticated !== true) onUnauthorized?.()
     } catch {
-      // The API could not be reached, so there is no evidence the session ended.
-      // Unreachable is not the same as closed: locking here is what turns an
-      // outage into a door that does not open.
     } finally {
       cleanup()
       verifying = null
@@ -126,8 +123,6 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs = 30_000):
   try {
     response = await fetch(`${BASE}${path}`, {
       headers: { 'Content-Type': 'application/json' },
-      // The session lives in a cookie. Without this it is not sent to a
-      // different origin, and Vercel is a different origin than Render.
       credentials: 'include',
       ...reqInit,
     })
@@ -149,11 +144,7 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs = 30_000):
       const body = await response.json()
       message = typeof body.detail === 'string' ? body.detail : formatDetail(body.detail)
     } catch {
-      // The response was not JSON; keep the generic message.
     }
-    // A 401 means the request was refused. Whether that is an expired session or
-    // just this call failing is not something the response tells us, so it gets
-    // checked against the backend before the door is closed.
     if (response.status === 401 && !isOpenPath(path)) lockTheDoor()
     throw new ApiError(message, response.status)
   }

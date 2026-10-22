@@ -168,9 +168,6 @@ export function Dashboard() {
 
             <Card
               title="Próximos compromisos"
-              // Siempre con enlace, incluso sin nada programado: la barra de
-              // abajo en el móvil no tiene esta pantalla, así que la home es la
-              // única puerta de entrada desde el teléfono.
               action={
                 <Link to="/recurrentes" className="text-sm text-gold hover:underline">
                   Ver todos

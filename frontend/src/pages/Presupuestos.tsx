@@ -35,7 +35,6 @@ export function Presupuestos() {
   const [deleting, setDeleting] = useState<Budget | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
-  // Sólo para la línea de "van a ser N presupuestos".
   const [repeat, setRepeat] = useState(true)
 
   const items = budgets.data?.items ?? []
@@ -83,8 +82,6 @@ export function Presupuestos() {
           period,
           repeat_months: repeat ? 12 : 1,
         })
-        // Los meses que ya tenían presupuesto no se pisan: avisarlo es la
-        // diferencia entre "no pasó nada" y "creo que lo creé y no está".
         setNotice(
           result.skipped > 0
             ? `Creados ${result.created} de ${result.created + result.skipped}. Los otros ${result.skipped} ya tenían presupuesto y quedaron como estaban.`
@@ -113,8 +110,6 @@ export function Presupuestos() {
 
       {summary && summary.count > 0 && (
         <Card>
-          {/* Con wrap porque a 320 px "Gastado del mes" y los dos montos no
-              entran en una línea: es mejor que bajen que que se pisen. */}
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <p className="text-muted text-sm">Gastado del mes</p>
             <p className="font-semibold tabular-nums">

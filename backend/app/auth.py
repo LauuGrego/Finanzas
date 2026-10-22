@@ -33,8 +33,6 @@ COOKIE = "finanzas_session"
 
 
 def _key() -> bytes:
-    # Deriving from the password means no separate secret to keep in sync, and
-    # a rotated password silently drops every outstanding session.
     return hashlib.sha256(config.PASSWORD.encode("utf-8")).digest()
 
 
@@ -60,7 +58,7 @@ def issue_cookie(response: Response, *, secure: bool) -> None:
         COOKIE,
         token,
         max_age=config.SESSION_TTL_DAYS * 86400,
-        httponly=True,  # unreachable from JavaScript, so an XSS cannot steal it
+        httponly=True,
         samesite="none" if secure else "lax",
         secure=secure,
         path="/",
@@ -94,7 +92,6 @@ def verify(token: str | None) -> bool:
     version, expires, signature = token.split(".") if token.count(".") == 2 else ("", "", "")
     if version != "v1" or not expires or not signature:
         return False
-    # The signature covers the version too, so a downgrade is not possible.
     if not hmac.compare_digest(signature, _sign(f"{version}.{expires}")):
         return False
     try:
@@ -113,7 +110,7 @@ def check_basic(header: str) -> bool:
     except (ValueError, UnicodeDecodeError):
         return False
     user, _, password = decoded.partition(":")
-    # compare_digest on both halves: a plain == leaks length and prefix.
     return hmac.compare_digest(user, config.USERNAME) & hmac.compare_digest(
         password, config.PASSWORD
     )
+

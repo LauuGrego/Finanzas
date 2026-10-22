@@ -4,7 +4,6 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type Size = 'sm' | 'md'
 
 const VARIANTS: Record<Variant, string> = {
-  // Oro con tinta oscura: en blanco no alcanzaba contraste.
   primary: 'bg-gold text-gold-ink hover:brightness-110 disabled:opacity-50',
   secondary: 'bg-raised text-ink border border-line hover:border-gold-dim',
   ghost: 'text-muted hover:text-ink hover:bg-raised',

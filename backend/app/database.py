@@ -37,16 +37,11 @@ def _is_remote(url: str) -> bool:
 
 url = normalize_url(config._database_url())
 
-# `pre_ping` evita que una conexión muerta por el pooler de Supabase se convierta
-# en un error 500 para el usuario. El pool chico es por lo mismo: Supabase corta
-# conexiones ociosas y hay que poder reconectar sin comerse el límite.
 engine = create_engine(
     url,
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=5,
-    # Al reconectar hay que renegociar TLS o el servidor rechaza la sesión. Solo
-    # en la nube: el Postgres local no lo pide y con `require` no arranca.
     connect_args={"sslmode": "require"} if "sslmode=" not in url and _is_remote(url) else {},
 )
 
@@ -92,9 +87,6 @@ def sync_sequences(db: Session) -> None:
 
         siguiente = (db.scalar(select(func.coalesce(func.max(tabla.c.id), 0))) or 0) + 1
 
-        # La secuencia viene como `public.accounts_id_seq`. Se parte solo para
-        # comparar contra la vista de catálogo `pg_sequences`, y las dos mitades
-        # van como parámetros: no se arma SQL con texto.
         esquema, _, nombre = secuencia.rpartition(".")
         actual = db.scalar(
             text(
@@ -112,6 +104,7 @@ def sync_sequences(db: Session) -> None:
         )
 
     db.commit()
+
 
 
 def get_db() -> Iterator[Session]:

@@ -20,8 +20,6 @@ import {
 } from '../utils/format'
 
 export function Recurrentes() {
-  // Las dadas de baja se piden también: una regla que pausaste vuelve con un
-  // clic, y si desapareciera de la lista no quedaría dónde reactivarla.
   const list = useAsync(() => api.recurring.list(true), [])
   const accounts = useAsync(() => api.accounts.list(), [])
   const categories = useAsync(
@@ -261,9 +259,6 @@ export function Recurrentes() {
         onClose={() => setDeleting(null)}
       />
 
-      {/* Las cuotas van abajo y separadas por una línea, no metidas en la misma
-          lista: son hermanas de los recurrentes, no otro tipo de recurrente.
-          Cada bloque tiene su botón y se lee solo. */}
       <div className="pt-5 border-t border-line">
         <CuotasSection />
       </div>
@@ -338,8 +333,6 @@ function RecurringCard({
           </div>
         </div>
 
-        {/* Pausar es lo normal: un suscripción que se cancela casi nunca se
-            borra, se deja de cobrar y queda a mano por si vuelve. */}
         <button
           onClick={onToggle}
           className="mt-3 text-xs text-muted hover:text-gold transition"

@@ -45,10 +45,6 @@ export function MoneyInput({
   const ref = useRef<HTMLInputElement>(null)
   const pending = useRef<number | null>(null)
 
-  // Controlled: React owns the value, so the DOM can only be corrected once the
-  // re-render has happened. `useLayoutEffect` runs after the DOM changes and
-  // before the browser paints, which is the only moment the caret can be placed
-  // without the jump being visible.
   useLayoutEffect(() => {
     const input = ref.current
     const anchor = pending.current
@@ -66,8 +62,6 @@ export function MoneyInput({
     const anchor = caretAnchor(typed, event.target.selectionStart ?? typed.length)
 
     if (value === undefined) {
-      // Uncontrolled: writing straight to the node is the only way to change it,
-      // and React will not fight over a value it does not own.
       event.target.value = formatted
       const position = caretFromAnchor(formatted, anchor)
       event.target.setSelectionRange(position, position)

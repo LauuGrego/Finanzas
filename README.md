@@ -112,6 +112,13 @@ no un archivo. `DATABASE_URL` ya está puesta en el panel de Render.
 | `FINANZAS_STATIC`   | `frontend/dist`        | Dónde está el frontend compilado.                           |
 | `FINANZAS_CORS`     | `localhost:5173`       | Orígenes permitidos, separados por coma.                    |
 | `FINANZAS_SESSION_DAYS` | `30`                | Días que dura la sesión iniciada.                           |
+| `SMTP_HOST`         | `smtp.gmail.com`       | Host del servidor SMTP (por ej. Gmail).                     |
+| `SMTP_PORT`         | `587`                  | Puerto SMTP (587 para TLS).                                 |
+| `SMTP_USER`         | *(vacío)*              | Tu correo remitente (ej. `tu-cuenta@gmail.com`).            |
+| `SMTP_PASSWORD`     | *(vacío)*              | Contraseña de aplicación de Google (16 caracteres).         |
+| `NOTIFICATION_EMAIL`| *(vacío)*              | Correo donde recibir los recordatorios (o `SMTP_USER`).     |
+| `CRON_SECRET`       | *(vacío)*              | Clave opcional para llamar al endpoint de recordatorios.    |
+
 
 `DATABASE_URL` no tiene defecto a propósito: un valor por omisión sería peor que
 ninguno, porque conectaría en silencio a un lado que no elegiste. En desarrollo es
@@ -342,7 +349,25 @@ El día del mes queda anclado aparte de la fecha. Si el alquiler se cobra el 31,
 en febrero cae el 28, y marzo tiene que volver al 31: avanzar desde la fecha
 clampada lo dejaría en el 28 para siempre.
 
+**Recordatorios por mail un día antes (gastos e ingresos).**
+
+Un día antes de que venza un recurrente (cuando `next_date == mañana`), el sistema
+envía un correo con el monto formateado, la cuenta, la categoría y el tipo (gasto
+o ingreso con su distintivo visual). Para no mandar duplicados cuando el servidor
+se reinicia o UptimeRobot hace pings frecuentes, la tabla `recurring_reminders`
+registra cada envío por `(recurring_id, due_date)`: una vez enviado para ese
+vencimiento, no se vuelve a mandar.
+
+La comprobación se dispara:
+1. En cada arranque del backend (por ejemplo, cuando UptimeRobot despierta a Render).
+2. Periódicamente cada hora en segundo plano mientras el servidor esté activo.
+3. Cada vez que abrís la app (vía `/api/recurring/generate`).
+4. Llamando al endpoint `POST /api/recurring/reminders/send`.
+
+Para probar que tu cuenta de Gmail o SMTP funciona podés hacer `POST /api/recurring/reminders/test`.
+
 **Una cuota es un recurrente con fin.**
+
 
 En la misma pantalla, más abajo, se cargan las compras en cuotas: la tele en 12
 de 50.000. Se cobra una vez por mes, como un recurrente, pero se termina sola
@@ -530,7 +555,10 @@ Todas las rutas cuelgan de `/api`.
 | `POST`   | `/api/recurring`                 | Crea una regla                  |
 | `PUT`    | `/api/recurring/{id}`            | Edita o pausa                   |
 | `DELETE` | `/api/recurring/{id}`            | Borra                           |
-| `POST`   | `/api/recurring/generate`        | Registra lo que venció          |
+| `POST`   | `/api/recurring/generate`        | Registra lo que venció y chequea recordatorios |
+| `POST`   | `/api/recurring/reminders/send`  | Envía recordatorios de mañana (idempotente)   |
+| `POST`   | `/api/recurring/reminders/test`  | Envía un email de prueba para validar SMTP    |
+
 | `GET`    | `/api/installments`              | Cuotas por mes                  |
 | `POST`   | `/api/installments`              | Crea una compra en cuotas       |
 | `PUT`    | `/api/installments/{id}`         | Edita o pausa                   |

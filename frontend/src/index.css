@@ -1,20 +1,5 @@
 @import 'tailwindcss';
 
-/*
- * Armadura: oro, rojo y titanio sobre una base casi negra.
- *
- * La idea es la de un traje de metal, no la de un cartel: el oro aparece solo
- * en lo accionable y en la cifra que importa, el rojo solo marca gasto, y el
- * resto es titanio. Nada brilla, nada tiene glow.
- *
- * Todos los pares pasan WCAG AA sobre la superficie donde se usan:
- *   ink    on surface -> 15.1:1
- *   muted  on surface ->  6.1:1
- *   gold   on surface ->  8.2:1
- *   income on surface ->  9.5:1
- *   expense on surface -> 5.6:1
- *   brand-ink on gold  ->  8.3:1
- */
 @theme {
   --color-canvas: #0c0b0a;
   --color-surface: #171512;
@@ -23,12 +8,10 @@
   --color-ink: #ece6dc;
   --color-muted: #9d9488;
 
-  /* Oro: el acento. Botones primarios, enlaces y la sección activa. */
   --color-gold: #e0a32e;
   --color-gold-dim: #7d6224;
   --color-gold-ink: #1a1206;
 
-  /* Cian de reactor: ingresos. Frío contra el oro, para que se lean juntos. */
   --color-arc: #5fb8cf;
 
   --color-income: #67c8e0;
@@ -48,8 +31,6 @@
     @apply text-ink antialiased;
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     background-color: var(--color-canvas);
-    /* Titus cepillado al 1%: apenas se nota, pero la superficie deja de ser
-       un plano muerto. */
     background-image: repeating-linear-gradient(
       115deg,
       rgba(255, 255, 255, 0.014) 0 1px,
@@ -62,7 +43,6 @@
     @apply outline-2 outline-offset-2 outline-gold;
   }
 
-  /* El icono nativo del date picker es negro sobre fondo oscuro. */
   input[type='date']::-webkit-calendar-picker-indicator {
     filter: invert(0.72) sepia(1) saturate(3) hue-rotate(5deg);
     cursor: pointer;
@@ -87,7 +67,6 @@
     @apply bg-surface border border-line rounded-2xl;
   }
 
-  /* La cifra grande: un panel de titanio con filo dorado, no un resplandor. */
   .card-hero {
     @apply border-gold-dim/70 bg-gradient-to-br from-hero-from to-hero-to;
   }
@@ -102,7 +81,6 @@
     @apply block text-sm font-medium text-muted mb-1.5;
   }
 
-  /* Oculta los spinners del input numérico: el monto se tipea, no se steppea. */
   .no-spinner::-webkit-outer-spin-button,
   .no-spinner::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -110,35 +88,11 @@
   }
 
   .no-spinner {
+    appearance: textfield;
     -moz-appearance: textfield;
   }
 }
 
-/*
- * Piso del area sensible.
- *
- * Con el dedo, 24 px es el minimo que pide la norma (WCAG 2.2, 2.5.8) y hay
- * controles que quedan por debajo: los botones de icono miden 27, el "Pausar"
- * de los recurrentes 16 y los enlaces de texto 20. En la compu esos 16 px los
- * llega el mouse sin problema, asi que la regla va bajo `pointer: coarse` y no
- * por ancho de ventana: el escritorio queda exactamente como estaba.
- *
- * `min-height` y no padding a propósito. Padding suma espacio de verdad y
- * corría las filas; `min-height` no empuja a nadie, solo estira lo que ya era
- * más bajo que el piso. Los botones grandes, las tarjetas y la barra de abajo
- * ya miden más, así que esta regla no los toca.
- *
- * No se toca `display`: los enlaces que son hijo de un `flex` ya son bloques y
- * el piso se les aplica igual, y forzar `inline-flex` haría que las tarjetas
- * que son un `<a>` dejaran de ocupar todo el ancho.
- *
- * Sin `main` adentro a propósito: la hoja de secciones y los diálogos se
- * montan en el `Layout`, afuera de `main`, y con el prefijo quedaban sin cubrir.
- * Los puntos de color y los textos no entran porque no son pulsables.
- *
- * La barra de abajo queda afuera de la regla porque ya es enorme: sus celdas
- * miden más de 24 px de alto y sus íconos están a 21.
- */
 @media (pointer: coarse) {
   a[href],
   button,

@@ -54,9 +54,6 @@ def to_read(goal: Goal, today: date | None = None) -> GoalRead:
 
     `today` is a parameter so tests can pin "now" without freezing the clock.
     """
-    # El día local, no el de UTC: si el usuario está en Argentina y son las 22,
-    # `utcnow().date()` todavía dice que es mañana y la meta aparece vencida un
-    # día antes.
     today = today or datetime.now(UTC).astimezone().date()
     remaining = goal.target_amount - goal.current_amount
     return GoalRead(
@@ -66,8 +63,6 @@ def to_read(goal: Goal, today: date | None = None) -> GoalRead:
         current_amount=to_pesos(goal.current_amount),
         deadline=goal.deadline,
         active=goal.active,
-        # Sin tope en 100: pasarse es una buena noticia y el número tiene que
-        # decirla. El ancho de la barra lo recorta la pantalla, no el dato.
         progress=(
             round(goal.current_amount * 100 / goal.target_amount, 1) if goal.target_amount else 0.0
         ),
@@ -93,8 +88,6 @@ def create(db: Session, payload: GoalCreate) -> GoalRead:
     _check_pair(target, current)
 
     goal = Goal(
-        # El schema ya recorta el nombre; el .strip() es por si alguien escribe
-        # el campo saltándose la validación, no por confianza.
         name=payload.name.strip(),
         target_amount=target,
         current_amount=current,
@@ -129,7 +122,6 @@ def update(db: Session, goal: Goal, payload: GoalUpdate) -> GoalRead:
         goal.target_amount = target
     if "current_amount" in data:
         goal.current_amount = current
-    # `"deadline" in data` con valor None es la forma de borrar la fecha.
     if "deadline" in data:
         goal.deadline = data["deadline"]
     if "active" in data and data["active"] is not None:

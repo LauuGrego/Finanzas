@@ -15,8 +15,8 @@ class RecurringBase(BaseModel):
     amount: Money = Field(gt=0, description="Always positive; the category says if it leaves or enters")
     description: str | None = Field(default=None, max_length=200)
     frequency: Frequency
-    # The first day it fires. It is moved forward on its own after each run.
     next_date: date
+
 
 
 class RecurringCreate(RecurringBase):
@@ -42,8 +42,8 @@ class RecurringRead(RecurringBase):
     created_at: datetime
     category: CategoryRef | None = None
     account_name: str | None = None
-    # Resolved from the category, so the UI does not have to join anything.
     type: str = Field(description="EXPENSE or INCOME, taken from the category")
+
 
 
 class RecurringList(BaseModel):

@@ -47,12 +47,9 @@ def generate_due(db: Session, today: date | None = None) -> int:
 
     written = 0
     for rule in due:
-        # A rule that has been asleep for months owes more than one movement, so
-        # this is a loop and not a single insert. It walks forward from the due
-        # date, not from today, so every missed occurrence is recorded on the day
-        # it actually happened and the history reads true.
         while rule.next_date <= today:
             write_occurrence(
+
                 db,
                 account_id=rule.account_id,
                 category=rule.category,

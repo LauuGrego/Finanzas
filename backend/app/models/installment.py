@@ -43,21 +43,14 @@ class Installment(Base, TimestampMixin):
         ForeignKey("categories.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     description: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    # Integer centavos, always positive. See app/money.py
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    # How many installments the plan has in total.
     total_count: Mapped[int] = mapped_column(nullable=False)
-    # How many have already been written. The pending total and the number of
-    # the next installment are derived from this and are not stored, the same
-    # way an account balance is not stored.
     paid_count: Mapped[int] = mapped_column(nullable=False, default=0)
-    # The day the next one falls on. Generation moves this forward as it goes.
     next_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
-    # The day of the month the plan was set up for, kept separately so a short
-    # month does not drag the plan with it. The same reason `Recurring` has it.
     anchor_day: Mapped[int] = mapped_column(nullable=False)
 
     account = relationship("Account")
+
     category = relationship("Category")
 
     def __repr__(self) -> str:  # pragma: no cover - debugging aid

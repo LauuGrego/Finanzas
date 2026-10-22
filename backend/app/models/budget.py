@@ -24,12 +24,11 @@ class Budget(Base, TimestampMixin):
     category_id: Mapped[int] = mapped_column(
         ForeignKey("categories.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    # Period in 'YYYY-MM' form is convenient for queries; we also store ints
     period: Mapped[str] = mapped_column(String(7), nullable=False, index=True)
     year: Mapped[int] = mapped_column(Integer, nullable=False)
     month: Mapped[int] = mapped_column(Integer, nullable=False)
-    # Integer centavos
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
+
 
     category = relationship("Category")
 

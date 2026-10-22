@@ -21,25 +21,14 @@ def _path(value: str | None, default: Path) -> Path:
     return Path(value).expanduser().resolve() if value else default
 
 
-# Where `npm run build` puts the frontend. If it is missing the API still
-# serves; only the browser UI is unavailable.
+# Frontend
 STATIC_DIR = _path(os.getenv("FINANZAS_STATIC"), REPO_DIR / "frontend" / "dist")
 
-# Empty means no auth. Set it before exposing the app to a network.
+# Autenticación
 PASSWORD = os.getenv("FINANZAS_PASSWORD", "")
 USERNAME = os.getenv("FINANZAS_USER", "lautaro")
 
-# El frontend puede venir de otro dominio, que es lo que pasa en el deploy
-# partido: Vercel sirve la app y Render solo la API. Son dos orígenes distintos,
-# asi que CORS no es opcional ahi. Sin esto el navegador manda un preflight que
-# Render rechaza con "Disallowed CORS origin" y el fetch falla entero, que es lo
-# que pasa si la variable queda sin poner. Varios origins van separados por coma.
-# `*` abre todo, pero con credenciales el navegador lo va a rechazar igual, asi
-# que conviene poner el origin exacto.
-#
-# La comparacion de CORSMiddleware es de cadena exacta, asi que se saca la barra
-# final: un origin por definicion no la lleva y es el error que mas se cuela al
-# copiar la URL del navegador, que siempre viene con barra.
+# CORS
 def _origins() -> list[str]:
     raw = os.getenv("FINANZAS_CORS")
     if raw is None:
@@ -49,12 +38,7 @@ def _origins() -> list[str]:
 
 CORS_ORIGINS = _origins()
 
-# The database connection. Required: there is no default, because a wrong default
-# is worse than a clear failure. In development it is the container from
-# `docker compose up -d`; in the cloud, the managed PostgreSQL.
-#
-#   docker compose up -d
-#   DATABASE_URL=postgresql+psycopg://finanzas:finanzas@127.0.0.1:5434/finanzas uvicorn app.main:app
+# Base de datos
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 
@@ -75,8 +59,18 @@ def _database_url() -> str:
         )
     return DATABASE_URL
 
-# Render and Vercel are different sites, so the session cookie has to be
-# SameSite=None to survive the cross-origin call. Browsers only accept that
-# over HTTPS, which is why the flag is decided per request instead of in config.
-# See app/auth.py.
+# Sesión
 SESSION_TTL_DAYS = int(os.getenv("FINANZAS_SESSION_DAYS", "30"))
+
+# Email reminders (SMTP)
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM = os.getenv("SMTP_FROM") or os.getenv("SMTP_USER", "")
+SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() in ("true", "1", "yes")
+SMTP_USE_SSL = os.getenv("SMTP_USE_SSL", "false").lower() in ("true", "1", "yes")
+NOTIFICATION_EMAIL = os.getenv("NOTIFICATION_EMAIL") or os.getenv("SMTP_USER", "")
+CRON_SECRET = os.getenv("CRON_SECRET", "")
+
+

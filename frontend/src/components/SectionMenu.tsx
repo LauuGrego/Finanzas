@@ -20,8 +20,6 @@ export function SectionMenu({ open, onClose }: { open: boolean; onClose: () => v
 
   return (
     <Modal open={open} title="Otras secciones" onClose={onClose}>
-      {/* Sin aria-label: el diálogo ya se anuncia como "Otras secciones" y un
-          segundo nombre igual es ruido para quien lee con lector de pantalla. */}
       <nav>
         <ul className="space-y-1">
           {SHEET_LINKS.map((link) => {

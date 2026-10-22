@@ -53,39 +53,16 @@ export function TransactionModal({
   const [accountId, setAccountId] = useState<number>(
     transaction?.account_id ?? defaultAccountId ?? accounts[0]?.id ?? 0
   )
-  // `moneyEditable` y no `String(...)`: el API devuelve pesos, así que un gasto de
-  // 450,75 llega como 450.75 y con un punto. Ese punto es decimal, no separador de
-  // miles, y por eso el texto inicial tiene que pasar por el formateador de
-  // valores y no por el de tecleo.
   const [amountText, setAmountText] = useState(
     transaction ? moneyEditable(transaction.amount) : ''
   )
-  // La categoría y la fecha van controladas porque de las dos depende el aviso
-  // de presupuesto: sin saber cuál está elegida no hay nada que avisar.
   const [categoryId, setCategoryId] = useState<number>(transaction?.category_id ?? 0)
   const [date, setDate] = useState(transaction?.date ?? todayIso())
-  // El aviso viene con la clave de la consulta que lo pidió. Guardarlo con su
-  // clave y compararla al renderizar evita dos cosas: tener que apagarlo a mano
-  // cuando cambia la categoría, y que aparezca por un instante el dato del
-  // presupuesto anterior.
   const [budgetState, setBudgetState] = useState<{
     key: string
     data: BudgetCheck
   } | null>(null)
 
-  // El modal queda montado siempre, recibe open en vez de desmontarse. Por eso
-  // el useState de arriba solo corre una vez y el tipo se queda pegado entre
-  // aperturas: en Nuevo tocás "Ingreso" y el modal abre con el EXPENSE de la
-  // apertura anterior, así que el botón deja de mandar. También se arrastraba
-  // el error de un guardado fallido al volver a abrir.
-  //
-  // Los inputs sí se desmontan con el <Modal>, pero este estado vive acá
-  // arriba, así que la cuenta y el monto también hay que resetearlos.
-  //
-  // La dependencia es solo `open` a propósito: interesa leer el default que el
-  // padre pasó en este momento. Si también dependiera de `transaction` y el
-  // padre lo creara inline, cambiaría de identidad en cada render y esto
-  // pisaría lo que la persona eligió con el modal abierto.
   useEffect(() => {
     if (open) {
       setType(transaction?.type ?? defaultType)
@@ -99,14 +76,8 @@ export function TransactionModal({
 
   const editing = Boolean(transaction)
   const relevant = categories.filter((c) => c.type === type)
-  // 0 significa "la primera de las que corresponden a este tipo", que es lo que
-  // muestra el <select> cuando no hay nada elegido. Se resuelve acá y no dentro
-  // del <select> para que el aviso de presupuesto y el select nunca puedan
-  // discrepar sobre cuál es la categoría elegida.
   const selectedCategoryId = categoryId || relevant[0]?.id || 0
   const selectedCategory = relevant.find((c) => c.id === selectedCategoryId)
-  // La clave identifica la consulta: sólo se muestra el aviso si es el de la
-  // categoría y el mes que están elegidos ahora.
   const budgetKey = [
     selectedCategoryId,
     date.slice(0, 7),
@@ -116,8 +87,6 @@ export function TransactionModal({
   const budget = budgetState?.key === budgetKey ? budgetState.data : null
 
   const account = accounts.find((a) => a.id === accountId)
-  // Al editar, el saldo que importa es el que queda si se saca este movimiento
-  // de la cuenta. Si se muda de cuenta, el saldo de la nueva todavía no lo tiene.
   const sameAccount = !transaction || accountId === transaction.account_id
   const alreadyCounted =
     sameAccount && transaction
@@ -129,13 +98,6 @@ export function TransactionModal({
   const overLimit =
     type === 'EXPENSE' && blocksSpending(account) && exceedsBalance(amountText, account?.balance ?? 0, alreadyCounted)
 
-  // El aviso de presupuesto. No bloquea el guardado: un tope sirve para saber
-  // que te estás yendo, no para fingir que el gasto no pasó.
-  //
-  // Se consulta por separado del resto porque depende de dos cosas que el
-  // formulario va cambiando: la categoría y la fecha. Al editar se le pasa el
-  // movimiento en edición para que no cuente dos veces en lo gastado, igual que
-  // el saldo disponible de arriba le devuelve su propia parte.
   useEffect(() => {
     if (!open || type !== 'EXPENSE' || !selectedCategoryId) return
     const key = budgetKey
@@ -146,7 +108,6 @@ export function TransactionModal({
         if (alive) setBudgetState({ key, data })
       })
       .catch(() => {
-        // Si el aviso falla, el modal sigue sirviendo para guardar el gasto.
         if (alive) setBudgetState(null)
       })
     return () => {
@@ -154,9 +115,6 @@ export function TransactionModal({
     }
   }, [open, type, selectedCategoryId, date, transaction?.id, budgetKey])
 
-  // Lo que el gasto dejaría en el presupuesto. El backend ya sacó de "lo
-  // gastado" el movimiento que se está editando, así que acá sólo hay que
-  // sumarle lo que se está por escribir.
   const pendingAmount = type === 'EXPENSE' ? parseMoney(amountText) || 0 : 0
   const budgetProjected = (budget?.spent ?? 0) + pendingAmount
   const budgetOver = Boolean(
@@ -211,8 +169,6 @@ export function TransactionModal({
             type="button"
             onClick={() => {
               setType(option)
-              // Cambiar de Gasto a Ingreso cambia el grupo de categorías, así
-              // que la elegida puede no existir más: se vuelve a la primera.
               setCategoryId(0)
             }}
             aria-pressed={type === option}
@@ -247,9 +203,6 @@ export function TransactionModal({
 
       {account && type === 'EXPENSE' && blocksSpending(account) && (
         <p className="text-xs text-muted -mt-2">
-          {/* Al editar, el limite es el saldo mas lo que este movimiento ya
-              tenia descontado, asi que puede ser mayor que el saldo de la cuenta.
-              La etiqueta lo aclara: si no, el numero parece mentir. */}
           {alreadyCounted === 0
             ? `Disponible en ${account.name}`
             : 'Disponible para este movimiento'}
@@ -286,8 +239,6 @@ export function TransactionModal({
           ))}
         </select>
 
-        {/* El aviso va debajo de la categoría y no del monto porque es la
-            categoría lo que lo decide; el monto sólo lo corre dentro del rango. */}
         {budget?.has_budget && (
           <p
             className={`text-xs mt-1.5 ${budgetOver ? 'text-expense' : 'text-muted'}`}
@@ -378,7 +329,6 @@ export function TransferModal({
   const [fromId, setFromId] = useState<number>(accounts[0]?.id ?? 0)
   const [amountText, setAmountText] = useState('')
 
-  // Mismo motivo que en TransactionModal: este estado sobrevive al cierre.
   useEffect(() => {
     if (open) {
       setError(null)

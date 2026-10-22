@@ -28,12 +28,7 @@ export function Settings() {
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<Category | null>(null)
   const [error, setError] = useState<string | null>(null)
-  // Where the data lives comes from the server. Whether `VITE_API_URL` is set
-  // says who serves the API, not what the data is stored in, so guessing from
-  // that ended up calling a cloud database "un archivo en tu computadora".
   const session = useAsync(() => api.session.check(), [])
-  // Only offer the way out when there is a door to close. With no password
-  // configured the app is open and there is no session to end.
   const canSignOut = session.data?.password_required ?? false
 
   async function signOut() {
@@ -45,8 +40,6 @@ export function Settings() {
   const active = items.filter((c) => c.active)
   const inactive = items.filter((c) => !c.active)
 
-  // Picking the next unused colour means a new category rarely looks like an
-  // existing one by accident.
   const suggestedColor =
     CATEGORY_COLORS[items.length % CATEGORY_COLORS.length] ?? CATEGORY_COLORS[0]
 

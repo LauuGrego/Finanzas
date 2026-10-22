@@ -24,11 +24,10 @@ class Goal(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
-    # Integer centavos, like every other amount in the database.
     target_amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    # Zero is fine: plenty of goals start the day they are created.
     current_amount: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     deadline: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+
 
     def __repr__(self) -> str:  # pragma: no cover - debugging aid
         return f"<Goal {self.id} {self.name} {self.current_amount}/{self.target_amount}>"

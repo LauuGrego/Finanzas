@@ -10,12 +10,10 @@ from app.schemas.transaction import CategoryRef
 
 class BudgetBase(BaseModel):
     category_id: int
-    # Integer centavos in the DB, decimal pesos on the wire.
     amount: Money = Field(gt=0, description="El límite en pesos para el mes")
 
 
 class BudgetCreate(BudgetBase):
-    # 'YYYY-MM'
     period: str = Field(description="Mes del presupuesto, formato YYYY-MM")
     repeat_months: int = Field(
         default=1,
@@ -27,7 +25,6 @@ class BudgetCreate(BudgetBase):
 
 class BudgetUpdate(BaseModel):
     amount: Money | None = Field(default=None, gt=0)
-    # Si True, actualiza también los meses posteriores de la misma categoría.
     apply_forward: bool = False
 
 
@@ -37,8 +34,8 @@ class BudgetRead(BudgetBase):
     id: int
     period: str
     active: bool
-    # Derivados: what's already been spent, what's left, how far along.
     spent: Money = Field(description="Gastado en la categoría durante el mes")
+
     remaining: Money = Field(description="Lo que queda; puede ser negativo")
     percentage: float = Field(description="Porcentaje gastado, un decimal")
     over: bool = Field(description="True cuando gastado > límite")

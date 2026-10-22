@@ -16,6 +16,7 @@ from app.schemas.recurring import (
     RecurringUpdate,
 )
 from app.services import recurring_service as rec
+from app.services import reminder_service
 from app.services.scheduling import resolve_references
 
 router = APIRouter(prefix="/recurring", tags=["recurring"])
@@ -69,9 +70,35 @@ def generate_recurring(
     Its own endpoint rather than a side effect of the dashboard because it writes.
     The frontend calls it once when the app opens, which is the only reliable
     moment: the server sleeps between uses, so nothing else would ever run it.
+    Also checks and sends email reminders for recurring transactions due tomorrow.
     """
     written = rec.generate_due(db, today)
+    reminder_service.check_and_send_reminders(db, today)
     return {"generated": written}
+
+
+@router.post("/reminders/send", response_model=dict)
+@router.get("/reminders/send", response_model=dict)
+def send_reminders(
+    db: Session = Depends(get_db),
+    today: date | None = Query(None, description="Override the clock; for tests"),
+) -> dict:
+    """Check active recurrings due tomorrow and send reminder emails."""
+    results = reminder_service.check_and_send_reminders(db, today)
+    return {"checked": True, "results": results}
+
+
+@router.post("/reminders/test", response_model=dict)
+def test_reminder_email(
+    to_email: str | None = Query(None, description="Optional override email for testing"),
+) -> dict:
+    """Send a test email to verify SMTP configuration."""
+    result = reminder_service.send_test_email(to_email)
+    if not result.get("ok"):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, result.get("error", "Error enviando correo de prueba")
+        )
+    return result
 
 
 @router.get("/{recurring_id}", response_model=RecurringRead)
@@ -99,10 +126,8 @@ def update_recurring(
         except ValueError as exc:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
     if "next_date" in changes and changes["next_date"] is not None:
-        # Moving the date by hand means starting over from there, and the anchor
-        # moves with it: otherwise a rule set for the 31st would snap back to the
-        # 28th on the next February.
         changes["anchor_day"] = changes["next_date"].day
+
 
     for field, value in changes.items():
         setattr(rule, field, value)

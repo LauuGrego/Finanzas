@@ -91,8 +91,6 @@ export function formatMoneyTyped(raw: string): string {
   const cents = cleaned.slice(comma + 1).replace(/\D/g, '').slice(0, 2)
   const head = groupThousands(whole)
 
-  // The comma stays while there are no cents yet, otherwise typing "450," and
-  // then the 7 would land on the other side of a separator that vanished.
   return cents ? `${head},${cents}` : `${head},`
 }
 
@@ -212,9 +210,6 @@ export function relativeDay(iso: string, from = todayIso()): string {
   if (days === 1) return 'mañana'
   if (days === -1) return 'ayer'
 
-  // Days first, up to about a month. Rounding straight to months would call
-  // six days ago "hace un mes", which is the kind of small lie a date is not
-  // supposed to tell.
   if (days > 0) return days < 31 ? `en ${days} días` : formatDate(iso)
   const elapsed = -days
   if (elapsed < 31) return `hace ${elapsed} días`

@@ -11,7 +11,6 @@ interface Props {
 export function Modal({ open, title, onClose, children, footer }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
 
-  // Escape closes, and the page behind must not scroll while the dialog is open.
   useEffect(() => {
     if (!open) return
     function onKeyDown(event: KeyboardEvent) {
@@ -30,10 +29,6 @@ export function Modal({ open, title, onClose, children, footer }: Props) {
   if (!open) return null
 
   return (
-    // En el teléfono esto no es un diálogo centrado sino una hoja pegada abajo,
-    // y abajo está el indicador de inicio del iPhone. El padding va en el
-    // overlay y no en el panel: así la hoja sube lo justo y sigue pegada al
-    // borde, en vez de dejar el último botón debajo del indicador.
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center
                  bg-black/70 p-0 pb-[env(safe-area-inset-bottom)] sm:p-4 backdrop-blur-sm"

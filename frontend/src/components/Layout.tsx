@@ -23,7 +23,6 @@ function Mark() {
 }
 
 function linkClass({ isActive }: { isActive: boolean }): string {
-  // The active row gets a gold edge, like a lit strip on the suit.
   return `flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition ${
     isActive
       ? 'bg-gold/10 text-gold shadow-[inset_2px_0_0_0_var(--color-gold)]'
@@ -34,10 +33,6 @@ function linkClass({ isActive }: { isActive: boolean }): string {
 export function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
 
-  // La hoja tiene que cerrarse sola al cambiar de pantalla: si no, el botón
-  // atrás del teléfono la deja abierta encima de la página nueva. Se guarda
-  // junto con la ruta en la que se abrió y se deriva acá, en vez de corregirlo
-  // con un effect: la de antes ya no aplica y no hace falta otro render.
   const [menu, setMenu] = useState({ path: pathname, open: false })
   const menuOpen = menu.path === pathname && menu.open
   const setMenuOpen = (open: boolean) => setMenu({ path: pathname, open })
@@ -77,8 +72,6 @@ export function Layout({ children }: { children: ReactNode }) {
         {MOBILE_LINKS.map((link) => {
           const active =
             link.to === '/' ? pathname === '/' : pathname.startsWith(link.to)
-          // `Nuevo` no es una sección: es la acción de siempre, así que lleva el
-          // dorado siempre y no solo cuando estás parado en esa pantalla.
           const gold = link.to === '/nuevo' ? true : active
           return (
             <NavLink
@@ -96,8 +89,6 @@ export function Layout({ children }: { children: ReactNode }) {
           )
         })}
 
-        {/* Abre la hoja con las secciones que no están en la barra. Va en gris
-            como el resto y no en dorado, porque el dorado quedó para `Nuevo`. */}
         <button
           type="button"
           onClick={() => setMenuOpen(true)}

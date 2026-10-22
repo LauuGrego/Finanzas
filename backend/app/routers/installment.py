@@ -53,10 +53,9 @@ def create_installment(
         description=payload.description,
         total_count=payload.total_count,
         next_date=payload.next_date,
-        # The day the plan was set up for, kept so that a short month cannot drag
-        # the whole plan onto the 28th for the rest of its life.
         anchor_day=payload.next_date.day,
     )
+
     db.add(plan)
     db.commit()
     db.refresh(plan)
@@ -103,9 +102,8 @@ def update_installment(
         except ValueError as exc:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
     if "next_date" in changes and changes["next_date"] is not None:
-        # Moving the date by hand means starting over from there, and the anchor
-        # moves with it, exactly as it does on a recurring rule.
         changes["anchor_day"] = changes["next_date"].day
+
 
     for field, value in changes.items():
         setattr(plan, field, value)

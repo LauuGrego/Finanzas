@@ -19,8 +19,8 @@ class Account(TimestampMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(80), nullable=False, unique=True)
     type: Mapped[AccountType] = mapped_column(String(20), nullable=False, default=AccountType.BANK)
-    # Integer centavos. See app/money.py
     initial_balance: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+
 
     transactions: Mapped[list["Transaction"]] = relationship(
         back_populates="account", cascade="all, delete-orphan", passive_deletes=True

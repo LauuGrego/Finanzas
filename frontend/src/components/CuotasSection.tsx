@@ -22,8 +22,6 @@ import { money, parseMoney, relativeDay, shortDate, todayIso } from '../utils/fo
  * barra del teléfono, que ya está llena.
  */
 export function CuotasSection() {
-  // Las terminadas y las pausadas se piden también, por el mismo motivo que en
-  // recurrentes: hay que poder verlas, reanudarlas y borrarlas.
   const list = useAsync(() => api.installments.list(true), [])
   const accounts = useAsync(() => api.accounts.list(), [])
   const categories = useAsync(() => api.categories.list(undefined, true), [])
@@ -31,7 +29,6 @@ export function CuotasSection() {
   const [editing, setEditing] = useState<Installment | null>(null)
   const [deleting, setDeleting] = useState<Installment | null>(null)
   const [error, setError] = useState<string | null>(null)
-  // Solo para el renglón que multiplica mientras se escribe el monto.
   const [preview, setPreview] = useState({ amount: 0, count: 12 })
 
   const all = list.data?.items ?? []
@@ -115,9 +112,6 @@ export function CuotasSection() {
       )}
 
       <StateWrapper loading={list.loading} error={list.error} onRetry={() => void list.reload()}>
-        {/* El cartel de "todavía no hay" es para la primera vez. Si lo único que
-            queda son pausadas o terminadas, las listas de abajo ya explican
-            todo y el cartel mentiría. */}
         {all.length === 0 ? (
           <EmptyState
             title="Todavía no tenés cuotas"
@@ -247,8 +241,6 @@ export function CuotasSection() {
           </div>
         </div>
 
-        {/* El total no se guarda, se calcula: por eso se puede mostrar mientras
-            se escribe sin que nadie lo tenga que mantener en sincronía. */}
         {preview.amount > 0 && preview.count > 0 && (
           <p className="text-xs text-muted -mt-1">
             {preview.count} {preview.count === 1 ? 'cuota' : 'cuotas'} de{' '}
@@ -409,7 +401,6 @@ function InstallmentCard({
           </div>
         </div>
 
-        {/* Titanio, no oro: es un dato, no algo que se toca. */}
         <div className="mt-3.5 flex items-center gap-3">
           <div className="h-1.5 flex-1 rounded-full bg-line overflow-hidden">
             <div className="h-full rounded-full bg-muted" style={{ width: `${progress}%` }} />

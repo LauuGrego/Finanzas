@@ -13,13 +13,13 @@ from pydantic import Field, PlainSerializer, WithJsonSchema
 
 CENTS = 10**2
 
-# Decimal pesos in the API, integer centavos in the database.
 Money = Annotated[
     Decimal,
     Field(max_digits=14, decimal_places=2),
     PlainSerializer(lambda v: float(v), return_type=float, when_used="json"),
     WithJsonSchema({"type": "number", "format": "double"}),
 ]
+
 
 
 def to_cents(amount: Decimal | int | str) -> int:

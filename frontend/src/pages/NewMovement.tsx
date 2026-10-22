@@ -24,7 +24,6 @@ export function NewMovement() {
   function handleSaved() {
     void accounts.reload()
     void categories.reload()
-    // Going back to the dashboard is what the user wants after saving.
     navigate('/')
   }
 

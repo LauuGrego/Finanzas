@@ -21,9 +21,6 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 export function Accounts() {
-  // Se piden también las dadas de baja: sin esto no hay dónde volver si te
-  // equivocás y la das de baja, porque desaparecen de la lista y no queda
-  // nada detrás para reactivarlas.
   const list = useAsync(() => api.accounts.list(true), [])
   const [editing, setEditing] = useState<Account | null>(null)
   const [creating, setCreating] = useState(false)

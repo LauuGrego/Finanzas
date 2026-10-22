@@ -100,8 +100,6 @@ def check(
     return BudgetCheck(
         has_budget=True,
         period=period,
-        # Pesos on the wire, centavos in the row: the conversion happens here and
-        # nowhere else, like everywhere else in the app.
         amount=to_pesos(budget.amount),
         spent=to_pesos(spent),
         remaining=to_pesos(budget.amount - spent),
@@ -146,8 +144,6 @@ def create(
             if offset == 0:
                 category = db.get(Category, category_id)
                 name = category.name if category else "esa categoría"
-                # No se pone el periodo en el mensaje: los nombres de mes viven
-                # en el frontend y la pantalla ya muestra cuál se está mirando.
                 raise ValueError(
                     f"{name} ya tiene un presupuesto para este mes. "
                     "Si querés cambiar el tope, editá la tarjeta."
@@ -163,7 +159,6 @@ def create(
         )
         db.add(budget)
         db.flush()
-        # Refresh so the category relationship is loaded for to_read.
         db.refresh(budget)
         created.append(_to_read(db, budget))
 
@@ -181,7 +176,6 @@ def update(
     if amount is not None:
         budget.amount = amount
         if apply_forward:
-            # Also update every later month of the same category.
             later = (
                 db.execute(
                     select(Budget).where(
