@@ -9,6 +9,7 @@ import { FormModal } from '../components/FormModal'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Account } from '../types'
+import { useFavoriteAccount } from '../utils/favoriteAccount'
 
 const TYPE_LABELS: Record<string, string> = {
   BANK: 'Banco',
@@ -20,6 +21,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 export function Accounts() {
   const list = useAsync(() => api.accounts.list(true), [])
+  const [favoriteId, setFavoriteId] = useFavoriteAccount()
   const [editing, setEditing] = useState<Account | null>(null)
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<Account | null>(null)
@@ -74,42 +76,70 @@ export function Accounts() {
           <EmptyState title="Todavía no tenés cuentas" hint="Creá una para empezar." />
         ) : (
           <ul className="space-y-3">
-            {accounts.map((account) => (
-              <li key={account.id}>
-                <Card className="p-5 hover:border-gold-dim transition">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <Link
-                        to={`/cuentas/${account.id}`}
-                        className="font-semibold hover:text-gold transition
-                                   inline-block py-0.5"
-                      >
-                        {account.name}
-                      </Link>
-                      <p className="text-xs text-muted mt-0.5">
-                        {TYPE_LABELS[account.type] ?? account.type}
-                      </p>
+            {accounts.map((account) => {
+              const isFavorite =
+                favoriteId === account.id || (!favoriteId && accounts[0]?.id === account.id)
+
+              return (
+                <li key={account.id}>
+                  <Card className="p-5 hover:border-gold-dim transition">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Link
+                            to={`/cuentas/${account.id}`}
+                            className="font-semibold hover:text-gold transition inline-block py-0.5"
+                          >
+                            {account.name}
+                          </Link>
+                          {isFavorite && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-gold bg-gold/10 px-2 py-0.5 rounded-full border border-gold/20">
+                              <Icon name="starFilled" size={10} />
+                              Principal
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted mt-0.5">
+                          {TYPE_LABELS[account.type] ?? account.type}
+                        </p>
+                      </div>
+                      <div className="flex gap-1 items-center shrink-0">
+                        <button
+                          onClick={() => setFavoriteId(account.id)}
+                          aria-label={
+                            isFavorite
+                              ? `Cuenta principal: ${account.name}`
+                              : `Marcar ${account.name} como principal`
+                          }
+                          title={isFavorite ? 'Cuenta principal' : 'Marcar como principal'}
+                          className={`p-1.5 rounded-lg transition ${
+                            isFavorite
+                              ? 'text-gold bg-gold/10 hover:bg-gold/20'
+                              : 'text-muted hover:text-gold hover:bg-raised'
+                          }`}
+                        >
+                          <Icon name={isFavorite ? 'starFilled' : 'star'} size={15} />
+                        </button>
+                        <button
+                          onClick={() => setEditing(account)}
+                          aria-label={`Editar ${account.name}`}
+                          className="text-muted hover:text-ink p-1.5 rounded-lg hover:bg-raised transition"
+                        >
+                          <Icon name="pencil" size={15} />
+                        </button>
+                        <button
+                          onClick={() => setDeleting(account)}
+                          aria-label={`Dar de baja ${account.name}`}
+                          className="text-muted hover:text-expense p-1.5 rounded-lg hover:bg-raised transition"
+                        >
+                          <Icon name="trash" size={15} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-0.5 items-center shrink-0">
-                      <button
-                        onClick={() => setEditing(account)}
-                        aria-label={`Editar ${account.name}`}
-                        className="text-muted hover:text-ink p-1.5 rounded-lg hover:bg-raised transition"
-                      >
-                        <Icon name="pencil" size={15} />
-                      </button>
-                      <button
-                        onClick={() => setDeleting(account)}
-                        aria-label={`Dar de baja ${account.name}`}
-                        className="text-muted hover:text-expense p-1.5 rounded-lg hover:bg-raised transition"
-                      >
-                        <Icon name="trash" size={15} />
-                      </button>
-                    </div>
-                  </div>
-                </Card>
-              </li>
-            ))}
+                  </Card>
+                </li>
+              )
+            })}
           </ul>
         )}
 

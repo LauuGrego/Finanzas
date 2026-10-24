@@ -8,9 +8,11 @@ import { TransactionModal } from '../components/TransactionModal'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Transaction } from '../types'
+import { useFavoriteAccount } from '../utils/favoriteAccount'
 import { currentPeriod, formatDate, money } from '../utils/format'
 
 export function Transactions() {
+  const [favoriteId] = useFavoriteAccount()
   const [period, setPeriod] = useState(currentPeriod())
   const [categoryId, setCategoryId] = useState('')
   const [accountId, setAccountId] = useState('')
@@ -74,6 +76,7 @@ export function Transactions() {
           {(accounts.data?.accounts ?? []).map((account) => (
             <option key={account.id} value={account.id}>
               {account.name}
+              {account.id === favoriteId ? ' (Principal)' : ''}
             </option>
           ))}
         </select>

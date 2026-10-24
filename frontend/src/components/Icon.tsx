@@ -27,6 +27,8 @@ export type IconName =
   | 'pause'
   | 'back'
   | 'grid'
+  | 'star'
+  | 'starFilled'
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: <path d="M3 10.2 12 3l9 7.2M5 9.4V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.4" />,
@@ -97,6 +99,15 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <rect x="3" y="13" width="8" height="8" rx="1.5" />
       <rect x="13" y="13" width="8" height="8" rx="1.5" />
     </>
+  ),
+  star: (
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  ),
+  starFilled: (
+    <polygon
+      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+      fill="currentColor"
+    />
   ),
 }
 

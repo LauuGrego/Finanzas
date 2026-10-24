@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../services/api'
 import type { Account, BudgetCheck, Category, Transaction, TransactionPayload } from '../types'
 import { resolveColor } from '../utils/colors'
+import { resolveDefaultAccountId, useFavoriteAccount } from '../utils/favoriteAccount'
 import { todayIso, money, moneyEditable, parseMoney, percent } from '../utils/format'
 import { FormModal } from './FormModal'
 import { MoneyInput } from './MoneyInput'
@@ -29,10 +30,11 @@ export function TransactionModal({
   onClose,
   onSaved,
 }: Props) {
+  const [favoriteId] = useFavoriteAccount()
   const [error, setError] = useState<string | null>(null)
   const [type, setType] = useState<'EXPENSE' | 'INCOME'>(transaction?.type ?? defaultType)
   const [accountId, setAccountId] = useState<number>(
-    transaction?.account_id ?? defaultAccountId ?? accounts[0]?.id ?? 0
+    transaction?.account_id ?? resolveDefaultAccountId(accounts, defaultAccountId)
   )
   const [amountText, setAmountText] = useState(
     transaction ? moneyEditable(transaction.amount) : ''
@@ -48,12 +50,14 @@ export function TransactionModal({
     if (open) {
       setType(transaction?.type ?? defaultType)
       setError(null)
-      setAccountId(transaction?.account_id ?? defaultAccountId ?? accounts[0]?.id ?? 0)
+      setAccountId(
+        transaction?.account_id ?? resolveDefaultAccountId(accounts, defaultAccountId)
+      )
       setAmountText(transaction ? moneyEditable(transaction.amount) : '')
       setCategoryId(transaction?.category_id ?? 0)
       setDate(transaction?.date ?? todayIso())
     }
-  }, [open])
+  }, [open, defaultAccountId, accounts])
 
   const editing = Boolean(transaction)
   const relevant = categories.filter((c) => c.type === type)
@@ -241,6 +245,7 @@ export function TransactionModal({
             {accounts.map((account) => (
               <option key={account.id} value={account.id}>
                 {account.name}
+                {account.id === favoriteId ? ' (Principal)' : ''}
               </option>
             ))}
           </select>
@@ -275,17 +280,21 @@ export function TransferModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const [favoriteId] = useFavoriteAccount()
+  const defaultFrom = resolveDefaultAccountId(accounts)
+  const defaultTo = accounts.find((a) => a.id !== defaultFrom)?.id ?? accounts[0]?.id ?? ''
+
   const [error, setError] = useState<string | null>(null)
-  const [fromId, setFromId] = useState<number>(accounts[0]?.id ?? 0)
+  const [fromId, setFromId] = useState<number>(defaultFrom)
   const [amountText, setAmountText] = useState('')
 
   useEffect(() => {
     if (open) {
       setError(null)
-      setFromId(accounts[0]?.id ?? 0)
+      setFromId(resolveDefaultAccountId(accounts))
       setAmountText('')
     }
-  }, [open])
+  }, [open, accounts])
 
   async function handleSubmit(form: FormData) {
     setError(null)
@@ -333,6 +342,7 @@ export function TransferModal({
           {accounts.map((account) => (
             <option key={account.id} value={account.id}>
               {account.name}
+              {account.id === favoriteId ? ' (Principal)' : ''}
             </option>
           ))}
         </select>
@@ -346,12 +356,13 @@ export function TransferModal({
           id="to_account_id"
           name="to_account_id"
           required
-          defaultValue={accounts[1]?.id ?? accounts[0]?.id ?? ''}
+          defaultValue={defaultTo}
           className="input"
         >
           {accounts.map((account) => (
             <option key={account.id} value={account.id}>
               {account.name}
+              {account.id === favoriteId ? ' (Principal)' : ''}
             </option>
           ))}
         </select>

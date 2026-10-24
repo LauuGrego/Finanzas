@@ -10,6 +10,7 @@ import { EmptyState, StateWrapper } from '../components/States'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Category, Frequency, Recurring } from '../types'
+import { resolveDefaultAccountId, useFavoriteAccount } from '../utils/favoriteAccount'
 import {
   FREQUENCY_LABELS,
   money,
@@ -20,6 +21,7 @@ import {
 } from '../utils/format'
 
 export function Recurrentes() {
+  const [favoriteId] = useFavoriteAccount()
   const list = useAsync(() => api.recurring.list(true), [])
   const accounts = useAsync(() => api.accounts.list(), [])
   const categories = useAsync(
@@ -227,12 +229,13 @@ export function Recurrentes() {
             id="account_id"
             name="account_id"
             required
-            defaultValue={editing?.account_id ?? usableAccounts[0]?.id ?? ''}
+            defaultValue={editing?.account_id ?? resolveDefaultAccountId(usableAccounts)}
             className="input"
           >
             {usableAccounts.map((account) => (
               <option key={account.id} value={account.id}>
                 {account.name}
+                {account.id === favoriteId ? ' (Principal)' : ''}
               </option>
             ))}
           </select>

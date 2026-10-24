@@ -9,6 +9,7 @@ import { EmptyState, StateWrapper } from './States'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Category, Installment } from '../types'
+import { resolveDefaultAccountId, useFavoriteAccount } from '../utils/favoriteAccount'
 import { money, parseMoney, relativeDay, shortDate, todayIso } from '../utils/format'
 
 /**
@@ -22,6 +23,7 @@ import { money, parseMoney, relativeDay, shortDate, todayIso } from '../utils/fo
  * barra del teléfono, que ya está llena.
  */
 export function CuotasSection() {
+  const [favoriteId] = useFavoriteAccount()
   const list = useAsync(() => api.installments.list(true), [])
   const accounts = useAsync(() => api.accounts.list(), [])
   const categories = useAsync(() => api.categories.list(undefined, true), [])
@@ -271,12 +273,13 @@ export function CuotasSection() {
               id="installment-account"
               name="account_id"
               required
-              defaultValue={editing?.account_id ?? usableAccounts[0]?.id ?? ''}
+              defaultValue={editing?.account_id ?? resolveDefaultAccountId(usableAccounts)}
               className="input"
             >
               {usableAccounts.map((account) => (
                 <option key={account.id} value={account.id}>
                   {account.name}
+                  {account.id === favoriteId ? ' (Principal)' : ''}
                 </option>
               ))}
             </select>

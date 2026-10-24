@@ -8,10 +8,12 @@ import { TransactionModal } from '../components/TransactionModal'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Transaction } from '../types'
+import { useFavoriteAccount } from '../utils/favoriteAccount'
 
 export function AccountDetail() {
   const { id } = useParams<{ id: string }>()
   const accountId = Number(id)
+  const [favoriteId, setFavoriteId] = useFavoriteAccount()
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [creating, setCreating] = useState(false)
 
@@ -23,6 +25,7 @@ export function AccountDetail() {
   const categories = useAsync(() => api.categories.list(), [])
 
   const current = (account.data?.accounts ?? []).find((a) => a.id === accountId)
+  const isFavorite = favoriteId === current?.id
 
   if (!Number.isFinite(accountId)) {
     return <EmptyState title="Cuenta inválida" />
@@ -50,15 +53,37 @@ export function AccountDetail() {
           <Card className="card-hero p-5 border">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-wide text-muted font-medium">Cuenta</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs uppercase tracking-wide text-muted font-medium">Cuenta</p>
+                  {isFavorite && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-gold bg-gold/10 px-2 py-0.5 rounded-full border border-gold/20">
+                      <Icon name="starFilled" size={10} />
+                      Principal
+                    </span>
+                  )}
+                </div>
                 <h1 className="text-2xl sm:text-3xl font-bold mt-1 tracking-tight text-ink">
                   {current.name}
                 </h1>
               </div>
-              <span className="text-xs text-muted bg-raised px-3 py-1.5 rounded-xl border border-line">
-                {page.data?.items.length ?? 0}{' '}
-                {(page.data?.items.length ?? 0) === 1 ? 'movimiento' : 'movimientos'}
-              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setFavoriteId(current.id)}
+                  title={isFavorite ? 'Cuenta principal' : 'Marcar como principal'}
+                  aria-label={isFavorite ? 'Cuenta principal' : 'Marcar como principal'}
+                  className={`p-2 rounded-xl border transition ${
+                    isFavorite
+                      ? 'text-gold bg-gold/10 border-gold/30'
+                      : 'text-muted border-line hover:text-gold hover:bg-raised'
+                  }`}
+                >
+                  <Icon name={isFavorite ? 'starFilled' : 'star'} size={18} />
+                </button>
+                <span className="text-xs text-muted bg-raised px-3 py-2 rounded-xl border border-line">
+                  {page.data?.items.length ?? 0}{' '}
+                  {(page.data?.items.length ?? 0) === 1 ? 'movimiento' : 'movimientos'}
+                </span>
+              </div>
             </div>
           </Card>
         )}
