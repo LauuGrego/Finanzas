@@ -232,7 +232,7 @@ export function Recurrentes() {
           >
             {usableAccounts.map((account) => (
               <option key={account.id} value={account.id}>
-                {account.name} · {money(account.balance)}
+                {account.name}
               </option>
             ))}
           </select>

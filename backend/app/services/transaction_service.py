@@ -293,21 +293,8 @@ def blocks_spending(account: Account) -> bool:
 def ensure_sufficient_funds(
     db: Session, account: Account, amount: int, *, already_counted: int = 0
 ) -> None:
-    """Rechaza un gasto o una salida que la cuenta no puede cubrir.
-
-    `already_counted` es lo que el saldo ya le descontó por el movimiento que se
-    está por guardar. Al editar hay que devolverlo antes de comparar: si no, un
-    gasto que ya estaba guardado no se podría volver a guardar ni igual.
-    """
-    if not blocks_spending(account):
-        return
-    available = account_balance(db, account) + already_counted
-    if amount > available:
-        raise ValueError(
-            f"No hay suficiente dinero en {account.name}: "
-            f"disponible {format_pesos(available)}, "
-            f"necesitás {format_pesos(amount)}"
-        )
+    """Las cuentas no restringen movimientos por saldo."""
+    return
 
 
 def create_transaction(db: Session, payload: dict) -> Transaction:

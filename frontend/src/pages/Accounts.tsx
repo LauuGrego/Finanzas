@@ -6,11 +6,9 @@ import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Icon } from '../components/Icon'
 import { EmptyState, StateWrapper } from '../components/States'
 import { FormModal } from '../components/FormModal'
-import { MoneyInput } from '../components/MoneyInput'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Account } from '../types'
-import { money, parseMoney } from '../utils/format'
 
 const TYPE_LABELS: Record<string, string> = {
   BANK: 'Banco',
@@ -30,7 +28,6 @@ export function Accounts() {
   const all = list.data?.accounts ?? []
   const accounts = all.filter((a) => a.active)
   const inactive = all.filter((a) => !a.active)
-  const total = list.data?.total_balance ?? 0
 
   async function handleSave(form: FormData) {
     setError(null)
@@ -43,7 +40,7 @@ export function Accounts() {
     const payload = {
       name,
       type: ((form.get('type') as string) || 'BANK') as Account['type'],
-      initial_balance: parseMoney(String(form.get('initial_balance') ?? '0')) || 0,
+      initial_balance: 0,
     }
 
     try {
@@ -76,62 +73,44 @@ export function Accounts() {
         {accounts.length === 0 ? (
           <EmptyState title="Todavía no tenés cuentas" hint="Creá una para empezar." />
         ) : (
-          <>
-            <ul className="space-y-3">
-              {accounts.map((account) => (
-                <li key={account.id}>
-                  <Card className="p-5 hover:border-gold-dim transition">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <Link
-                          to={`/cuentas/${account.id}`}
-                          className="font-semibold hover:text-gold transition
-                                     inline-block py-0.5"
-                        >
-                          {account.name}
-                        </Link>
-                        <p className="text-xs text-muted mt-0.5">
-                          {TYPE_LABELS[account.type] ?? account.type}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p
-                          className={`font-semibold tabular-nums ${
-                            account.balance < 0 ? 'text-expense' : ''
-                          }`}
-                        >
-                          {money(account.balance)}
-                        </p>
-                        <div className="flex gap-0.5 mt-1">
-                          <button
-                            onClick={() => setEditing(account)}
-                            aria-label={`Editar ${account.name}`}
-                            className="text-muted hover:text-ink p-1.5 rounded-lg hover:bg-raised transition"
-                          >
-                            <Icon name="pencil" size={15} />
-                          </button>
-                          <button
-                            onClick={() => setDeleting(account)}
-                            aria-label={`Dar de baja ${account.name}`}
-                            className="text-muted hover:text-expense p-1.5 rounded-lg hover:bg-raised transition"
-                          >
-                            <Icon name="trash" size={15} />
-                          </button>
-                        </div>
-                      </div>
+          <ul className="space-y-3">
+            {accounts.map((account) => (
+              <li key={account.id}>
+                <Card className="p-5 hover:border-gold-dim transition">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <Link
+                        to={`/cuentas/${account.id}`}
+                        className="font-semibold hover:text-gold transition
+                                   inline-block py-0.5"
+                      >
+                        {account.name}
+                      </Link>
+                      <p className="text-xs text-muted mt-0.5">
+                        {TYPE_LABELS[account.type] ?? account.type}
+                      </p>
                     </div>
-                  </Card>
-                </li>
-              ))}
-            </ul>
-
-            <div
-              className="card-hero card p-5 border flex items-center justify-between"
-            >
-              <span className="text-muted text-sm">Total</span>
-              <span className="font-bold tabular-nums text-lg text-gold">{money(total)}</span>
-            </div>
-          </>
+                    <div className="flex gap-0.5 items-center shrink-0">
+                      <button
+                        onClick={() => setEditing(account)}
+                        aria-label={`Editar ${account.name}`}
+                        className="text-muted hover:text-ink p-1.5 rounded-lg hover:bg-raised transition"
+                      >
+                        <Icon name="pencil" size={15} />
+                      </button>
+                      <button
+                        onClick={() => setDeleting(account)}
+                        aria-label={`Dar de baja ${account.name}`}
+                        className="text-muted hover:text-expense p-1.5 rounded-lg hover:bg-raised transition"
+                      >
+                        <Icon name="trash" size={15} />
+                      </button>
+                    </div>
+                  </div>
+                </Card>
+              </li>
+            ))}
+          </ul>
         )}
 
         {inactive.length > 0 && (
@@ -145,7 +124,6 @@ export function Accounts() {
                   <span className="text-muted line-through flex-1 text-sm truncate">
                     {account.name}
                   </span>
-                  <span className="text-muted tabular-nums text-sm">{money(account.balance)}</span>
                   <button
                     onClick={() => void handleReactivate(account)}
                     className="text-xs text-gold hover:underline"
@@ -202,22 +180,6 @@ export function Accounts() {
               </option>
             ))}
           </select>
-        </div>
-
-        <div>
-          <label className="label" htmlFor="initial_balance">
-            Saldo inicial
-          </label>
-          <MoneyInput
-            id="initial_balance"
-            name="initial_balance"
-            placeholder="0"
-            defaultValue={editing?.initial_balance ?? ''}
-            className="input no-spinner pl-8"
-          />
-          <p className="text-xs text-muted mt-1.5">
-            La plata que tenías antes de usar la app.
-          </p>
         </div>
       </FormModal>
 

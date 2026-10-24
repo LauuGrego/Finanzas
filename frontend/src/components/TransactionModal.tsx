@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../services/api'
 import type { Account, BudgetCheck, Category, Transaction, TransactionPayload } from '../types'
 import { resolveColor } from '../utils/colors'
-import { todayIso, money, moneyEditable, moneyPrecise, parseMoney, percent } from '../utils/format'
+import { todayIso, money, moneyEditable, parseMoney, percent } from '../utils/format'
 import { FormModal } from './FormModal'
 import { MoneyInput } from './MoneyInput'
 
@@ -17,25 +17,6 @@ interface Props {
   defaultAccountId?: number
   onClose: () => void
   onSaved: () => void
-}
-
-/** A credit card is meant to end the month in the red: that balance is the debt. */
-function blocksSpending(account: Account | undefined): boolean {
-  return account !== undefined && account.type !== 'CREDIT'
-}
-
-/**
- * Whether an amount would take the account below zero.
- *
- * Mirrors what the backend checks, in centavos so the comparison never depends
- * on how a float rounds. `alreadyCounted` is what the balance already has
- * subtracted for the movement being edited: without adding it back, saving an
- * expense without changing a single thing would read as over the limit.
- */
-function exceedsBalance(amountText: string, balance: number, alreadyCounted = 0): boolean {
-  const amount = parseMoney(amountText)
-  if (!Number.isFinite(amount) || amount <= 0) return false
-  return Math.round(amount * 100) > Math.round((balance + alreadyCounted) * 100)
 }
 
 export function TransactionModal({
@@ -86,17 +67,6 @@ export function TransactionModal({
   ].join('|')
   const budget = budgetState?.key === budgetKey ? budgetState.data : null
 
-  const account = accounts.find((a) => a.id === accountId)
-  const sameAccount = !transaction || accountId === transaction.account_id
-  const alreadyCounted =
-    sameAccount && transaction
-      ? transaction.type === 'EXPENSE'
-        ? transaction.amount
-        : -transaction.amount
-      : 0
-  const spendable = (account?.balance ?? 0) + alreadyCounted
-  const overLimit =
-    type === 'EXPENSE' && blocksSpending(account) && exceedsBalance(amountText, account?.balance ?? 0, alreadyCounted)
 
   useEffect(() => {
     if (!open || type !== 'EXPENSE' || !selectedCategoryId) return
@@ -157,7 +127,6 @@ export function TransactionModal({
       open={open}
       title={editing ? 'Editar movimiento' : type === 'EXPENSE' ? 'Nuevo gasto' : 'Nuevo ingreso'}
       submitLabel={editing ? 'Guardar cambios' : 'Guardar'}
-      canSubmit={!overLimit}
       onClose={onClose}
       onSubmit={handleSubmit}
       error={error}
@@ -200,25 +169,6 @@ export function TransactionModal({
           className="input no-spinner pl-8 text-lg font-semibold"
         />
       </div>
-
-      {account && type === 'EXPENSE' && blocksSpending(account) && (
-        <p className="text-xs text-muted -mt-2">
-          {alreadyCounted === 0
-            ? `Disponible en ${account.name}`
-            : 'Disponible para este movimiento'}
-          {': '}
-          <span className="tabular-nums text-ink">{moneyPrecise(spendable)}</span>
-        </p>
-      )}
-
-      {overLimit && (
-        <p
-          role="alert"
-          className="text-sm text-expense bg-expense/10 rounded-xl px-3 py-2"
-        >
-          No hay suficiente dinero en {account?.name}. Te quedan {moneyPrecise(spendable)}.
-        </p>
-      )}
 
       <div>
         <label className="label" htmlFor="category_id">
@@ -337,10 +287,6 @@ export function TransferModal({
     }
   }, [open])
 
-  const from = accounts.find((a) => a.id === fromId)
-  const overLimit =
-    blocksSpending(from) && exceedsBalance(amountText, from?.balance ?? 0)
-
   async function handleSubmit(form: FormData) {
     setError(null)
     const amount = parseMoney(String(form.get('amount') ?? ''))
@@ -368,7 +314,6 @@ export function TransferModal({
     <FormModal
       open={open}
       title="Transferir dinero"
-      canSubmit={!overLimit}
       onClose={onClose}
       onSubmit={handleSubmit}
       error={error}
@@ -391,12 +336,6 @@ export function TransferModal({
             </option>
           ))}
         </select>
-        {from && blocksSpending(from) && (
-          <p className="text-xs text-muted mt-1.5">
-            Disponible:{' '}
-            <span className="tabular-nums text-ink">{moneyPrecise(from.balance)}</span>
-          </p>
-        )}
       </div>
 
       <div>
@@ -433,12 +372,6 @@ export function TransferModal({
           className="input no-spinner pl-8 text-lg font-semibold"
         />
       </div>
-
-      {overLimit && (
-        <p role="alert" className="text-sm text-expense bg-expense/10 rounded-xl px-3 py-2">
-          No hay suficiente dinero en {from?.name}. Te quedan {moneyPrecise(from?.balance ?? 0)}.
-        </p>
-      )}
 
       <div>
         <label className="label" htmlFor="transfer-description">

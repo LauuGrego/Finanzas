@@ -8,7 +8,6 @@ import { TransactionModal } from '../components/TransactionModal'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Transaction } from '../types'
-import { money } from '../utils/format'
 
 export function AccountDetail() {
   const { id } = useParams<{ id: string }>()
@@ -49,8 +48,18 @@ export function AccountDetail() {
       >
         {current && (
           <Card className="card-hero p-5 border">
-            <p className="text-muted text-sm">{current.name}</p>
-            <p className="text-3xl font-bold mt-1 tabular-nums">{money(current.balance)}</p>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted font-medium">Cuenta</p>
+                <h1 className="text-2xl sm:text-3xl font-bold mt-1 tracking-tight text-ink">
+                  {current.name}
+                </h1>
+              </div>
+              <span className="text-xs text-muted bg-raised px-3 py-1.5 rounded-xl border border-line">
+                {page.data?.items.length ?? 0}{' '}
+                {(page.data?.items.length ?? 0) === 1 ? 'movimiento' : 'movimientos'}
+              </span>
+            </div>
           </Card>
         )}
 

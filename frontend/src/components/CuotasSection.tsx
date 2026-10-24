@@ -276,7 +276,7 @@ export function CuotasSection() {
             >
               {usableAccounts.map((account) => (
                 <option key={account.id} value={account.id}>
-                  {account.name} · {money(account.balance)}
+                  {account.name}
                 </option>
               ))}
             </select>
@@ -401,14 +401,14 @@ function InstallmentCard({
           </div>
         </div>
 
-        <div className="mt-3.5 flex items-center gap-3">
-          <div className="h-1.5 flex-1 rounded-full bg-line overflow-hidden">
+        <div className="mt-3.5 space-y-1.5">
+          <div className="h-1.5 w-full rounded-full bg-line overflow-hidden">
             <div className="h-full rounded-full bg-muted" style={{ width: `${progress}%` }} />
           </div>
-          <span className="text-xs text-muted tabular-nums shrink-0">
-            quedan {plan.remaining} {plan.remaining === 1 ? 'cuota' : 'cuotas'} ·{' '}
-            {money(plan.total_pending)}
-          </span>
+          <div className="flex items-center justify-between text-xs text-muted tabular-nums">
+            <span>quedan {plan.remaining} {plan.remaining === 1 ? 'cuota' : 'cuotas'}</span>
+            <span className="font-medium text-ink">{money(plan.total_pending)}</span>
+          </div>
         </div>
 
         <button

@@ -55,29 +55,27 @@ export function Dashboard() {
         {data && (
           <>
             <section className="card-hero rounded-2xl p-5 border">
-              <p className="text-muted text-sm">Dinero disponible</p>
-              <p className="text-3xl sm:text-4xl font-bold mt-1 tabular-nums tracking-tight">
-                {money(data.available_balance)}
+              <p className="text-muted text-sm">Balance del mes</p>
+              <p
+                className={`text-3xl sm:text-4xl font-bold mt-1 tabular-nums tracking-tight ${
+                  data.month_summary.balance >= 0 ? 'text-income' : 'text-expense'
+                }`}
+              >
+                {data.month_summary.balance >= 0 ? '+' : '−'}
+                {money(Math.abs(data.month_summary.balance))}
               </p>
 
-              <dl className="grid grid-cols-3 gap-2 sm:gap-3 mt-6 pt-5 border-t border-line">
+              <dl className="grid grid-cols-2 gap-4 mt-6 pt-5 border-t border-line">
                 <div className="min-w-0">
                   <dt className="text-muted text-xs">Ingresos</dt>
-                  <dd className="font-semibold tabular-nums text-sm sm:text-base text-income truncate">
-                    {money(data.month_summary.income)}
+                  <dd className="font-semibold tabular-nums text-base sm:text-lg text-income truncate mt-0.5">
+                    +{money(data.month_summary.income)}
                   </dd>
                 </div>
                 <div className="min-w-0">
                   <dt className="text-muted text-xs">Gastos</dt>
-                  <dd className="font-semibold tabular-nums text-sm sm:text-base text-expense truncate">
-                    {money(data.month_summary.expense)}
-                  </dd>
-                </div>
-                <div className="min-w-0">
-                  <dt className="text-white/60 text-xs">Balance</dt>
-                  <dd className="font-semibold tabular-nums text-sm sm:text-base truncate">
-                    {data.month_summary.balance >= 0 ? '+' : '−'}
-                    {money(Math.abs(data.month_summary.balance))}
+                  <dd className="font-semibold tabular-nums text-base sm:text-lg text-expense truncate mt-0.5">
+                    −{money(data.month_summary.expense)}
                   </dd>
                 </div>
               </dl>

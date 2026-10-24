@@ -58,7 +58,7 @@ export function TransactionItem({
       </div>
 
       <p
-        className={`font-semibold tabular-nums shrink-0 ${
+        className={`font-semibold tabular-nums shrink-0 text-sm sm:text-base whitespace-nowrap ${
           isIncome ? 'text-income' : 'text-expense'
         }`}
       >

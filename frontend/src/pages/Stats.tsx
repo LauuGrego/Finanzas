@@ -60,7 +60,6 @@ export function Stats() {
   const period = currentPeriod()
   const categories = useAsync(() => api.reports.categories(period), [period])
   const monthly = useAsync(() => api.reports.monthly(6, period), [period])
-  const evolution = useAsync(() => api.reports.balanceEvolution(6, period), [period])
 
   const categoryRows = categories.data ?? []
   const categoryData = categoryRows.map((item, index) => ({
@@ -75,9 +74,9 @@ export function Stats() {
     Gastos: row.expense,
   }))
 
-  const lineData = (evolution.data ?? []).map((row) => ({
+  const balanceData = (monthly.data ?? []).map((row) => ({
     month: shortMonth(row.month),
-    Saldo: row.balance,
+    Balance: row.balance,
   }))
 
   return (
@@ -179,15 +178,15 @@ export function Stats() {
         </StateWrapper>
       </Card>
 
-      <Card title="Evolución del saldo">
+      <Card title="Balance neto mensual">
         <StateWrapper
-          loading={evolution.loading}
-          error={evolution.error}
-          onRetry={() => void evolution.reload()}
+          loading={monthly.loading}
+          error={monthly.error}
+          onRetry={() => void monthly.reload()}
         >
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={lineData}>
+              <LineChart data={balanceData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
                 <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                 <YAxis
@@ -204,7 +203,7 @@ export function Stats() {
                 />
                 <Line
                   type="monotone"
-                  dataKey="Saldo"
+                  dataKey="Balance"
                   stroke={GOLD}
                   strokeWidth={2.5}
                   dot={{ r: 3, fill: GOLD }}
@@ -216,39 +215,43 @@ export function Stats() {
       </Card>
 
       <Card title="Comparación mensual">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-muted text-left">
-                <th className="font-medium pb-2">Mes</th>
-                <th className="font-medium pb-2 text-right">Ingresos</th>
-                <th className="font-medium pb-2 text-right">Gastos</th>
-                <th className="font-medium pb-2 text-right">Balance</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {(monthly.data ?? []).map((row) => (
-                <tr key={row.month}>
-                  <td className="py-2.5">{monthLabel(row.month)}</td>
-                  <td className="py-2.5 text-right tabular-nums text-income">
-                    {money(row.income)}
-                  </td>
-                  <td className="py-2.5 text-right tabular-nums text-expense">
-                    {money(row.expense)}
-                  </td>
-                  <td
-                    className={`py-2.5 text-right tabular-nums font-medium ${
+        {(monthly.data ?? []).length === 0 ? (
+          <EmptyState title="Sin datos para comparar" />
+        ) : (
+          <ul className="divide-y divide-line">
+            {(monthly.data ?? []).map((row) => (
+              <li key={row.month} className="py-3.5 first:pt-1 last:pb-1">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <span className="font-semibold capitalize text-ink">
+                    {monthLabel(row.month)}
+                  </span>
+                  <span
+                    className={`font-semibold tabular-nums text-sm sm:text-base ${
                       row.balance >= 0 ? 'text-income' : 'text-expense'
                     }`}
                   >
                     {row.balance >= 0 ? '+' : '−'}
                     {money(Math.abs(row.balance))}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm bg-raised/60 rounded-xl p-3 border border-line/40">
+                  <div className="min-w-0">
+                    <span className="text-muted block text-[11px] mb-0.5">Ingresos</span>
+                    <span className="font-semibold tabular-nums text-income break-words">
+                      +{money(row.income)}
+                    </span>
+                  </div>
+                  <div className="min-w-0 text-right">
+                    <span className="text-muted block text-[11px] mb-0.5">Gastos</span>
+                    <span className="font-semibold tabular-nums text-expense break-words">
+                      −{money(row.expense)}
+                    </span>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
     </div>
   )
