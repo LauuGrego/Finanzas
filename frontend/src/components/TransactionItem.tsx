@@ -1,6 +1,6 @@
 import type { Transaction } from '../types'
 import { formatDate, money } from '../utils/format'
-import { Icon, type IconName } from './Icon'
+import { Icon } from './Icon'
 
 interface Props {
   transaction: Transaction
@@ -20,12 +20,11 @@ export function TransactionItem({
   const isIncome = transaction.type === 'INCOME'
   const isTransfer = transaction.transfer_id !== null
 
-  const glyph: IconName = isTransfer ? 'transfer' : isIncome ? 'income' : 'expense'
-  const color = isTransfer
-    ? 'text-muted'
+  const iconWrapper = isTransfer
+    ? 'bg-zinc-800 text-zinc-300'
     : isIncome
-      ? 'text-income'
-      : 'text-expense'
+      ? 'bg-sky-950/70 text-sky-400 border border-sky-800/40'
+      : 'bg-red-950/70 text-red-400 border border-red-800/40'
 
   const meta = [
     showDate ? formatDate(transaction.date) : null,
@@ -35,30 +34,33 @@ export function TransactionItem({
   ].filter(Boolean)
 
   return (
-    <div className="flex items-center gap-3 py-3">
+    <div className="flex items-center gap-3.5 py-3.5 group">
       <div
         aria-hidden="true"
-        className={`w-9 h-9 rounded-xl grid place-items-center shrink-0 bg-raised ${color}`}
+        className={`w-9 h-9 rounded-full grid place-items-center shrink-0 transition-transform duration-150 group-hover:scale-105 ${iconWrapper}`}
       >
-        <Icon name={glyph} size={18} />
+        <Icon
+          name={isTransfer ? 'transfer' : isIncome ? 'arrowDownLeft' : 'arrowUpRight'}
+          size={16}
+        />
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="font-medium truncate">
+        <p className="font-semibold text-white text-sm sm:text-base truncate">
           {transaction.description ||
             transaction.category?.name ||
             (isTransfer ? 'Transferencia' : 'Movimiento')}
         </p>
         {meta.length > 0 && (
-          <p className="text-sm text-muted truncate">
+          <p className="text-xs text-zinc-400 truncate mt-0.5">
             {meta.length > 1 ? `${meta.slice(0, -1).join(' · ')} · ` : ''}
-            <span className="text-muted/80">{meta[meta.length - 1]}</span>
+            <span className="text-zinc-400">{meta[meta.length - 1]}</span>
           </p>
         )}
       </div>
 
       <p
-        className={`font-semibold tabular-nums shrink-0 text-sm sm:text-base whitespace-nowrap ${
+        className={`font-bold tabular-nums shrink-0 text-sm sm:text-base whitespace-nowrap tracking-tight ${
           isIncome ? 'text-income' : 'text-expense'
         }`}
       >
@@ -67,23 +69,25 @@ export function TransactionItem({
       </p>
 
       {(onEdit || onDelete) && (
-        <div className="flex gap-0.5 shrink-0">
+        <div className="flex gap-1 shrink-0 ml-1">
           {onEdit && !isTransfer && (
             <button
+              type="button"
               onClick={() => onEdit(transaction)}
               aria-label={`Editar ${transaction.description ?? 'movimiento'}`}
-              className="text-muted hover:text-ink p-2 rounded-lg hover:bg-raised transition"
+              className="text-zinc-500 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
             >
-              <Icon name="pencil" size={16} />
+              <Icon name="pencil" size={15} />
             </button>
           )}
           {onDelete && (
             <button
+              type="button"
               onClick={() => onDelete(transaction)}
               aria-label={`Eliminar ${transaction.description ?? 'movimiento'}`}
-              className="text-muted hover:text-expense p-2 rounded-lg hover:bg-raised transition"
+              className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
             >
-              <Icon name="trash" size={16} />
+              <Icon name="trash" size={15} />
             </button>
           )}
         </div>

@@ -48,11 +48,16 @@ export function FormModal({
       onClose={onClose}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose} className="flex-1" type="button">
+          <Button
+            variant="secondary"
+            onClick={onClose}
+            className="flex-1 rounded-full py-3 text-sm font-semibold"
+            type="button"
+          >
             Cancelar
           </Button>
           <Button
-            className="flex-1"
+            className="flex-1 rounded-full py-3 text-sm font-bold bg-gold hover:bg-gold-light text-black shadow-md shadow-gold/20"
             type="submit"
             form="modal-form"
             disabled={saving || !canSubmit}
@@ -66,7 +71,7 @@ export function FormModal({
         {error && (
           <p
             role="alert"
-            className="text-sm text-expense bg-expense/10 rounded-xl px-3 py-2"
+            className="text-xs text-expense bg-expense/10 border border-expense/20 rounded-2xl px-4 py-2.5 font-medium"
           >
             {error}
           </p>

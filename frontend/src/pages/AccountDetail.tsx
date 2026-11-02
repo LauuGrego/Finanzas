@@ -32,13 +32,13 @@ export function AccountDetail() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <Link
         to="/cuentas"
-        className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition"
+        className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white transition-colors"
       >
         <Icon name="back" size={16} />
-        Cuentas
+        Volver a cuentas
       </Link>
 
       <StateWrapper
@@ -50,52 +50,71 @@ export function AccountDetail() {
         }}
       >
         {current && (
-          <Card className="card-hero p-5 border">
+          <div
+            className={`rounded-3xl p-6 sm:p-7 shadow-lg relative flex flex-col justify-between ${
+              isFavorite
+                ? 'bg-gold text-black'
+                : 'bg-[#141414] border border-white/5 text-white'
+            }`}
+          >
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="text-xs uppercase tracking-wide text-muted font-medium">Cuenta</p>
+                  <span className={`text-xs font-bold uppercase tracking-wider ${
+                    isFavorite ? 'text-black/75' : 'text-zinc-400'
+                  }`}>
+                    Cuenta
+                  </span>
                   {isFavorite && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-gold bg-gold/10 px-2 py-0.5 rounded-full border border-gold/20">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-black px-2.5 py-0.5 rounded-full shadow-sm">
                       <Icon name="starFilled" size={10} />
                       Principal
                     </span>
                   )}
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold mt-1 tracking-tight text-ink">
+                <h1 className={`text-3xl sm:text-4xl font-black mt-2 tracking-tight ${
+                  isFavorite ? 'text-black' : 'text-white'
+                }`}>
                   {current.name}
                 </h1>
               </div>
+
               <div className="flex items-center gap-2 shrink-0">
                 <button
+                  type="button"
                   onClick={() => setFavoriteId(current.id)}
                   title={isFavorite ? 'Cuenta principal' : 'Marcar como principal'}
                   aria-label={isFavorite ? 'Cuenta principal' : 'Marcar como principal'}
-                  className={`p-2 rounded-xl border transition ${
+                  className={`p-2 rounded-xl transition-colors cursor-pointer ${
                     isFavorite
-                      ? 'text-gold bg-gold/10 border-gold/30'
-                      : 'text-muted border-line hover:text-gold hover:bg-raised'
+                      ? 'text-black hover:bg-black/10'
+                      : 'text-zinc-400 hover:text-gold hover:bg-white/5'
                   }`}
                 >
-                  <Icon name={isFavorite ? 'starFilled' : 'star'} size={18} />
+                  <Icon name={isFavorite ? 'starFilled' : 'star'} size={20} />
                 </button>
-                <span className="text-xs text-muted bg-raised px-3 py-2 rounded-xl border border-line">
+                <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${
+                  isFavorite
+                    ? 'border-black/20 text-black'
+                    : 'border-white/10 text-zinc-400 bg-white/5'
+                }`}>
                   {page.data?.items.length ?? 0}{' '}
                   {(page.data?.items.length ?? 0) === 1 ? 'movimiento' : 'movimientos'}
                 </span>
               </div>
             </div>
-          </Card>
+          </div>
         )}
 
         <Card
           title="Últimos movimientos"
           action={
             <button
+              type="button"
               onClick={() => setCreating(true)}
-              className="inline-flex items-center gap-1.5 text-sm text-gold hover:underline"
+              className="bg-gold text-black font-bold rounded-full px-4 py-1.5 text-xs flex items-center gap-1.5 hover:bg-gold-hover shadow-sm transition-colors cursor-pointer"
             >
-              <Icon name="plus" size={15} />
+              <Icon name="plus" size={14} />
               Nuevo
             </button>
           }
@@ -103,7 +122,7 @@ export function AccountDetail() {
           {(page.data?.items.length ?? 0) === 0 ? (
             <EmptyState title="Sin movimientos en esta cuenta" />
           ) : (
-            <ul className="divide-y divide-line">
+            <ul className="divide-y divide-white/5">
               {page.data?.items.map((transaction) => (
                 <li key={transaction.id}>
                   <TransactionItem

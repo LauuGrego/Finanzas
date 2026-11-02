@@ -16,7 +16,7 @@ function CategoryDot({ category, index = 0 }: { category: Category; index?: numb
   return (
     <span
       aria-hidden="true"
-      className="w-3 h-3 rounded-full shrink-0"
+      className="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm"
       style={{ backgroundColor: color }}
     />
   )
@@ -74,15 +74,27 @@ export function Settings() {
   }
 
   return (
-    <div className="space-y-5">
-      <h1 className="text-sm font-medium uppercase tracking-wide text-muted">Configuración</h1>
+    <div className="space-y-6">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Configuración</h1>
+          <p className="text-xs sm:text-sm text-neutral-400 mt-1">
+            Preferencias generales y administración de categorías
+          </p>
+        </div>
+      </header>
 
       <Card
         title="Categorías"
+        className="bg-[#141414] border border-white/5 rounded-3xl p-5 sm:p-6"
         action={
-          <Button size="sm" variant="secondary" onClick={() => setCreating(true)}>
+          <Button
+            size="sm"
+            onClick={() => setCreating(true)}
+            className="bg-gold hover:bg-gold-light text-black font-bold rounded-full px-4 py-2 text-xs"
+          >
             <Icon name="plus" size={16} />
-            Nueva
+            Nueva categoría
           </Button>
         }
       >
@@ -94,50 +106,57 @@ export function Settings() {
           {active.length === 0 ? (
             <EmptyState title="Sin categorías" />
           ) : (
-            <ul className="divide-y divide-line">
+            <ul className="divide-y divide-white/5">
               {active.map((category, index) => (
-                <li key={category.id} className="flex items-center gap-3 py-2.5">
+                <li key={category.id} className="flex items-center gap-3 py-3 px-2 rounded-2xl hover:bg-white/5 transition">
                   <CategoryDot category={category} index={index} />
                   <span className="flex-1 min-w-0">
-                    <span className="block truncate">{category.name}</span>
-                    <span className="text-xs text-muted">
+                    <span className="block truncate font-semibold text-white text-sm">
+                      {category.name}
+                    </span>
+                    <span className="text-xs text-neutral-400">
                       {category.type === 'EXPENSE' ? 'Gasto' : 'Ingreso'}
                     </span>
                   </span>
-                  <button
-                    onClick={() => setEditing(category)}
-                    aria-label={`Editar ${category.name}`}
-                    className="text-muted hover:text-ink p-2 rounded-lg hover:bg-raised transition"
-                  >
-                    <Icon name="pencil" size={15} />
-                  </button>
-                  <button
-                    onClick={() => setDeleting(category)}
-                    aria-label={`Dar de baja ${category.name}`}
-                    className="text-muted hover:text-expense p-2 rounded-lg hover:bg-raised transition"
-                  >
-                    <Icon name="trash" size={15} />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setEditing(category)}
+                      aria-label={`Editar ${category.name}`}
+                      className="text-neutral-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition"
+                    >
+                      <Icon name="pencil" size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleting(category)}
+                      aria-label={`Dar de baja ${category.name}`}
+                      className="text-neutral-400 hover:text-expense p-2 rounded-xl hover:bg-white/5 transition"
+                    >
+                      <Icon name="trash" size={15} />
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
 
           {inactive.length > 0 && (
-            <details className="mt-4">
-              <summary className="text-sm text-muted cursor-pointer">
-                {inactive.length} dada{inactive.length === 1 ? '' : 's'} de baja
+            <details className="mt-5 pt-4 border-t border-white/5">
+              <summary className="text-xs font-semibold uppercase tracking-wider text-neutral-400 cursor-pointer hover:text-white transition">
+                {inactive.length} categoría{inactive.length === 1 ? '' : 's'} dada{inactive.length === 1 ? '' : 's'} de baja
               </summary>
-              <ul className="mt-2 space-y-1">
+              <ul className="mt-3 space-y-1">
                 {inactive.map((category, index) => (
-                  <li key={category.id} className="flex items-center gap-3 py-1.5">
+                  <li key={category.id} className="flex items-center gap-3 py-2 px-2 rounded-xl hover:bg-white/5">
                     <CategoryDot category={category} index={index} />
-                    <span className="text-muted line-through flex-1 text-sm truncate">
+                    <span className="text-neutral-500 line-through flex-1 text-sm truncate">
                       {category.name}
                     </span>
                     <button
+                      type="button"
                       onClick={() => void toggleActive(category)}
-                      className="text-xs text-gold hover:underline"
+                      className="text-xs text-gold hover:text-gold-hover font-medium underline"
                     >
                       Reactivar
                     </button>
@@ -149,17 +168,17 @@ export function Settings() {
         </StateWrapper>
       </Card>
 
-      <Card title="Tus datos">
-        <p className="text-sm text-muted">
+      <Card title="Base de datos e infraestructura" className="bg-[#141414] border border-white/5 rounded-3xl p-5 sm:p-6">
+        <p className="text-sm text-neutral-400">
           {session.data?.storage === 'postgresql'
-            ? 'Todo vive en una base PostgreSQL administrada, sin acceso público.'
+            ? 'Todo vive en una base de datos PostgreSQL administrada y segura.'
             : 'No se pudo leer dónde están los datos.'}
         </p>
         {canSignOut && (
           <Button
             size="sm"
             variant="secondary"
-            className="mt-4"
+            className="mt-4 rounded-full"
             onClick={() => void signOut()}
           >
             Cerrar sesión
@@ -180,7 +199,7 @@ export function Settings() {
       >
         <div>
           <label className="label" htmlFor="cat-name">
-            Nombre
+            Nombre de la categoría
           </label>
           <input
             id="cat-name"
@@ -188,7 +207,7 @@ export function Settings() {
             required
             autoFocus
             maxLength={80}
-            placeholder="Comida"
+            placeholder="Supermercado, Alquiler, etc."
             defaultValue={editing?.name ?? ''}
             className="input"
           />
@@ -196,7 +215,7 @@ export function Settings() {
 
         <div>
           <label className="label" htmlFor="cat-type">
-            Tipo
+            Tipo de movimiento
           </label>
           <select
             id="cat-type"
@@ -210,8 +229,8 @@ export function Settings() {
         </div>
 
         <fieldset>
-          <legend className="label">Color</legend>
-          <div className="flex flex-wrap gap-2">
+          <legend className="label">Color distintivo</legend>
+          <div className="flex flex-wrap gap-2.5 pt-1">
             {CATEGORY_PALETTE.map((swatch) => (
               <label key={swatch.value} className="cursor-pointer">
                 <input
@@ -224,8 +243,7 @@ export function Settings() {
                 />
                 <span
                   aria-hidden="true"
-                  className="block w-8 h-8 rounded-full border-2 border-transparent
-                             peer-checked:border-ink transition"
+                  className="block w-8 h-8 rounded-full border-2 border-transparent peer-checked:border-white peer-checked:scale-110 shadow-sm transition"
                   style={{ backgroundColor: swatch.value }}
                 />
               </label>
@@ -240,7 +258,7 @@ export function Settings() {
         confirmLabel="Dar de baja"
         message={
           deleting
-            ? `"${deleting.name}" deja de aparecer al registrar; los movimientos que ya la usan quedan.`
+            ? `"${deleting.name}" deja de aparecer al registrar nuevos movimientos. Los registros existentes conservan su histórico.`
             : ''
         }
         onConfirm={async () => {

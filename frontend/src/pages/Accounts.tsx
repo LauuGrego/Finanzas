@@ -1,15 +1,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button } from '../components/Button'
-import { Card } from '../components/Card'
 import { ConfirmDialog } from '../components/ConfirmDialog'
-import { Icon } from '../components/Icon'
-import { EmptyState, StateWrapper } from '../components/States'
 import { FormModal } from '../components/FormModal'
+import { Icon, type IconName } from '../components/Icon'
+import { EmptyState, StateWrapper } from '../components/States'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Account } from '../types'
 import { useFavoriteAccount } from '../utils/favoriteAccount'
+import { money } from '../utils/format'
 
 const TYPE_LABELS: Record<string, string> = {
   BANK: 'Banco',
@@ -17,6 +16,14 @@ const TYPE_LABELS: Record<string, string> = {
   CASH: 'Efectivo',
   CREDIT: 'Crédito',
   OTHER: 'Otro',
+}
+
+const TYPE_ICONS: Record<string, IconName> = {
+  BANK: 'home',
+  WALLET: 'wallet',
+  CASH: 'receipt',
+  CREDIT: 'wallet',
+  OTHER: 'wallet',
 }
 
 export function Accounts() {
@@ -62,108 +69,198 @@ export function Accounts() {
   }
 
   return (
-    <div className="space-y-5">
-      <header className="flex items-center justify-between">
-        <h1 className="text-sm font-medium uppercase tracking-wide text-muted">Mis cuentas</h1>
-        <Button size="sm" onClick={() => setCreating(true)}>
+    <div className="space-y-6">
+      {/* Header */}
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+          Mis cuentas
+        </h1>
+
+        <button
+          type="button"
+          onClick={() => setCreating(true)}
+          className="bg-gold text-black font-bold rounded-full px-5 py-2 text-xs sm:text-sm flex items-center gap-1.5 hover:bg-gold-hover shadow-sm transition-colors cursor-pointer"
+        >
           <Icon name="plus" size={16} />
-          Nueva
-        </Button>
+          Nueva cuenta
+        </button>
       </header>
 
       <StateWrapper loading={list.loading} error={list.error} onRetry={() => void list.reload()}>
         {accounts.length === 0 ? (
           <EmptyState title="Todavía no tenés cuentas" hint="Creá una para empezar." />
         ) : (
-          <ul className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {accounts.map((account) => {
               const isFavorite =
                 favoriteId === account.id || (!favoriteId && accounts[0]?.id === account.id)
 
-              return (
-                <li key={account.id}>
-                  <Card className="p-5 hover:border-gold-dim transition">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Link
-                            to={`/cuentas/${account.id}`}
-                            className="font-semibold hover:text-gold transition inline-block py-0.5"
-                          >
-                            {account.name}
-                          </Link>
-                          {isFavorite && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-gold bg-gold/10 px-2 py-0.5 rounded-full border border-gold/20">
-                              <Icon name="starFilled" size={10} />
-                              Principal
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted mt-0.5">
-                          {TYPE_LABELS[account.type] ?? account.type}
-                        </p>
+              if (isFavorite) {
+                // Primary / Favorite Card (Solid Yellow!)
+                return (
+                  <div
+                    key={account.id}
+                    className="bg-gold text-black rounded-3xl p-6 shadow-lg relative flex flex-col justify-between min-h-[175px] group"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="bg-black text-white px-3 py-1 rounded-full text-xs font-bold inline-block shadow-sm">
+                          Principal
+                        </span>
                       </div>
-                      <div className="flex gap-1 items-center shrink-0">
+
+                      <Link
+                        to={`/cuentas/${account.id}`}
+                        className="block text-2xl font-black text-black tracking-tight mt-3 hover:underline"
+                      >
+                        {account.name}
+                      </Link>
+
+                      <div className="flex items-center gap-1.5 text-xs text-black/80 font-medium mt-1">
+                        <Icon name={TYPE_ICONS[account.type] ?? 'wallet'} size={14} />
+                        <span>{TYPE_LABELS[account.type] ?? account.type}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-end justify-between pt-4 mt-2 border-t border-black/10">
+                      <div>
+                        <span className="block text-[11px] font-semibold text-black/70">
+                          Este mes
+                        </span>
+                        <span className="block text-sm sm:text-base font-black text-black tabular-nums">
+                          {account.balance === 0
+                            ? 'Sin movimientos'
+                            : `${account.balance > 0 ? '+' : '−'}${money(Math.abs(account.balance))}`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
                         <button
-                          onClick={() => setFavoriteId(account.id)}
-                          aria-label={
-                            isFavorite
-                              ? `Cuenta principal: ${account.name}`
-                              : `Marcar ${account.name} como principal`
-                          }
-                          title={isFavorite ? 'Cuenta principal' : 'Marcar como principal'}
-                          className={`p-1.5 rounded-lg transition ${
-                            isFavorite
-                              ? 'text-gold bg-gold/10 hover:bg-gold/20'
-                              : 'text-muted hover:text-gold hover:bg-raised'
-                          }`}
-                        >
-                          <Icon name={isFavorite ? 'starFilled' : 'star'} size={15} />
-                        </button>
-                        <button
+                          type="button"
                           onClick={() => setEditing(account)}
                           aria-label={`Editar ${account.name}`}
-                          className="text-muted hover:text-ink p-1.5 rounded-lg hover:bg-raised transition"
+                          className="p-1.5 rounded-lg text-black hover:bg-black/10 transition-colors cursor-pointer"
                         >
-                          <Icon name="pencil" size={15} />
+                          <Icon name="pencil" size={16} />
                         </button>
                         <button
+                          type="button"
                           onClick={() => setDeleting(account)}
                           aria-label={`Dar de baja ${account.name}`}
-                          className="text-muted hover:text-expense p-1.5 rounded-lg hover:bg-raised transition"
+                          className="p-1.5 rounded-lg text-black hover:bg-black/10 transition-colors cursor-pointer"
                         >
-                          <Icon name="trash" size={15} />
+                          <Icon name="trash" size={16} />
                         </button>
                       </div>
                     </div>
-                  </Card>
-                </li>
+                  </div>
+                )
+              }
+
+              // Secondary Account Cards (Dark Cards)
+              return (
+                <div
+                  key={account.id}
+                  className="bg-[#141414] border border-white/5 rounded-3xl p-6 text-white shadow-sm flex flex-col justify-between min-h-[175px] hover:border-white/10 transition-all group"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <Link
+                        to={`/cuentas/${account.id}`}
+                        className="text-2xl font-bold text-white tracking-tight hover:text-gold transition-colors truncate"
+                      >
+                        {account.name}
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={() => setFavoriteId(account.id)}
+                        aria-label={`Marcar ${account.name} como principal`}
+                        title="Marcar como principal"
+                        className="p-1 rounded-lg text-zinc-500 hover:text-gold transition-colors cursor-pointer"
+                      >
+                        <Icon name="star" size={17} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-xs text-zinc-400 mt-1">
+                      <Icon name={TYPE_ICONS[account.type] ?? 'wallet'} size={14} />
+                      <span>{TYPE_LABELS[account.type] ?? account.type}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-end justify-between pt-4 mt-2 border-t border-white/5">
+                    <div>
+                      <span className="block text-[11px] font-medium text-zinc-500">
+                        Este mes
+                      </span>
+                      <span
+                        className={`block text-sm sm:text-base font-bold tabular-nums ${
+                          account.balance > 0
+                            ? 'text-income'
+                            : account.balance < 0
+                              ? 'text-expense'
+                              : 'text-zinc-400'
+                        }`}
+                      >
+                        {account.balance === 0
+                          ? 'Sin movimientos'
+                          : `${account.balance > 0 ? '+' : '−'}${money(Math.abs(account.balance))}`}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setEditing(account)}
+                        aria-label={`Editar ${account.name}`}
+                        className="p-1.5 rounded-lg text-zinc-500 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <Icon name="pencil" size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleting(account)}
+                        aria-label={`Dar de baja ${account.name}`}
+                        className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 transition-colors cursor-pointer"
+                      >
+                        <Icon name="trash" size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )
             })}
-          </ul>
+          </div>
         )}
 
         {inactive.length > 0 && (
-          <details className="mt-5">
-            <summary className="text-sm text-muted cursor-pointer">
-              {inactive.length} dada{inactive.length === 1 ? '' : 's'} de baja
-            </summary>
-            <ul className="mt-2 space-y-1">
-              {inactive.map((account) => (
-                <li key={account.id} className="flex items-center gap-3 py-1.5">
-                  <span className="text-muted line-through flex-1 text-sm truncate">
-                    {account.name}
-                  </span>
-                  <button
-                    onClick={() => void handleReactivate(account)}
-                    className="text-xs text-gold hover:underline"
+          <div className="pt-2">
+            <details className="mt-4">
+              <summary className="text-xs text-zinc-400 cursor-pointer hover:text-white transition-colors">
+                {inactive.length} {inactive.length === 1 ? 'cuenta dada de baja' : 'cuentas dadas de baja'}
+              </summary>
+              <ul className="mt-3 space-y-2">
+                {inactive.map((account) => (
+                  <li
+                    key={account.id}
+                    className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-[#141414] border border-white/5"
                   >
-                    Reactivar
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </details>
+                    <span className="text-zinc-500 line-through text-sm truncate">
+                      {account.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void handleReactivate(account)}
+                      className="text-xs font-semibold text-gold hover:underline cursor-pointer"
+                    >
+                      Reactivar
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </div>
         )}
       </StateWrapper>
 
@@ -202,10 +299,10 @@ export function Accounts() {
             id="type"
             name="type"
             defaultValue={editing?.type ?? 'BANK'}
-            className="input"
+            className="input cursor-pointer"
           >
             {Object.entries(TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
+              <option key={value} value={value} className="bg-zinc-900 text-white">
                 {label}
               </option>
             ))}

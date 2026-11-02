@@ -12,6 +12,7 @@ type MoneyInputProps = {
   required?: boolean
   autoFocus?: boolean
   className?: string
+  hidePrefix?: boolean
 }
 
 /**
@@ -41,6 +42,7 @@ export function MoneyInput({
   required,
   autoFocus,
   className = 'input no-spinner pl-8',
+  hidePrefix = false,
 }: MoneyInputProps) {
   const ref = useRef<HTMLInputElement>(null)
   const pending = useRef<number | null>(null)
@@ -85,8 +87,12 @@ export function MoneyInput({
   }
 
   return (
-    <div className="relative">
-      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">$</span>
+    <div className={hidePrefix ? 'w-full' : 'relative'}>
+      {!hidePrefix && (
+        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-semibold select-none">
+          $
+        </span>
+      )}
       <input
         ref={ref}
         id={id}

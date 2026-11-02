@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import { Button } from './Button'
-import { Card } from './Card'
 import { ConfirmDialog } from './ConfirmDialog'
 import { FormModal } from './FormModal'
 import { Icon } from './Icon'
@@ -13,14 +11,11 @@ import { resolveDefaultAccountId, useFavoriteAccount } from '../utils/favoriteAc
 import { money, parseMoney, relativeDay, shortDate, todayIso } from '../utils/format'
 
 /**
- * Las cuotas en curso, dentro de la pantalla de programados.
+ * Sección de gestión y visualización de planes de compras en cuotas.
  *
- * No tienen pantalla propia a propósito. Una cuota y un recurrente son hermanos:
- * los dos son reglas que escriben movimientos solos y los dos aparecen juntos en
- * el mismo bloque de próximos compromisos del inicio. Mostrarlos juntos en el
- * dashboard y después separarlos en dos pantallas dejaría el aviso apuntando a
- * un lado donde no está la mitad de las cosas, y sumaría un octavo lugar a la
- * barra del teléfono, que ya está llena.
+ * Se integra dentro de la vista de compromisos programados junto a los gastos recurrentes
+ * para unificar la planificación financiera de débitos automáticos periódicos, consolidar
+ * las obligaciones próximas en el panel de control y optimizar el espacio de navegación.
  */
 export function CuotasSection() {
   const [favoriteId] = useFavoriteAccount()
@@ -97,12 +92,16 @@ export function CuotasSection() {
 
   return (
     <section className="space-y-3">
-      <header className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-muted">Cuotas</h2>
-        <Button size="sm" onClick={openCreate}>
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">Cuotas</h2>
+        <button
+          type="button"
+          onClick={openCreate}
+          className="bg-gold text-black font-bold rounded-full px-5 py-2 text-xs sm:text-sm flex items-center gap-1.5 hover:bg-gold-hover shadow-sm transition-colors cursor-pointer"
+        >
           <Icon name="plus" size={16} />
-          Nueva
-        </Button>
+          Nueva cuota
+        </button>
       </header>
 
       {running.length > 0 && (
@@ -351,24 +350,31 @@ function InstallmentCard({
   const label = plan.description || plan.category?.name || 'Cuota'
   const current = Math.min(plan.paid_count + 1, plan.total_count)
   const progress = Math.round((plan.paid_count / plan.total_count) * 100)
+  const isIncome = plan.type === 'INCOME'
 
   return (
     <li>
-      <Card className="p-5 hover:border-gold-dim transition">
+      <div className="bg-[#141414] border border-white/5 rounded-3xl p-5 sm:p-6 shadow-sm hover:border-white/10 transition-colors">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 min-w-0">
-            <span className={plan.type === 'INCOME' ? 'text-income mt-0.5' : 'text-muted mt-0.5'}>
-              <Icon name="layers" size={18} />
+          <div className="flex items-start gap-3.5 min-w-0">
+            <span
+              className={`w-9 h-9 rounded-full grid place-items-center shrink-0 mt-0.5 ${
+                isIncome
+                  ? 'bg-sky-950/70 text-sky-400 border border-sky-800/40'
+                  : 'bg-red-950/70 text-red-400 border border-red-800/40'
+              }`}
+            >
+              <Icon name="layers" size={16} />
             </span>
             <div className="min-w-0">
-              <p className="font-semibold truncate">{label}</p>
-              <p className="text-xs text-muted mt-0.5">
+              <p className="font-bold text-white text-base truncate">{label}</p>
+              <p className="text-xs text-zinc-400 mt-0.5">
                 Cuota {current} de {plan.total_count} · {shortDate(plan.next_date)}
                 {plan.next_date < todayIso() && (
-                  <span className="text-gold"> · {relativeDay(plan.next_date)}</span>
+                  <span className="text-gold font-medium"> · {relativeDay(plan.next_date)}</span>
                 )}
               </p>
-              <p className="text-xs text-muted mt-0.5">
+              <p className="text-xs text-zinc-500 mt-0.5">
                 {plan.category?.name ?? 'Sin categoría'}
                 {plan.account_name ? ` · ${plan.account_name}` : ''}
               </p>
@@ -377,26 +383,28 @@ function InstallmentCard({
 
           <div className="text-right shrink-0">
             <p
-              className={`font-semibold tabular-nums ${
-                plan.type === 'INCOME' ? 'text-income' : ''
+              className={`font-black tabular-nums text-base sm:text-lg tracking-tight ${
+                isIncome ? 'text-income' : 'text-expense'
               }`}
             >
-              {plan.type === 'INCOME' ? '+' : '−'}
+              {isIncome ? '+' : '−'}
               {money(plan.amount)}
             </p>
-            <p className="text-xs text-muted">por mes</p>
-            <div className="flex gap-0.5 mt-1 justify-end">
+            <p className="text-xs text-zinc-500">por mes</p>
+            <div className="flex gap-1 mt-1 justify-end">
               <button
+                type="button"
                 onClick={onEdit}
                 aria-label={`Editar ${label}`}
-                className="text-muted hover:text-ink p-1.5 rounded-lg hover:bg-raised transition"
+                className="text-zinc-500 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <Icon name="pencil" size={15} />
               </button>
               <button
+                type="button"
                 onClick={onDelete}
                 aria-label={`Borrar ${label}`}
-                className="text-muted hover:text-expense p-1.5 rounded-lg hover:bg-raised transition"
+                className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <Icon name="trash" size={15} />
               </button>
@@ -404,23 +412,29 @@ function InstallmentCard({
           </div>
         </div>
 
-        <div className="mt-3.5 space-y-1.5">
-          <div className="h-1.5 w-full rounded-full bg-line overflow-hidden">
-            <div className="h-full rounded-full bg-muted" style={{ width: `${progress}%` }} />
+        <div className="mt-4 space-y-2">
+          <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gold transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
           </div>
-          <div className="flex items-center justify-between text-xs text-muted tabular-nums">
+          <div className="flex items-center justify-between text-xs text-zinc-400 tabular-nums font-medium">
             <span>quedan {plan.remaining} {plan.remaining === 1 ? 'cuota' : 'cuotas'}</span>
-            <span className="font-medium text-ink">{money(plan.total_pending)}</span>
+            <span className="font-bold text-white">{money(plan.total_pending)}</span>
           </div>
         </div>
 
-        <button
-          onClick={onToggle}
-          className="mt-3 text-xs text-muted hover:text-gold transition"
-        >
-          Pausar
-        </button>
-      </Card>
+        <div className="pt-3 mt-3 border-t border-white/5 flex justify-end">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="text-xs font-semibold text-zinc-400 hover:text-gold transition-colors cursor-pointer"
+          >
+            Pausar
+          </button>
+        </div>
+      </div>
     </li>
   )
 }

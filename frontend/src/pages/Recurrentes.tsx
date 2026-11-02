@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import { Button } from '../components/Button'
-import { Card } from '../components/Card'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { CuotasSection } from '../components/CuotasSection'
 import { FormModal } from '../components/FormModal'
@@ -73,23 +71,29 @@ export function Recurrentes() {
   }
 
   return (
-    <div className="space-y-5">
-      <header className="flex items-center justify-between">
-        <h1 className="text-sm font-medium uppercase tracking-wide text-muted">Recurrentes</h1>
-        <Button size="sm" onClick={() => setCreating(true)}>
+    <div className="space-y-6">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+          Recurrentes
+        </h1>
+        <button
+          type="button"
+          onClick={() => setCreating(true)}
+          className="bg-gold text-black font-bold rounded-full px-5 py-2 text-xs sm:text-sm flex items-center gap-1.5 hover:bg-gold-hover shadow-sm transition-colors cursor-pointer"
+        >
           <Icon name="plus" size={16} />
-          Nuevo
-        </Button>
+          Nuevo recurrente
+        </button>
       </header>
 
       <StateWrapper loading={list.loading} error={list.error} onRetry={() => void list.reload()}>
         {active.length === 0 ? (
           <EmptyState
             title="Todavía no tenés recurrentes"
-            hint="Cargá el alquiler, Netflix o el sueldo una vez y se registran solos."
+            hint="Cargá el alquiler, servicios o el sueldo una vez y se registran solos."
           />
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {active.map((rule) => (
               <RecurringCard
                 key={rule.id}
@@ -103,20 +107,26 @@ export function Recurrentes() {
         )}
 
         {inactive.length > 0 && (
-          <details className="mt-5">
-            <summary className="text-sm text-muted cursor-pointer">
+          <details className="mt-4">
+            <summary className="text-xs text-zinc-400 cursor-pointer hover:text-white transition-colors">
               {inactive.length} pausado{inactive.length === 1 ? '' : 's'}
             </summary>
-            <ul className="mt-2 space-y-1">
+            <ul className="mt-3 space-y-2">
               {inactive.map((rule) => (
-                <li key={rule.id} className="flex items-center gap-3 py-1.5">
-                  <span className="text-muted line-through flex-1 text-sm truncate">
+                <li
+                  key={rule.id}
+                  className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#141414] border border-white/5"
+                >
+                  <span className="text-zinc-500 line-through text-sm truncate flex-1">
                     {rule.description || rule.category?.name}
                   </span>
-                  <span className="text-muted tabular-nums text-sm">{money(rule.amount)}</span>
+                  <span className="text-zinc-500 tabular-nums text-sm font-semibold">
+                    {money(rule.amount)}
+                  </span>
                   <button
+                    type="button"
                     onClick={() => void handleToggle(rule)}
-                    className="text-xs text-gold hover:underline"
+                    className="text-xs font-semibold text-gold hover:underline cursor-pointer ml-2"
                   >
                     Reanudar
                   </button>
@@ -175,10 +185,10 @@ export function Recurrentes() {
               id="frequency"
               name="frequency"
               defaultValue={editing?.frequency ?? 'MONTHLY'}
-              className="input"
+              className="input cursor-pointer"
             >
-              <option value="MONTHLY">Todos los meses</option>
-              <option value="WEEKLY">Todas las semanas</option>
+              <option value="MONTHLY" className="bg-zinc-900 text-white">Todos los meses</option>
+              <option value="WEEKLY" className="bg-zinc-900 text-white">Todas las semanas</option>
             </select>
           </div>
           <div>
@@ -205,20 +215,17 @@ export function Recurrentes() {
             name="category_id"
             required
             defaultValue={editing?.category_id ?? ''}
-            className="input"
+            className="input cursor-pointer"
           >
-            <option value="" disabled>
+            <option value="" disabled className="bg-zinc-900 text-white">
               Elegí una categoría
             </option>
             {usableCategories.map((category: Category) => (
-              <option key={category.id} value={category.id}>
+              <option key={category.id} value={category.id} className="bg-zinc-900 text-white">
                 {category.name} · {category.type === 'INCOME' ? 'entra' : 'sale'}
               </option>
             ))}
           </select>
-          <p className="text-xs text-muted mt-1.5">
-            La categoría dice si esto entra o sale.
-          </p>
         </div>
 
         <div>
@@ -230,10 +237,10 @@ export function Recurrentes() {
             name="account_id"
             required
             defaultValue={editing?.account_id ?? resolveDefaultAccountId(usableAccounts)}
-            className="input"
+            className="input cursor-pointer"
           >
             {usableAccounts.map((account) => (
-              <option key={account.id} value={account.id}>
+              <option key={account.id} value={account.id} className="bg-zinc-900 text-white">
                 {account.name}
                 {account.id === favoriteId ? ' (Principal)' : ''}
               </option>
@@ -262,7 +269,7 @@ export function Recurrentes() {
         onClose={() => setDeleting(null)}
       />
 
-      <div className="pt-5 border-t border-line">
+      <div className="pt-6 border-t border-white/5">
         <CuotasSection />
       </div>
     </div>
@@ -281,54 +288,61 @@ function RecurringCard({
   onDelete: () => void
 }) {
   const label = rule.description || rule.category?.name || 'Recurrente'
+  const isIncome = rule.type === 'INCOME'
 
   return (
     <li>
-      <Card className="p-5 hover:border-gold-dim transition">
+      <div className="bg-[#141414] border border-white/5 rounded-3xl p-5 sm:p-6 shadow-sm hover:border-white/10 transition-colors">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 min-w-0">
+          <div className="flex items-start gap-3.5 min-w-0">
             <span
-              className={rule.type === 'INCOME' ? 'text-income mt-0.5' : 'text-muted mt-0.5'}
+              className={`w-9 h-9 rounded-full grid place-items-center shrink-0 mt-0.5 ${
+                isIncome
+                  ? 'bg-sky-950/70 text-sky-400 border border-sky-800/40'
+                  : 'bg-red-950/70 text-red-400 border border-red-800/40'
+              }`}
             >
-              <Icon name="repeat" size={18} />
+              <Icon name="repeat" size={16} />
             </span>
             <div className="min-w-0">
-              <p className="font-semibold truncate">{label}</p>
-              <p className="text-xs text-muted mt-0.5">
+              <p className="font-bold text-white text-base truncate">{label}</p>
+              <p className="text-xs text-zinc-400 mt-0.5">
                 {FREQUENCY_LABELS[rule.frequency] ?? rule.frequency} · {shortDate(rule.next_date)}
                 {rule.next_date < todayIso() && (
-                  <span className="text-gold"> · {relativeDay(rule.next_date)}</span>
+                  <span className="text-gold font-medium"> · {relativeDay(rule.next_date)}</span>
                 )}
               </p>
-              <p className="text-xs text-muted mt-0.5">
+              <p className="text-xs text-zinc-500 mt-0.5">
                 {rule.category?.name ?? 'Sin categoría'}
                 {rule.account_name ? ` · ${rule.account_name}` : ''}
-                {rule.times_charged > 0 && ` · van ${rule.times_charged}`}
+                {rule.times_charged > 0 && ` · ${rule.times_charged} cobros`}
               </p>
             </div>
           </div>
 
           <div className="text-right shrink-0">
             <p
-              className={`font-semibold tabular-nums ${
-                rule.type === 'INCOME' ? 'text-income' : ''
+              className={`font-black tabular-nums text-base sm:text-lg tracking-tight ${
+                isIncome ? 'text-income' : 'text-expense'
               }`}
             >
-              {rule.type === 'INCOME' ? '+' : '−'}
+              {isIncome ? '+' : '−'}
               {money(rule.amount)}
             </p>
-            <div className="flex gap-0.5 mt-1 justify-end">
+            <div className="flex gap-1 mt-1 justify-end">
               <button
+                type="button"
                 onClick={onEdit}
                 aria-label={`Editar ${label}`}
-                className="text-muted hover:text-ink p-1.5 rounded-lg hover:bg-raised transition"
+                className="text-zinc-500 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <Icon name="pencil" size={15} />
               </button>
               <button
+                type="button"
                 onClick={onDelete}
                 aria-label={`Borrar ${label}`}
-                className="text-muted hover:text-expense p-1.5 rounded-lg hover:bg-raised transition"
+                className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <Icon name="trash" size={15} />
               </button>
@@ -336,13 +350,16 @@ function RecurringCard({
           </div>
         </div>
 
-        <button
-          onClick={onToggle}
-          className="mt-3 text-xs text-muted hover:text-gold transition"
-        >
-          Pausar
-        </button>
-      </Card>
+        <div className="pt-3 mt-3 border-t border-white/5 flex justify-end">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="text-xs font-semibold text-zinc-400 hover:text-gold transition-colors cursor-pointer"
+          >
+            Pausar
+          </button>
+        </div>
+      </div>
     </li>
   )
 }

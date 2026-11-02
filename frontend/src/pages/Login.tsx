@@ -36,49 +36,55 @@ export function Login({ onSignedIn }: { onSignedIn: () => void }) {
   return (
     <div className="min-h-dvh flex items-center justify-center px-5">
       <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-8 text-gold">
-          <svg
-            viewBox="0 0 32 32"
-            width="40"
-            height="40"
-            aria-hidden="true"
-            focusable="false"
-          >
-            <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.45" />
-            <circle cx="16" cy="16" r="7" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.7" />
-            <circle cx="16" cy="16" r="3.5" fill="currentColor" />
-          </svg>
-          <h1 className="mt-3 text-lg font-semibold text-ink">Agenda Financiera</h1>
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-12 h-12 rounded-2xl bg-gold flex items-center justify-center text-black shadow-lg shadow-gold/20 mb-3">
+            <svg
+              viewBox="0 0 32 32"
+              width="26"
+              height="26"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="2.5" opacity="0.4" />
+              <circle cx="16" cy="16" r="7" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.8" />
+              <circle cx="16" cy="16" r="3.5" fill="currentColor" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-black text-white tracking-tight">Finanzas</h1>
+          <p className="text-xs text-neutral-400 mt-0.5">Agenda Financiera Personal</p>
         </div>
 
-        <form onSubmit={submit} className="card-hero rounded-2xl p-6">
-          <label htmlFor="clave" className="label">
-            Clave
-          </label>
-          <input
-            id="clave"
-            type="password"
-            autoComplete="current-password"
-            autoFocus
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="input"
-            disabled={busy}
-          />
+        <form onSubmit={submit} className="bg-[#141414] border border-white/5 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4">
+          <div>
+            <label htmlFor="clave" className="label">
+              Contraseña de acceso
+            </label>
+            <input
+              id="clave"
+              type="password"
+              autoComplete="current-password"
+              autoFocus
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="input rounded-xl"
+              disabled={busy}
+              placeholder="••••••••"
+            />
+          </div>
 
           {error && (
-            <p role="alert" className="mt-3 text-sm text-expense">
+            <p role="alert" className="text-xs text-expense bg-expense/10 border border-expense/20 rounded-xl px-3 py-2">
               {error}
             </p>
           )}
 
-          <Button type="submit" className="w-full mt-5" disabled={busy || !password}>
-            {busy ? 'Verificando…' : 'Entrar'}
+          <Button type="submit" className="w-full rounded-full py-3 text-sm font-bold mt-2" disabled={busy || !password}>
+            {busy ? 'Verificando…' : 'Ingresar'}
           </Button>
         </form>
 
-        <p className="mt-4 text-center text-xs text-muted">
-          La clave no se guarda en este dispositivo.
+        <p className="mt-5 text-center text-xs text-neutral-500">
+          La sesión se autentica de forma segura con cookie HttpOnly.
         </p>
       </div>
     </div>
@@ -112,36 +118,39 @@ export function LoginLoading({
   return (
     <div className="min-h-dvh flex items-center justify-center px-5">
       <div className="w-full max-w-sm flex flex-col items-center">
-        <div className="flex flex-col items-center mb-6 text-gold">
-          <svg
-            viewBox="0 0 32 32"
-            width="40"
-            height="40"
-            aria-hidden="true"
-            focusable="false"
-          >
-            <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.45" />
-            <circle cx="16" cy="16" r="7" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.7" />
-            <circle cx="16" cy="16" r="3.5" fill="currentColor" />
-          </svg>
-          <h1 className="mt-3 text-lg font-semibold text-ink">Agenda Financiera</h1>
+        <div className="flex flex-col items-center mb-6">
+          <div className="w-12 h-12 rounded-2xl bg-gold flex items-center justify-center text-black shadow-lg shadow-gold/20 mb-3">
+            <svg
+              viewBox="0 0 32 32"
+              width="26"
+              height="26"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="2.5" opacity="0.4" />
+              <circle cx="16" cy="16" r="7" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.8" />
+              <circle cx="16" cy="16" r="3.5" fill="currentColor" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-black text-white tracking-tight">Finanzas</h1>
+          <p className="text-xs text-neutral-400 mt-0.5">Agenda Financiera</p>
         </div>
 
         {error ? (
-          <div className="card-hero rounded-2xl p-6 w-full text-center space-y-4">
-            <p className="text-expense text-sm font-medium">{error}</p>
-            <p className="text-muted text-xs">
-              No pudimos conectar con el servidor. Si el servicio en Render estaba inactivo,
+          <div className="bg-[#141414] border border-white/5 rounded-3xl p-6 w-full text-center space-y-4 shadow-2xl">
+            <p className="text-expense text-sm font-semibold">{error}</p>
+            <p className="text-neutral-400 text-xs">
+              No pudimos conectar con el servidor. Si el servicio estaba inactivo,
               puede haber demorado en despertar o haber un problema de red temporal.
             </p>
             <div className="pt-2 flex flex-col gap-2">
               {onRetry && (
-                <Button type="button" variant="secondary" className="w-full" onClick={onRetry}>
+                <Button type="button" variant="secondary" className="w-full rounded-full" onClick={onRetry}>
                   Reintentar conexión
                 </Button>
               )}
               {onSkip && (
-                <Button type="button" variant="primary" className="w-full" onClick={onSkip}>
+                <Button type="button" variant="primary" className="w-full rounded-full" onClick={onSkip}>
                   {skipLabel}
                 </Button>
               )}
@@ -150,16 +159,16 @@ export function LoginLoading({
         ) : (
           <div className="flex flex-col items-center w-full">
             <Spinner label={label} />
-            {sublabel && <p className="text-xs text-muted text-center mt-1">{sublabel}</p>}
+            {sublabel && <p className="text-xs text-neutral-400 text-center mt-1">{sublabel}</p>}
 
             {elapsed >= 5 && (
-              <div className="mt-4 p-4 rounded-xl border border-line bg-card/60 text-xs text-muted text-center max-w-xs space-y-2">
-                <p className="text-ink font-medium">Conectando con el servidor…</p>
+              <div className="mt-4 p-4 rounded-2xl border border-white/5 bg-[#141414] text-xs text-neutral-400 text-center max-w-xs space-y-2">
+                <p className="text-white font-semibold">Conectando con el servidor…</p>
                 <p>
-                  En el plan gratuito de Render el servidor se suspende tras inactividad y tarda
-                  cerca de 50 segundos en despertar.
+                  En el plan gratuito el servidor se suspende tras inactividad y tarda
+                  unos instantes en despertar.
                 </p>
-                <p className="text-gold font-mono text-[11px] font-semibold">
+                <p className="text-gold font-mono text-[11px] font-bold">
                   {elapsed}s transcurridos
                 </p>
               </div>
@@ -171,7 +180,7 @@ export function LoginLoading({
                   <button
                     type="button"
                     onClick={onRetry}
-                    className="text-xs text-gold hover:underline font-medium cursor-pointer"
+                    className="text-xs text-gold hover:underline font-bold cursor-pointer"
                   >
                     Reintentar conexión
                   </button>
@@ -180,7 +189,7 @@ export function LoginLoading({
                   <button
                     type="button"
                     onClick={onSkip}
-                    className="text-xs text-muted hover:text-ink transition cursor-pointer"
+                    className="text-xs text-neutral-400 hover:text-white transition cursor-pointer"
                   >
                     {skipLabel}
                   </button>

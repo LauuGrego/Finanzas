@@ -4,15 +4,17 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type Size = 'sm' | 'md'
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-gold text-gold-ink hover:brightness-110 disabled:opacity-50',
-  secondary: 'bg-raised text-ink border border-line hover:border-gold-dim',
-  ghost: 'text-muted hover:text-ink hover:bg-raised',
-  danger: 'bg-expense text-gold-ink hover:brightness-110',
+  primary:
+    'bg-gold text-black hover:bg-gold-hover font-bold shadow-sm transition-all duration-150',
+  secondary:
+    'bg-surface text-ink border border-white/15 hover:bg-white/10 font-semibold transition-all duration-150',
+  ghost: 'text-muted hover:text-ink hover:bg-white/5 transition-all duration-150',
+  danger: 'bg-expense text-white hover:brightness-110 font-bold shadow-sm transition-all duration-150',
 }
 
 const SIZES: Record<Size, string> = {
-  sm: 'px-3 py-1.5 text-sm rounded-lg',
-  md: 'px-4 py-2.5 rounded-xl',
+  sm: 'px-4 py-1.5 text-xs rounded-full',
+  md: 'px-5 py-2.5 text-sm rounded-full',
 }
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -26,12 +28,14 @@ export function Button({
   size = 'md',
   className = '',
   children,
+  type = 'button',
   ...rest
 }: Props) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 font-medium transition
-                  disabled:cursor-not-allowed disabled:opacity-60
+      type={type}
+      className={`inline-flex items-center justify-center gap-2 font-medium transition cursor-pointer
+                  disabled:cursor-not-allowed disabled:opacity-50
                   ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
       {...rest}
     >

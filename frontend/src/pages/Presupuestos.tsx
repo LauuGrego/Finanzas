@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import { Button } from '../components/Button'
-import { Card } from '../components/Card'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { FormModal } from '../components/FormModal'
 import { Icon } from '../components/Icon'
@@ -13,19 +11,6 @@ import type { Budget, Category } from '../types'
 import { resolveColor } from '../utils/colors'
 import { currentPeriod, money, monthLabel, parseMoney, percent, shiftPeriod } from '../utils/format'
 
-/**
- * Presupuestos: un tope por categoría y por mes.
- *
- * La pantalla es de sólo lectura salvo el botón de nuevo y el de cada tarjeta.
- * Nada de lo que hay acá frena un gasto: un presupuesto que se pasó informa, no
- * bloquea, porque un límite que no se puede pasar de largo miente sobre lo que
- * ya pasó. El único aviso en el camino está en el modal de movimiento, y
- * tampoco impide guardar.
- *
- * El mes se elige arriba con el mismo Stepper que usan el inicio y la agenda,
- * para que "presupuesto de septiembre" sea el mismo septiembre que estás
- * mirando en los movimientos y no un mes aparte que hay que volver a elegir.
- */
 export function Presupuestos() {
   const [period, setPeriod] = useState(currentPeriod())
   const budgets = useAsync(() => api.budgets.list(period), [period])
@@ -96,49 +81,62 @@ export function Presupuestos() {
   }
 
   return (
-    <div className="space-y-5">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-sm font-medium uppercase tracking-wide text-muted">Presupuestos</h1>
-        <MonthStepper period={period} onChange={setPeriod} />
+    <div className="space-y-6">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+          Presupuestos
+        </h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <MonthStepper period={period} onChange={setPeriod} />
+          <button
+            type="button"
+            onClick={openCreate}
+            className="bg-gold text-black font-bold rounded-full px-5 py-2 text-xs sm:text-sm flex items-center gap-1.5 hover:bg-gold-hover shadow-sm transition-colors cursor-pointer"
+          >
+            <Icon name="plus" size={16} />
+            Nuevo presupuesto
+          </button>
+        </div>
       </header>
 
-      <p className="text-sm text-muted">Un tope por categoría: te avisa, no te frena.</p>
-
       {notice && (
-        <p className="text-sm text-muted bg-raised rounded-xl px-3 py-2">{notice}</p>
+        <p className="text-xs text-zinc-300 bg-[#141414] border border-white/10 rounded-2xl p-4">
+          {notice}
+        </p>
       )}
 
       {summary && summary.count > 0 && (
-        <Card>
+        <div className="bg-[#141414] border border-white/5 rounded-3xl p-6 shadow-sm">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <p className="text-muted text-sm">Gastado del mes</p>
-            <p className="font-semibold tabular-nums">
-              {money(summary.spent)} <span className="text-muted font-normal">de {money(summary.amount)}</span>
-            </p>
+            <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+              Gastado del mes
+            </span>
+            <span className="font-black text-lg text-white tabular-nums">
+              {money(summary.spent)}{' '}
+              <span className="text-zinc-500 font-medium text-sm">
+                de {money(summary.amount)}
+              </span>
+            </span>
           </div>
 
-          <BudgetBar percentage={summary.percentage} color={summary.over_count > 0 ? '#e06a62' : undefined} />
+          <BudgetBar
+            percentage={summary.percentage}
+            color={summary.over_count > 0 ? '#ef4444' : '#ffcd00'}
+          />
 
-          <div className="flex items-center justify-between gap-3 mt-3 text-sm">
-            <span className="text-muted">
+          <div className="flex items-center justify-between gap-3 mt-3 text-xs sm:text-sm font-medium">
+            <span className="text-zinc-400">
               {summary.count} {summary.count === 1 ? 'presupuesto' : 'presupuestos'}
-              {summary.over_count > 0 && ` · ${summary.over_count} pasado${summary.over_count === 1 ? '' : 's'}`}
+              {summary.over_count > 0 && ` · ${summary.over_count} excedido${summary.over_count === 1 ? '' : 's'}`}
             </span>
-            <span className={`tabular-nums ${summary.remaining < 0 ? 'text-expense' : 'text-muted'}`}>
+            <span className={`tabular-nums font-bold ${summary.remaining < 0 ? 'text-expense' : 'text-zinc-300'}`}>
               {summary.remaining < 0
-                ? `te pasaste por ${money(Math.abs(summary.remaining))}`
-                : `quedan ${money(summary.remaining)}`}
+                ? `Excedido por ${money(Math.abs(summary.remaining))}`
+                : `Quedan ${money(summary.remaining)}`}
             </span>
           </div>
-        </Card>
+        </div>
       )}
-
-      <div className="flex justify-end">
-        <Button onClick={openCreate}>
-          <Icon name="plus" size={16} />
-          Nuevo
-        </Button>
-      </div>
 
       <StateWrapper
         loading={budgets.loading}
@@ -148,10 +146,10 @@ export function Presupuestos() {
         {items.length === 0 ? (
           <EmptyState
             title={`Todavía no tenés presupuestos en ${monthLabel(period)}`}
-            hint="Creá uno y vas a ver cuánto queda."
+            hint="Definí topes por categoría para controlar tus gastos mensuales."
           />
         ) : (
-          <ul className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {items.map((budget) => (
               <BudgetCard
                 key={budget.id}
@@ -160,7 +158,7 @@ export function Presupuestos() {
                 onDelete={() => setDeleting(budget)}
               />
             ))}
-          </ul>
+          </div>
         )}
       </StateWrapper>
 
@@ -172,54 +170,53 @@ export function Presupuestos() {
         error={error}
       >
         {editing ? (
-          <div>
-            <label className="label" htmlFor="budget-edit-amount">
-              Tope para {editing.category?.name ?? 'la categoría'}
-            </label>
-            <MoneyInput
-              id="budget-edit-amount"
-              name="amount"
-              required
-              defaultValue={editing.amount}
-              className="input no-spinner pl-8"
-            />
-            <p className="text-xs text-muted mt-1.5">
-              Vas gastado {money(editing.spent)} de {money(editing.amount)} ({percent(editing.percentage)}).
-            </p>
-            <label className="flex items-start gap-2.5 mt-4 cursor-pointer">
+          <div className="space-y-4">
+            <div>
+              <label className="label" htmlFor="budget-edit-amount">
+                Tope para {editing.category?.name ?? 'la categoría'}
+              </label>
+              <MoneyInput
+                id="budget-edit-amount"
+                name="amount"
+                required
+                defaultValue={editing.amount}
+                className="input no-spinner pl-8 text-lg font-bold"
+              />
+              <p className="text-xs text-muted mt-1.5">
+                Vas gastado {money(editing.spent)} de {money(editing.amount)} ({percent(editing.percentage)}).
+              </p>
+            </div>
+            <label className="flex items-start gap-2.5 cursor-pointer">
               <input
                 type="checkbox"
                 name="apply_forward"
                 defaultChecked
                 className="mt-0.5 accent-gold w-4 h-4"
               />
-              <span className="text-sm">
+              <span className="text-xs text-zinc-300">
                 Aplicar a los meses siguientes
-                <span className="block text-xs text-muted">Los que ya pasaron no cambian.</span>
+                <span className="block text-[11px] text-muted">Los meses anteriores no cambian.</span>
               </span>
             </label>
           </div>
         ) : (
-          <>
+          <div className="space-y-4">
             <div>
               <label className="label" htmlFor="budget-category">
                 Categoría
               </label>
-              <select id="budget-category" name="category_id" required className="input">
+              <select id="budget-category" name="category_id" required className="input cursor-pointer">
                 {usableCategories.map((category) => (
-                  <option key={category.id} value={category.id}>
+                  <option key={category.id} value={category.id} className="bg-zinc-900 text-white">
                     {category.name}
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-muted mt-1.5">
-                Para {monthLabel(period)}.
-              </p>
             </div>
 
             <div>
               <label className="label" htmlFor="budget-amount">
-                Tope del mes
+                Tope mensual
               </label>
               <MoneyInput
                 id="budget-amount"
@@ -227,7 +224,7 @@ export function Presupuestos() {
                 required
                 autoFocus
                 placeholder="200.000"
-                className="input no-spinner pl-8 text-lg font-semibold"
+                className="input no-spinner pl-8 text-lg font-bold"
               />
             </div>
 
@@ -238,18 +235,16 @@ export function Presupuestos() {
                 onChange={(event) => setRepeat(event.target.checked)}
                 className="mt-0.5 accent-gold w-4 h-4"
               />
-              <span className="text-sm">
+              <span className="text-xs text-zinc-300">
                 Repetir todos los meses por un año
-                <span className="block text-xs text-muted">
+                <span className="block text-[11px] text-muted">
                   {repeat
-                    ? `Se crean 12 presupuestos, de ${monthLabel(period)} a ${monthLabel(
-                        shiftPeriod(period, 11),
-                      )}.`
-                    : `Se crea 1 presupuesto en ${monthLabel(period)}.`}
+                    ? `Se crean 12 presupuestos hasta ${monthLabel(shiftPeriod(period, 11))}.`
+                    : `Se crea 1 presupuesto para ${monthLabel(period)}.`}
                 </span>
               </span>
             </label>
-          </>
+          </div>
         )}
       </FormModal>
 
@@ -276,21 +271,15 @@ export function Presupuestos() {
   )
 }
 
-/**
- * La barra de avance. Titanio como en las cuotas, porque es un dato y no algo
- * que se toca; en el color de la categoría mientras vas bien y en rojo sólo
- * cuando el gasto se pasó del tope, que es el único momento en que el color
- * está diciendo algo.
- */
 function BudgetBar({ percentage, color }: { percentage: number; color?: string }) {
   const over = percentage > 100
   return (
-    <div className="h-1.5 rounded-full bg-line overflow-hidden mt-3">
+    <div className="h-2 rounded-full bg-zinc-800 overflow-hidden mt-3">
       <div
-        className="h-full rounded-full"
+        className="h-full rounded-full transition-all duration-300"
         style={{
           width: `${Math.min(percentage, 100)}%`,
-          backgroundColor: over ? '#e06a62' : (color ?? '#9d9488'),
+          backgroundColor: over ? '#ef4444' : (color ?? '#ffcd00'),
         }}
       />
     </div>
@@ -311,49 +300,49 @@ function BudgetCard({
   const over = budget.over
 
   return (
-    <li>
-      <Card className="p-5 hover:border-gold-dim transition">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-2.5 min-w-0">
-            <span
-              aria-hidden="true"
-              className="w-2.5 h-2.5 rounded-full shrink-0 mt-1.5"
-              style={{ backgroundColor: barColor }}
-            />
-            <div className="min-w-0">
-              <p className="font-semibold truncate">{label}</p>
-              <p className="text-xs text-muted mt-0.5">
-                {money(budget.spent)} de {money(budget.amount)} · {percent(budget.percentage)}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-0.5 shrink-0">
-            <button
-              onClick={onEdit}
-              aria-label={`Editar ${label}`}
-              className="text-muted hover:text-ink p-1.5 rounded-lg hover:bg-raised transition"
-            >
-              <Icon name="pencil" size={15} />
-            </button>
-            <button
-              onClick={onDelete}
-              aria-label={`Borrar ${label}`}
-              className="text-muted hover:text-expense p-1.5 rounded-lg hover:bg-raised transition"
-            >
-              <Icon name="trash" size={15} />
-            </button>
+    <div className="bg-[#141414] border border-white/5 rounded-3xl p-5 sm:p-6 shadow-sm hover:border-white/10 transition-colors">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-2.5 min-w-0">
+          <span
+            aria-hidden="true"
+            className="w-2.5 h-2.5 rounded-full shrink-0 mt-1.5"
+            style={{ backgroundColor: barColor }}
+          />
+          <div className="min-w-0">
+            <p className="font-bold text-white text-base truncate">{label}</p>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              {money(budget.spent)} de {money(budget.amount)} · {percent(budget.percentage)}
+            </p>
           </div>
         </div>
 
-        <BudgetBar percentage={budget.percentage} color={barColor} />
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label={`Editar ${label}`}
+            className="text-zinc-500 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            <Icon name="pencil" size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            aria-label={`Borrar ${label}`}
+            className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            <Icon name="trash" size={15} />
+          </button>
+        </div>
+      </div>
 
-        <p className={`text-xs mt-2.5 ${over ? 'text-expense' : 'text-muted'}`}>
-          {over
-            ? `Te pasaste por ${money(Math.abs(budget.remaining))}`
-            : `Quedan ${money(budget.remaining)}`}
-        </p>
-      </Card>
-    </li>
+      <BudgetBar percentage={budget.percentage} color={barColor} />
+
+      <p className={`text-xs font-semibold mt-3 ${over ? 'text-expense' : 'text-zinc-400'}`}>
+        {over
+          ? `Excedido por ${money(Math.abs(budget.remaining))}`
+          : `Quedan ${money(budget.remaining)}`}
+      </p>
+    </div>
   )
 }

@@ -38,16 +38,22 @@ export function ConfirmDialog({
       onClose={onClose}
       footer={
         <>
-          <Button variant="secondary" className="flex-1" onClick={onClose} type="button">
+          <Button variant="secondary" className="flex-1 rounded-full" onClick={onClose} type="button">
             Cancelar
           </Button>
-          <Button variant="danger" className="flex-1" onClick={handleConfirm} disabled={busy}>
+          <Button
+            type="button"
+            variant="danger"
+            className="flex-1 rounded-full"
+            onClick={handleConfirm}
+            disabled={busy}
+          >
             {busy ? 'Eliminando…' : confirmLabel}
           </Button>
         </>
       }
     >
-      <p className="text-muted">{message}</p>
+      <p className="text-neutral-400 text-sm leading-relaxed">{message}</p>
     </Modal>
   )
 }

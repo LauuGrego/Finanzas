@@ -1,24 +1,26 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-canvas: #0c0b0a;
-  --color-surface: #171512;
-  --color-raised: #221e1a;
-  --color-line: #332d26;
-  --color-ink: #ece6dc;
-  --color-muted: #9d9488;
+  --color-canvas: #0b0b0b;
+  --color-sidebar: #0b0b0b;
+  --color-surface: #141414;
+  --color-raised: #1c1c1e;
+  --color-line: #222222;
+  --color-ink: #ffffff;
+  --color-muted: #9ca3af;
+  --color-disabled: #52525b;
 
-  --color-gold: #e0a32e;
-  --color-gold-dim: #7d6224;
-  --color-gold-ink: #1a1206;
+  --color-gold: #ffcd00;
+  --color-gold-hover: #ffe033;
+  --color-gold-dim: #ca8a04;
+  --color-gold-ink: #000000;
 
-  --color-arc: #5fb8cf;
+  --color-arc: #38bdf8;
+  --color-income: #38bdf8;
+  --color-expense: #ef4444;
 
-  --color-income: #67c8e0;
-  --color-expense: #e06a62;
-
-  --color-hero-from: #26201a;
-  --color-hero-to: #100e0b;
+  --color-hero-from: #ffcd00;
+  --color-hero-to: #ffd833;
 }
 
 @layer base {
@@ -29,12 +31,12 @@
 
   body {
     @apply text-ink antialiased;
-    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: var(--color-canvas);
     background-image: repeating-linear-gradient(
       115deg,
-      rgba(255, 255, 255, 0.014) 0 1px,
-      transparent 1px 7px
+      rgba(255, 255, 255, 0.015) 0 1px,
+      transparent 1px 6px
     );
     background-attachment: fixed;
   }
@@ -44,12 +46,12 @@
   }
 
   input[type='date']::-webkit-calendar-picker-indicator {
-    filter: invert(0.72) sepia(1) saturate(3) hue-rotate(5deg);
+    filter: invert(0.85) sepia(1) saturate(5) hue-rotate(5deg);
     cursor: pointer;
   }
 
   ::selection {
-    @apply bg-gold/25;
+    @apply bg-gold/30 text-white;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -64,21 +66,21 @@
 
 @layer components {
   .card {
-    @apply bg-surface border border-line rounded-2xl;
+    @apply bg-surface border border-line rounded-3xl;
   }
 
   .card-hero {
-    @apply border-gold-dim/70 bg-gradient-to-br from-hero-from to-hero-to;
+    @apply bg-gold text-black rounded-3xl;
   }
 
   .input {
-    @apply w-full rounded-xl border border-line bg-raised px-3.5 py-2.5 text-ink
-           placeholder:text-muted/60 focus:border-gold focus:outline-none
-           focus:ring-2 focus:ring-gold/20 transition;
+    @apply w-full rounded-xl border border-line bg-[#161616] px-3.5 py-2.5 text-ink
+           placeholder:text-muted/50 focus:border-gold focus:outline-none
+           focus:ring-2 focus:ring-gold/20 transition-all duration-150;
   }
 
   .label {
-    @apply block text-sm font-medium text-muted mb-1.5;
+    @apply block text-xs font-semibold text-muted uppercase tracking-wider mb-1.5;
   }
 
   .no-spinner::-webkit-outer-spin-button,
@@ -98,6 +100,6 @@
   button,
   summary,
   label[for] {
-    min-height: 24px;
+    min-height: 28px;
   }
 }

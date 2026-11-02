@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Button } from '../components/Button'
-import { Card } from '../components/Card'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { FormModal } from '../components/FormModal'
 import { Icon } from '../components/Icon'
@@ -99,25 +98,31 @@ export function Metas() {
   }
 
   return (
-    <div className="space-y-5">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-sm font-medium uppercase tracking-wide text-muted">Metas</h1>
-        <Button size="sm" onClick={openCreate}>
+    <div className="space-y-6">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Metas</h1>
+          <p className="text-xs sm:text-sm text-neutral-400 mt-1">
+            Lo juntado lo cargás vos, cuando quieras.
+          </p>
+        </div>
+        <Button
+          onClick={openCreate}
+          className="bg-gold hover:bg-gold-light text-black font-bold rounded-full px-5 py-2.5 shadow-sm text-xs sm:text-sm shrink-0 self-start sm:self-auto"
+        >
           <Icon name="plus" size={16} />
-          Nueva
+          Nueva meta
         </Button>
       </header>
-
-      <p className="text-sm text-muted -mt-2">Lo juntado lo cargás vos, cuando quieras.</p>
 
       <StateWrapper loading={goals.loading} error={goals.error} onRetry={() => void goals.reload()}>
         {items.length === 0 ? (
           <EmptyState
             title={showPaused ? 'No tenés metas' : 'No tenés metas activas'}
-            hint="Creá una para un viaje, un equipo o un fondo."
+            hint="Creá una para un viaje, un equipo o un fondo de ahorro."
           />
         ) : (
-          <ul className="space-y-3">
+          <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {items.map((goal) => (
               <GoalCard
                 key={goal.id}
@@ -132,14 +137,14 @@ export function Metas() {
       </StateWrapper>
 
       {!showPaused && (
-        <label className="flex items-center gap-2.5 cursor-pointer">
+        <label className="inline-flex items-center gap-2.5 cursor-pointer py-1 text-sm text-neutral-400 hover:text-white transition">
           <input
             type="checkbox"
             checked={showPaused}
             onChange={(event) => setShowPaused(event.target.checked)}
-            className="accent-gold w-4 h-4"
+            className="accent-gold w-4 h-4 rounded"
           />
-          <span className="text-sm text-muted">Ver las pausadas</span>
+          <span>Ver las metas pausadas</span>
         </label>
       )}
 
@@ -152,7 +157,7 @@ export function Metas() {
       >
         <div>
           <label className="label" htmlFor="goal-name">
-            Nombre
+            Nombre de la meta
           </label>
           <input
             id="goal-name"
@@ -162,14 +167,14 @@ export function Metas() {
             maxLength={120}
             autoFocus
             defaultValue={editing?.name ?? ''}
-            placeholder="Viaje a Bs. As."
+            placeholder="Fondo de emergencia, viaje, equipo..."
             className="input"
           />
         </div>
 
         <div>
           <label className="label" htmlFor="goal-target">
-            Cuánto necesitás
+            Monto objetivo
           </label>
           <MoneyInput
             id="goal-target"
@@ -177,26 +182,26 @@ export function Metas() {
             required
             defaultValue={editing?.target_amount ?? ''}
             placeholder="500.000"
-            className="input no-spinner pl-8 text-lg font-semibold"
+            className="input no-spinner pl-8 text-lg font-bold text-gold"
           />
         </div>
 
         <div>
           <label className="label" htmlFor="goal-current">
-            Cuánto llevás
+            Monto acumulado actual
           </label>
           <MoneyInput
             id="goal-current"
             name="current_amount"
             defaultValue={editing?.current_amount ?? ''}
             placeholder="0"
-            className="input no-spinner pl-8"
+            className="input no-spinner pl-8 font-semibold"
           />
         </div>
 
         <div>
           <label className="label" htmlFor="goal-deadline">
-            Fecha
+            Fecha límite
           </label>
           <input
             id="goal-deadline"
@@ -205,7 +210,7 @@ export function Metas() {
             defaultValue={editing?.deadline ?? ''}
             className="input"
           />
-          <p className="text-xs text-muted mt-1.5">Opcional: si pasa, la meta queda vencida.</p>
+          <p className="text-xs text-neutral-400 mt-1.5">Opcional: te ayuda a calcular cuánto falta.</p>
         </div>
       </FormModal>
 
@@ -228,31 +233,37 @@ export function Metas() {
   )
 }
 
-/**
- * El color dice en qué estado está, y sólo hay tres: dorado cuando se
- * cumplió, rojo cuando la fecha pasó sin llegar, titanio mientras se va. El
- * dorado va sólo acá porque es el único estado de la app que se ganó algo.
- */
-function statusStyle(goal: Goal): { bar: string; label: string; note: string } {
+function statusStyle(goal: Goal): { bar: string; label: string; note: string; badgeBg: string } {
   if (goal.status === 'cumplida') {
-    return { bar: '#c9a227', label: 'text-gold', note: 'Cumplida' }
+    return {
+      bar: '#ffcd00',
+      label: 'text-gold',
+      note: 'Cumplida',
+      badgeBg: 'bg-gold/10 text-gold border-gold/30',
+    }
   }
   if (goal.status === 'vencida') {
-    return { bar: '#e06a62', label: 'text-expense', note: 'Vencida' }
+    return {
+      bar: '#ef4444',
+      label: 'text-expense',
+      note: 'Vencida',
+      badgeBg: 'bg-expense/10 text-expense border-expense/30',
+    }
   }
-  return { bar: '#9d9488', label: 'text-muted', note: 'En curso' }
+  return {
+    bar: '#ffcd00',
+    label: 'text-neutral-300',
+    note: 'En curso',
+    badgeBg: 'bg-white/5 text-neutral-300 border-white/10',
+  }
 }
 
-/**
- * "vence en 45 días", "vence hoy", "venció hace 3 días". El día exacto ya está
- * en la línea de arriba; acá lo que interesa es cuánto falta.
- */
 function deadlineNote(goal: Goal): string | null {
   if (!goal.deadline) return null
   const days = goal.days_left ?? 0
-  if (days === 0) return 'vence hoy'
-  if (days > 0) return `vence en ${days} días`
-  return `venció hace ${Math.abs(days)} días`
+  if (days === 0) return 'Vence hoy'
+  if (days > 0) return `${days} días restantes`
+  return `Venció hace ${Math.abs(days)} días`
 }
 
 function GoalCard({
@@ -269,73 +280,97 @@ function GoalCard({
   const style = statusStyle(goal)
 
   return (
-    <li>
-      <Card className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-2.5 min-w-0">
-            <Icon name="target" size={18} className="text-muted mt-0.5 shrink-0" />
-            <div className="min-w-0">
-              <p className="font-semibold truncate">{goal.name}</p>
-              <p className="text-xs text-muted mt-0.5 tabular-nums">
-                {money(goal.current_amount)} de {money(goal.target_amount)} ·{' '}
-                {percent(goal.progress)}
-              </p>
+    <li className="list-none">
+      <div className="bg-[#141414] border border-white/5 rounded-3xl p-5 sm:p-6 transition hover:border-white/10 flex flex-col justify-between h-full">
+        <div>
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-gold shrink-0 border border-white/5">
+                <Icon name="target" size={18} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-bold text-white text-base truncate">{goal.name}</h3>
+                <span
+                  className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border mt-1 ${style.badgeBg}`}
+                >
+                  {style.note}
+                  {deadlineNote(goal) && (
+                    <span className="opacity-75 font-normal ml-1">· {deadlineNote(goal)}</span>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={onToggle}
+                aria-label={goal.active ? `Pausar ${goal.name}` : `Reactivar ${goal.name}`}
+                className="text-neutral-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition"
+              >
+                <Icon name={goal.active ? 'pause' : 'check'} size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={onEdit}
+                aria-label={`Editar ${goal.name}`}
+                className="text-neutral-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition"
+              >
+                <Icon name="pencil" size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={onDelete}
+                aria-label={`Borrar ${goal.name}`}
+                className="text-neutral-400 hover:text-expense p-2 rounded-xl hover:bg-white/5 transition"
+              >
+                <Icon name="trash" size={15} />
+              </button>
             </div>
           </div>
 
-          <div className="flex gap-0.5 shrink-0">
-            <button
-              onClick={onToggle}
-              aria-label={goal.active ? `Pausar ${goal.name}` : `Reactivar ${goal.name}`}
-              className="text-muted hover:text-ink p-1.5 rounded-lg hover:bg-raised transition"
-            >
-              <Icon name={goal.active ? 'pause' : 'check'} size={15} />
-            </button>
-            <button
-              onClick={onEdit}
-              aria-label={`Editar ${goal.name}`}
-              className="text-muted hover:text-ink p-1.5 rounded-lg hover:bg-raised transition"
-            >
-              <Icon name="pencil" size={15} />
-            </button>
-            <button
-              onClick={onDelete}
-              aria-label={`Borrar ${goal.name}`}
-              className="text-muted hover:text-expense p-1.5 rounded-lg hover:bg-raised transition"
-            >
-              <Icon name="trash" size={15} />
-            </button>
+          <div className="my-3">
+            <div className="flex justify-between items-baseline mb-1.5">
+              <span className="text-xl sm:text-2xl font-black text-white tabular-nums tracking-tight">
+                {money(goal.current_amount)}
+              </span>
+              <span className="text-xs text-neutral-400 font-semibold tabular-nums">
+                de {money(goal.target_amount)}
+              </span>
+            </div>
+
+            {/* Progress bar with electric yellow fill */}
+            <div className="h-2 rounded-full bg-neutral-800/80 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(goal.progress, 100)}%`,
+                  backgroundColor: style.bar,
+                }}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="h-1.5 rounded-full bg-line overflow-hidden mt-3">
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: `${Math.min(goal.progress, 100)}%`,
-              backgroundColor: style.bar,
-            }}
-          />
-        </div>
-
-        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mt-2.5">
-          <span className={`text-xs ${style.label}`}>
-            {style.note}
-            {deadlineNote(goal) && <span className="text-muted"> · {deadlineNote(goal)}</span>}
+        <div className="flex items-center justify-between pt-3 border-t border-white/5 text-xs text-neutral-400">
+          <span className="font-semibold text-white tabular-nums">
+            {percent(goal.progress)} completado
           </span>
-          <span className="text-xs text-muted tabular-nums">
-            {goal.status === 'cumplida'
-              ? 'Llegaste'
-              : `Faltan ${money(goal.remaining)}`}
+          <span className="tabular-nums">
+            {goal.status === 'cumplida' ? (
+              <span className="text-gold font-bold">¡Objetivo alcanzado!</span>
+            ) : (
+              `Faltan ${money(goal.remaining)}`
+            )}
           </span>
         </div>
 
         {!goal.active && (
-          <p className="text-xs text-muted mt-2">
-            Pausada{goal.deadline && ` · ${formatDate(goal.deadline)}`}
+          <p className="text-[11px] text-neutral-500 mt-2 italic">
+            Meta pausada{goal.deadline && ` · Fecha objetivo: ${formatDate(goal.deadline)}`}
           </p>
         )}
-      </Card>
+      </div>
     </li>
   )
 }

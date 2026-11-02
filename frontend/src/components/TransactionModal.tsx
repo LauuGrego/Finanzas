@@ -5,6 +5,7 @@ import { resolveColor } from '../utils/colors'
 import { resolveDefaultAccountId, useFavoriteAccount } from '../utils/favoriteAccount'
 import { todayIso, money, moneyEditable, parseMoney, percent } from '../utils/format'
 import { FormModal } from './FormModal'
+import { Icon } from './Icon'
 import { MoneyInput } from './MoneyInput'
 
 interface Props {
@@ -57,7 +58,7 @@ export function TransactionModal({
       setCategoryId(transaction?.category_id ?? 0)
       setDate(transaction?.date ?? todayIso())
     }
-  }, [open, defaultAccountId, accounts])
+  }, [open, defaultAccountId, accounts, defaultType, transaction])
 
   const editing = Boolean(transaction)
   const relevant = categories.filter((c) => c.type === type)
@@ -70,7 +71,6 @@ export function TransactionModal({
     type,
   ].join('|')
   const budget = budgetState?.key === budgetKey ? budgetState.data : null
-
 
   useEffect(() => {
     if (!open || type !== 'EXPENSE' || !selectedCategoryId) return
@@ -135,85 +135,153 @@ export function TransactionModal({
       onSubmit={handleSubmit}
       error={error}
     >
-      <div className="grid grid-cols-2 gap-2">
-        {(['EXPENSE', 'INCOME'] as const).map((option) => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => {
-              setType(option)
-              setCategoryId(0)
-            }}
-            aria-pressed={type === option}
-            className={`py-2.5 rounded-xl font-medium transition border ${
-              type === option
-                ? option === 'EXPENSE'
-                  ? 'bg-expense/10 border-expense text-expense'
-                  : 'bg-income/10 border-income text-income'
-                : 'border-line text-muted hover:bg-raised'
+      {/* Segmented Control: Gasto / Ingreso */}
+      <div className="bg-black/60 p-1.5 rounded-full border border-white/10 flex gap-1.5 shadow-inner">
+        <button
+          type="button"
+          onClick={() => {
+            setType('EXPENSE')
+            setCategoryId(0)
+          }}
+          aria-pressed={type === 'EXPENSE'}
+          className={`flex-1 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+            type === 'EXPENSE'
+              ? 'bg-expense text-white shadow-md shadow-expense/25'
+              : 'text-neutral-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <Icon name="arrowUpRight" size={16} />
+          Gasto
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setType('INCOME')
+            setCategoryId(0)
+          }}
+          aria-pressed={type === 'INCOME'}
+          className={`flex-1 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+            type === 'INCOME'
+              ? 'bg-income text-black shadow-md shadow-income/25'
+              : 'text-neutral-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <Icon name="arrowDownLeft" size={16} />
+          Ingreso
+        </button>
+      </div>
+
+      {/* Hero Amount Card */}
+      <div
+        className={`rounded-3xl p-5 sm:p-6 text-center border transition-all duration-200 ${
+          type === 'EXPENSE'
+            ? 'bg-expense/[0.04] border-white/10 focus-within:border-expense/60 focus-within:ring-2 focus-within:ring-expense/15'
+            : 'bg-income/[0.04] border-white/10 focus-within:border-income/60 focus-within:ring-2 focus-within:ring-income/15'
+        }`}
+      >
+        <span className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">
+          Monto
+        </span>
+        <div className="flex items-center justify-center gap-1.5">
+          <span
+            className={`text-3xl sm:text-4xl font-extrabold select-none ${
+              type === 'EXPENSE' ? 'text-expense/80' : 'text-income/80'
             }`}
           >
-            {option === 'EXPENSE' ? 'Gasto' : 'Ingreso'}
-          </button>
-        ))}
+            $
+          </span>
+          <MoneyInput
+            id="amount"
+            name="amount"
+            required
+            autoFocus
+            placeholder="0"
+            hidePrefix
+            value={amountText}
+            onChange={setAmountText}
+            className="bg-transparent border-none text-3xl sm:text-5xl font-black text-white text-center tabular-nums focus:outline-none w-full max-w-[280px] p-0 tracking-tight no-spinner"
+          />
+        </div>
       </div>
 
+      {/* Categoría */}
       <div>
-        <label className="label" htmlFor="amount">
-          Monto
-        </label>
-        <MoneyInput
-          id="amount"
-          name="amount"
-          required
-          autoFocus
-          placeholder="25.000"
-          value={amountText}
-          onChange={setAmountText}
-          className="input no-spinner pl-8 text-lg font-semibold"
-        />
-      </div>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="label mb-0" htmlFor="category_id">
+            Categoría
+          </label>
+          {selectedCategory && (
+            <span className="flex items-center gap-1.5 text-xs text-neutral-400">
+              <span
+                aria-hidden="true"
+                className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
+                style={{ backgroundColor: resolveColor(selectedCategory.color, selectedCategoryId) }}
+              />
+              <span className="font-medium text-white">{selectedCategory.name}</span>
+            </span>
+          )}
+        </div>
 
-      <div>
-        <label className="label" htmlFor="category_id">
-          Categoría
-        </label>
-        <select
-          id="category_id"
-          name="category_id"
-          required
-          value={selectedCategoryId || ''}
-          onChange={(event) => setCategoryId(Number(event.target.value))}
-          className="input"
-        >
-          {relevant.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            id="category_id"
+            name="category_id"
+            required
+            value={selectedCategoryId || ''}
+            onChange={(event) => setCategoryId(Number(event.target.value))}
+            className="w-full appearance-none rounded-2xl border border-white/10 bg-[#161616] px-4 py-3.5 pr-10 text-white font-medium focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20 transition-all cursor-pointer text-sm"
+          >
+            {relevant.map((category) => (
+              <option key={category.id} value={category.id} className="bg-zinc-900 text-white">
+                {category.name}
+              </option>
+            ))}
+          </select>
+          <Icon
+            name="chevronDown"
+            size={18}
+            className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400"
+          />
+        </div>
 
         {budget?.has_budget && (
-          <p
-            className={`text-xs mt-1.5 ${budgetOver ? 'text-expense' : 'text-muted'}`}
+          <div
+            className={`mt-2.5 p-3.5 rounded-2xl border text-xs transition-all ${
+              budgetOver
+                ? 'bg-expense/10 border-expense/30 text-expense'
+                : 'bg-white/5 border-white/10 text-neutral-300'
+            }`}
             aria-live="polite"
           >
-            <span
-              aria-hidden="true"
-              className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle"
-              style={{
-                backgroundColor: resolveColor(selectedCategory?.color, selectedCategoryId),
-              }}
-            />
-            En {selectedCategory?.name ?? 'esta categoría'} vas a{' '}
-            <span className="tabular-nums text-ink">{money(budgetProjected)}</span> de{' '}
-            <span className="tabular-nums">{money(budget.amount)}</span>
-            <span className="tabular-nums"> · {percent(budgetPercentage)}</span>
-            {budgetOver && ' · te pasaste'}
-          </p>
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <span className="font-semibold truncate">
+                Presupuesto de {selectedCategory?.name}
+              </span>
+              <span className="font-bold tabular-nums shrink-0">
+                {percent(budgetPercentage)}
+              </span>
+            </div>
+            <div className="h-2 bg-black/40 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${
+                  budgetOver ? 'bg-expense' : 'bg-gold'
+                }`}
+                style={{ width: `${Math.min(budgetPercentage, 100)}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between mt-2 text-[11px] opacity-90 tabular-nums">
+              <span>{money(budgetProjected)} de {money(budget.amount)}</span>
+              <span className="font-bold">
+                {budgetOver
+                  ? `Excedido por ${money(budgetProjected - budget.amount)}`
+                  : `Restan ${money(budget.amount - budgetProjected)}`}
+              </span>
+            </div>
+          </div>
         )}
       </div>
 
+      {/* Descripción */}
       <div>
         <label className="label" htmlFor="description">
           Descripción
@@ -222,34 +290,43 @@ export function TransactionModal({
           id="description"
           name="description"
           type="text"
-          placeholder="Supermercado"
+          placeholder="Supermercado, Almuerzo, Nafta, etc."
           maxLength={200}
           defaultValue={transaction?.description ?? ''}
-          className="input"
+          className="w-full rounded-2xl border border-white/10 bg-[#161616] px-4 py-3 text-white placeholder:text-neutral-600 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20 transition-all text-sm"
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      {/* Cuenta y Fecha */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="label" htmlFor="account_id">
             Cuenta
           </label>
-          <select
-            id="account_id"
-            name="account_id"
-            required
-            value={accountId}
-            onChange={(event) => setAccountId(Number(event.target.value))}
-            className="input"
-          >
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-                {account.id === favoriteId ? ' (Principal)' : ''}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              id="account_id"
+              name="account_id"
+              required
+              value={accountId}
+              onChange={(event) => setAccountId(Number(event.target.value))}
+              className="w-full appearance-none rounded-2xl border border-white/10 bg-[#161616] px-4 py-3 pr-10 text-white font-medium focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20 transition-all cursor-pointer text-sm"
+            >
+              {accounts.map((account) => (
+                <option key={account.id} value={account.id} className="bg-zinc-900 text-white">
+                  {account.name}
+                  {account.id === favoriteId ? ' (Principal)' : ''}
+                </option>
+              ))}
+            </select>
+            <Icon
+              name="chevronDown"
+              size={16}
+              className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400"
+            />
+          </div>
         </div>
+
         <div>
           <label className="label" htmlFor="date">
             Fecha
@@ -261,7 +338,7 @@ export function TransactionModal({
             required
             value={date}
             onChange={(event) => setDate(event.target.value)}
-            className="input"
+            className="w-full rounded-2xl border border-white/10 bg-[#161616] px-4 py-3 text-white focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20 transition-all cursor-pointer text-sm"
           />
         </div>
       </div>
@@ -323,84 +400,109 @@ export function TransferModal({
     <FormModal
       open={open}
       title="Transferir dinero"
+      submitLabel="Transferir"
       onClose={onClose}
       onSubmit={handleSubmit}
       error={error}
     >
-      <div>
-        <label className="label" htmlFor="from_account_id">
-          Desde
-        </label>
-        <select
-          id="from_account_id"
-          name="from_account_id"
-          required
-          value={fromId}
-          onChange={(event) => setFromId(Number(event.target.value))}
-          className="input"
-        >
-          {accounts.map((account) => (
-            <option key={account.id} value={account.id}>
-              {account.name}
-              {account.id === favoriteId ? ' (Principal)' : ''}
-            </option>
-          ))}
-        </select>
+      {/* Visual Transfer Flow (Desde -> Hacia) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative">
+        <div>
+          <label className="label" htmlFor="from_account_id">
+            Cuenta de origen
+          </label>
+          <div className="relative">
+            <select
+              id="from_account_id"
+              name="from_account_id"
+              required
+              value={fromId}
+              onChange={(event) => setFromId(Number(event.target.value))}
+              className="w-full appearance-none rounded-2xl border border-white/10 bg-[#161616] px-4 py-3 pr-10 text-white font-medium focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20 transition-all cursor-pointer text-sm"
+            >
+              {accounts.map((account) => (
+                <option key={account.id} value={account.id} className="bg-zinc-900 text-white">
+                  {account.name}
+                  {account.id === favoriteId ? ' (Principal)' : ''}
+                </option>
+              ))}
+            </select>
+            <Icon
+              name="chevronDown"
+              size={16}
+              className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="label" htmlFor="to_account_id">
+            Cuenta de destino
+          </label>
+          <div className="relative">
+            <select
+              id="to_account_id"
+              name="to_account_id"
+              required
+              defaultValue={defaultTo}
+              className="w-full appearance-none rounded-2xl border border-white/10 bg-[#161616] px-4 py-3 pr-10 text-white font-medium focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20 transition-all cursor-pointer text-sm"
+            >
+              {accounts.map((account) => (
+                <option key={account.id} value={account.id} className="bg-zinc-900 text-white">
+                  {account.name}
+                  {account.id === favoriteId ? ' (Principal)' : ''}
+                </option>
+              ))}
+            </select>
+            <Icon
+              name="chevronDown"
+              size={16}
+              className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400"
+            />
+          </div>
+        </div>
       </div>
 
-      <div>
-        <label className="label" htmlFor="to_account_id">
-          Hacia
-        </label>
-        <select
-          id="to_account_id"
-          name="to_account_id"
-          required
-          defaultValue={defaultTo}
-          className="input"
-        >
-          {accounts.map((account) => (
-            <option key={account.id} value={account.id}>
-              {account.name}
-              {account.id === favoriteId ? ' (Principal)' : ''}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label className="label" htmlFor="transfer-amount">
-          Monto
-        </label>
-        <MoneyInput
-          id="transfer-amount"
-          name="amount"
-          required
-          autoFocus
-          placeholder="50.000"
-          value={amountText}
-          onChange={setAmountText}
-          className="input no-spinner pl-8 text-lg font-semibold"
-        />
+      {/* Hero Amount Field */}
+      <div className="rounded-3xl p-5 sm:p-6 text-center border border-white/10 bg-gold/[0.04] focus-within:border-gold/60 focus-within:ring-2 focus-within:ring-gold/15 transition-all duration-200">
+        <span className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">
+          Monto a transferir
+        </span>
+        <div className="flex items-center justify-center gap-1.5">
+          <span className="text-3xl sm:text-4xl font-extrabold text-gold/80 select-none">
+            $
+          </span>
+          <MoneyInput
+            id="transfer-amount"
+            name="amount"
+            required
+            autoFocus
+            placeholder="0"
+            hidePrefix
+            value={amountText}
+            onChange={setAmountText}
+            className="bg-transparent border-none text-3xl sm:text-5xl font-black text-white text-center tabular-nums focus:outline-none w-full max-w-[280px] p-0 tracking-tight no-spinner"
+          />
+        </div>
       </div>
 
       <div>
         <label className="label" htmlFor="transfer-description">
-          Descripción
+          Motivo o referencia
         </label>
         <input
           id="transfer-description"
           name="description"
           type="text"
-          placeholder="Opcional"
+          placeholder="Opcional: Ahorro, cambio de cuenta, etc."
           maxLength={200}
-          className="input"
+          className="w-full rounded-2xl border border-white/10 bg-[#161616] px-4 py-3 text-white placeholder:text-neutral-600 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20 transition-all text-sm"
         />
       </div>
 
       <div>
         <label className="label" htmlFor="transfer-date">
-          Fecha
+          Fecha de la transferencia
         </label>
         <input
           id="transfer-date"
@@ -408,12 +510,12 @@ export function TransferModal({
           type="date"
           required
           defaultValue={todayIso()}
-          className="input"
+          className="w-full rounded-2xl border border-white/10 bg-[#161616] px-4 py-3 text-white focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20 transition-all cursor-pointer text-sm"
         />
       </div>
 
-      <p className="text-xs text-muted">
-        Transferir plata entre tus cuentas no es un gasto: solo mueve el dinero.
+      <p className="text-xs text-neutral-400 bg-white/5 border border-white/5 rounded-2xl p-3 text-center">
+        Mover saldo entre cuentas no computa como gasto ni como ingreso.
       </p>
     </FormModal>
   )

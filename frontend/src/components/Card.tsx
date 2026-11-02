@@ -12,10 +12,10 @@ export function Card({
   className?: string
 }) {
   return (
-    <section className={`card ${className || 'p-5'}`}>
+    <section className={`card ${className || 'p-6'}`}>
       {(title || action) && (
         <header className="flex items-center justify-between gap-3 mb-4">
-          {title && <h2 className="font-semibold text-ink">{title}</h2>}
+          {title && <h2 className="font-bold text-white text-base tracking-tight">{title}</h2>}
           {action}
         </header>
       )}

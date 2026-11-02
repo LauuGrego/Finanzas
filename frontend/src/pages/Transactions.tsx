@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { Card } from '../components/Card'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { Icon } from '../components/Icon'
 import { MonthStepper } from '../components/MonthStepper'
 import { EmptyState, StateWrapper } from '../components/States'
-import { TransactionItem } from '../components/TransactionItem'
 import { TransactionModal } from '../components/TransactionModal'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Transaction } from '../types'
+import { resolveColor } from '../utils/colors'
 import { useFavoriteAccount } from '../utils/favoriteAccount'
-import { currentPeriod, formatDate, money } from '../utils/format'
+import { currentPeriod, money } from '../utils/format'
 
 export function Transactions() {
   const [favoriteId] = useFavoriteAccount()
@@ -36,6 +37,14 @@ export function Transactions() {
 
   const items = page.data?.items ?? []
 
+  const totalIncome = items
+    .filter((t) => t.type === 'INCOME')
+    .reduce((sum, t) => sum + t.amount, 0)
+  const totalExpense = items
+    .filter((t) => t.type === 'EXPENSE')
+    .reduce((sum, t) => sum + t.amount, 0)
+  const netBalance = totalIncome - totalExpense
+
   const byDay = new Map<string, Transaction[]>()
   for (const transaction of items) {
     const key = transaction.date
@@ -49,32 +58,69 @@ export function Transactions() {
   }
 
   return (
-    <div className="space-y-5">
-      <header className="flex items-center justify-between gap-3">
-        <h1 className="text-sm font-medium uppercase tracking-wide text-muted">
+    <div className="space-y-6">
+      {/* Header */}
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
           Movimientos
         </h1>
         <MonthStepper period={period} onChange={setPeriod} />
       </header>
 
+      {/* 3 Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+        {/* Ingresos */}
+        <div className="bg-[#141414] border border-white/5 rounded-3xl p-5 sm:p-6 shadow-sm">
+          <span className="text-xs sm:text-sm font-semibold text-zinc-400 block mb-1">
+            Ingresos
+          </span>
+          <span className="text-2xl sm:text-3xl font-black text-income tabular-nums tracking-tight block">
+            +{money(totalIncome)}
+          </span>
+        </div>
+
+        {/* Gastos */}
+        <div className="bg-[#141414] border border-white/5 rounded-3xl p-5 sm:p-6 shadow-sm">
+          <span className="text-xs sm:text-sm font-semibold text-zinc-400 block mb-1">
+            Gastos
+          </span>
+          <span className="text-2xl sm:text-3xl font-black text-expense tabular-nums tracking-tight block">
+            −{money(totalExpense)}
+          </span>
+        </div>
+
+        {/* Balance (Hero Yellow Card) */}
+        <div className="bg-gold text-black rounded-3xl p-5 sm:p-6 shadow-md">
+          <span className="text-xs sm:text-sm font-semibold text-black/80 block mb-1">
+            Balance
+          </span>
+          <span className="text-2xl sm:text-3xl font-black text-black tabular-nums tracking-tight block">
+            ${money(Math.abs(netBalance)).replace('$', '').trim()}
+          </span>
+        </div>
+      </div>
+
+      {/* Filter Row */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <input
-          type="search"
-          placeholder="Buscar por descripción"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          aria-label="Buscar movimientos"
-          className="input"
-        />
+        <div className="relative">
+          <input
+            type="search"
+            placeholder="Buscar por descripción"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            aria-label="Buscar movimientos"
+            className="w-full bg-[#141414] border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors"
+          />
+        </div>
         <select
           value={accountId}
           onChange={(event) => setAccountId(event.target.value)}
           aria-label="Filtrar por cuenta"
-          className="input"
+          className="w-full bg-[#141414] border border-white/10 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors cursor-pointer"
         >
           <option value="">Todas las cuentas</option>
           {(accounts.data?.accounts ?? []).map((account) => (
-            <option key={account.id} value={account.id}>
+            <option key={account.id} value={account.id} className="bg-zinc-900 text-white">
               {account.name}
               {account.id === favoriteId ? ' (Principal)' : ''}
             </option>
@@ -84,58 +130,153 @@ export function Transactions() {
           value={categoryId}
           onChange={(event) => setCategoryId(event.target.value)}
           aria-label="Filtrar por categoría"
-          className="input"
+          className="w-full bg-[#141414] border border-white/10 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors cursor-pointer sm:col-span-2 lg:col-span-1"
         >
           <option value="">Todas las categorías</option>
           {(categories.data ?? []).map((category) => (
-            <option key={category.id} value={category.id}>
+            <option key={category.id} value={category.id} className="bg-zinc-900 text-white">
               {category.name}
             </option>
           ))}
         </select>
       </div>
 
+      {/* Table / List View */}
       <StateWrapper loading={page.loading} error={page.error} onRetry={() => void page.reload()}>
         {items.length === 0 ? (
-          <EmptyState title="Sin movimientos" hint="Probá cambiando el mes o los filtros" />
+          <EmptyState
+            title="Sin movimientos"
+            hint="Probá cambiando el mes o los filtros de búsqueda"
+          />
         ) : (
-          <div className="space-y-4">
-            {Array.from(byDay.entries()).map(([day, transactions]) => {
-              const dayIncome = transactions
-                .filter((t) => t.type === 'INCOME')
-                .reduce((sum, t) => sum + t.amount, 0)
-              const dayExpense = transactions
-                .filter((t) => t.type === 'EXPENSE')
-                .reduce((sum, t) => sum + t.amount, 0)
+          <Card className="p-4 sm:p-6 overflow-hidden">
+            {/* Table Header Columns (Desktop) */}
+            <div className="hidden sm:grid sm:grid-cols-12 gap-4 pb-3 border-b border-white/5 text-xs font-semibold text-zinc-400">
+              <span className="col-span-4">Concepto</span>
+              <span className="col-span-3">Categoría</span>
+              <span className="col-span-2">Cuenta</span>
+              <span className="col-span-3 text-right">Importe</span>
+            </div>
 
-              return (
-                <Card key={day}>
-                  <div className="flex items-center justify-between gap-3 mb-1">
-                    <h2 className="text-sm font-semibold text-muted">{formatDate(day)}</h2>
-                    <p className="text-xs tabular-nums text-muted shrink-0">
-                      {dayIncome > 0 && <span className="text-income">+{money(dayIncome)}</span>}
-                      {dayIncome > 0 && dayExpense > 0 && ' · '}
-                      {dayExpense > 0 && (
-                        <span className="text-expense">−{money(dayExpense)}</span>
-                      )}
-                    </p>
+            <div className="space-y-6 mt-2">
+              {Array.from(byDay.entries()).map(([day, transactions]) => {
+                const dayIncome = transactions
+                  .filter((t) => t.type === 'INCOME')
+                  .reduce((sum, t) => sum + t.amount, 0)
+                const dayExpense = transactions
+                  .filter((t) => t.type === 'EXPENSE')
+                  .reduce((sum, t) => sum + t.amount, 0)
+                const dayBalance = dayIncome - dayExpense
+
+                const dateObj = new Date(`${day}T12:00:00`)
+                const dayFormatted = dateObj.toLocaleDateString('es-AR', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                })
+                const capitalizedDay =
+                  dayFormatted.charAt(0).toUpperCase() + dayFormatted.slice(1)
+
+                return (
+                  <div key={day} className="space-y-1">
+                    {/* Date Section Header */}
+                    <div className="flex items-center justify-between py-2 border-b border-white/5">
+                      <span className="text-sm font-bold text-white tracking-tight">
+                        {capitalizedDay}
+                      </span>
+                      <span className="text-xs sm:text-sm font-bold tabular-nums text-income">
+                        {dayBalance >= 0 ? '+' : '−'}{money(Math.abs(dayBalance))}
+                      </span>
+                    </div>
+
+                    {/* Movement Items */}
+                    <ul className="divide-y divide-white/5">
+                      {transactions.map((t, idx) => {
+                        const isIncome = t.type === 'INCOME'
+                        const isTransfer = t.transfer_id !== null
+                        const catColor = resolveColor(
+                          t.category?.color,
+                          t.category_id ?? idx
+                        )
+
+                        return (
+                          <li
+                            key={t.id}
+                            className="py-3 sm:py-3.5 flex flex-col sm:grid sm:grid-cols-12 sm:items-center gap-2 sm:gap-4 group hover:bg-white/[0.02] -mx-2 px-2 rounded-xl transition-colors"
+                          >
+                            {/* Concepto */}
+                            <div className="sm:col-span-4 flex items-center justify-between sm:justify-start gap-2 min-w-0">
+                              <span className="font-semibold text-white text-sm sm:text-base truncate">
+                                {t.description ||
+                                  t.category?.name ||
+                                  (isTransfer ? 'Transferencia' : 'Movimiento')}
+                              </span>
+                              {/* Mobile Amount shown inline */}
+                              <span
+                                className={`sm:hidden font-bold tabular-nums text-sm whitespace-nowrap ${
+                                  isIncome ? 'text-income' : 'text-expense'
+                                }`}
+                              >
+                                {isIncome ? '+' : '−'}{money(Math.abs(t.amount))}
+                              </span>
+                            </div>
+
+                            {/* Categoría */}
+                            <div className="sm:col-span-3 flex items-center gap-2 text-xs sm:text-sm text-zinc-300">
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ backgroundColor: catColor }}
+                              />
+                              <span className="truncate">
+                                {t.category?.name ?? 'Sin categoría'}
+                              </span>
+                            </div>
+
+                            {/* Cuenta */}
+                            <div className="sm:col-span-2 text-xs sm:text-sm text-zinc-400 truncate">
+                              {t.account_name ?? 'Cuenta'}
+                            </div>
+
+                            {/* Importe & Actions (Desktop) */}
+                            <div className="sm:col-span-3 flex items-center justify-end gap-3">
+                              <span
+                                className={`hidden sm:inline-block font-bold tabular-nums text-sm sm:text-base whitespace-nowrap ${
+                                  isIncome ? 'text-income' : 'text-expense'
+                                }`}
+                              >
+                                {isIncome ? '+' : '−'}{money(Math.abs(t.amount))}
+                              </span>
+
+                              <div className="flex items-center gap-1">
+                                {!isTransfer && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditing(t)}
+                                    aria-label={`Editar ${t.description ?? 'movimiento'}`}
+                                    className="text-zinc-500 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                                  >
+                                    <Icon name="pencil" size={15} />
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setDeleting(t)}
+                                  aria-label={`Eliminar ${t.description ?? 'movimiento'}`}
+                                  className="text-zinc-500 hover:text-red-400 p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                                >
+                                  <Icon name="trash" size={15} />
+                                </button>
+                              </div>
+                            </div>
+                          </li>
+                        )
+                      })}
+                    </ul>
                   </div>
-                  <ul className="divide-y divide-line">
-                    {transactions.map((transaction) => (
-                      <li key={transaction.id}>
-                        <TransactionItem
-                          transaction={transaction}
-                          showAccount
-                          onEdit={setEditing}
-                          onDelete={setDeleting}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          </Card>
         )}
       </StateWrapper>
 

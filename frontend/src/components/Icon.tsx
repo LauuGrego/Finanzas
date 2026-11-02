@@ -29,6 +29,13 @@ export type IconName =
   | 'grid'
   | 'star'
   | 'starFilled'
+  | 'chevronLeft'
+  | 'chevronRight'
+  | 'chevronDown'
+  | 'search'
+  | 'filter'
+  | 'arrowDownLeft'
+  | 'arrowUpRight'
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: <path d="M3 10.2 12 3l9 7.2M5 9.4V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.4" />,
@@ -109,6 +116,18 @@ const PATHS: Record<IconName, React.ReactNode> = {
       fill="currentColor"
     />
   ),
+  chevronLeft: <path d="m15 18-6-6 6-6" />,
+  chevronRight: <path d="m9 18 6-6-6-6" />,
+  chevronDown: <path d="m6 9 6 6 6-6" />,
+  search: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.35-4.35" />
+    </>
+  ),
+  filter: <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />,
+  arrowDownLeft: <path d="m17 7-10 10M17 17H7V7" />,
+  arrowUpRight: <path d="m7 17 10-10M7 7h10v10" />,
 }
 
 interface Props {
