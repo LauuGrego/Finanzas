@@ -23,6 +23,7 @@ export function Transactions() {
 
   const categories = useAsync(() => api.categories.list(), [])
   const accounts = useAsync(() => api.accounts.list(), [])
+  const dashboard = useAsync(() => api.dashboard.get(period), [period])
   const page = useAsync(
     () =>
       api.transactions.list({
@@ -55,6 +56,7 @@ export function Transactions() {
     if (!deleting) return
     await api.transactions.remove(deleting.id)
     void page.reload()
+    void dashboard.reload()
   }
 
   return (
@@ -90,13 +92,22 @@ export function Transactions() {
         </div>
 
         {/* Balance (Hero Yellow Card) */}
-        <div className="bg-gold text-black rounded-3xl p-5 sm:p-6 shadow-md">
-          <span className="text-xs sm:text-sm font-semibold text-black/80 block mb-1">
-            Balance
-          </span>
-          <span className="text-2xl sm:text-3xl font-black text-black tabular-nums tracking-tight block">
-            ${money(Math.abs(netBalance)).replace('$', '').trim()}
-          </span>
+        <div className="bg-gold text-black rounded-3xl p-5 sm:p-6 shadow-md flex flex-col justify-between">
+          <div>
+            <span className="text-xs sm:text-sm font-bold text-black/80 block mb-1">
+              {categoryId || accountId || search ? 'Balance filtrado' : 'Saldo acumulado'}
+            </span>
+            <span className="text-2xl sm:text-3xl font-black text-black tabular-nums tracking-tight block">
+              {categoryId || accountId || search
+                ? `${netBalance < 0 ? '−' : ''}${money(Math.abs(netBalance))}`
+                : `${(dashboard.data?.accumulated_balance ?? netBalance) < 0 ? '−' : ''}${money(Math.abs(dashboard.data?.accumulated_balance ?? netBalance))}`}
+            </span>
+          </div>
+          {!categoryId && !accountId && !search && (
+            <span className="text-[11px] font-bold text-black/75 mt-2 tabular-nums">
+              Resultado del mes: {netBalance >= 0 ? '+' : '−'}{money(Math.abs(netBalance))}
+            </span>
+          )}
         </div>
       </div>
 
@@ -286,7 +297,10 @@ export function Transactions() {
         categories={categories.data ?? []}
         transaction={editing}
         onClose={() => setEditing(null)}
-        onSaved={() => void page.reload()}
+        onSaved={() => {
+          void page.reload()
+          void dashboard.reload()
+        }}
       />
 
       <ConfirmDialog

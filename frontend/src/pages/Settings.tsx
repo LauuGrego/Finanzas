@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Button } from '../components/Button'
-import { Card } from '../components/Card'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Icon } from '../components/Icon'
 import { FormModal } from '../components/FormModal'
@@ -39,6 +38,8 @@ export function Settings() {
   const items = categories.data ?? []
   const active = items.filter((c) => c.active)
   const inactive = items.filter((c) => !c.active)
+  const incomeCategories = active.filter((c) => c.type === 'INCOME')
+  const expenseCategories = active.filter((c) => c.type === 'EXPENSE')
 
   const suggestedColor =
     CATEGORY_COLORS[items.length % CATEGORY_COLORS.length] ?? CATEGORY_COLORS[0]
@@ -74,7 +75,7 @@ export function Settings() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl mx-auto">
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Configuración</h1>
@@ -84,79 +85,155 @@ export function Settings() {
         </div>
       </header>
 
-      <Card
-        title="Categorías"
-        className="bg-[#141414] border border-white/5 rounded-3xl p-5 sm:p-6"
-        action={
-          <Button
-            size="sm"
+      {/* Main Categories Card */}
+      <div className="bg-[#141414] border border-white/5 rounded-3xl p-6 sm:p-8">
+        <div className="flex items-center justify-between gap-4 pb-6 border-b border-white/5">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Categorías</h2>
+            <p className="text-xs text-neutral-400 mt-0.5">
+              Organizá cómo clasificás tus ingresos y gastos
+            </p>
+          </div>
+          <button
+            type="button"
             onClick={() => setCreating(true)}
-            className="bg-gold hover:bg-gold-light text-black font-bold rounded-full px-4 py-2 text-xs"
+            className="bg-gold hover:bg-gold-light text-black font-bold rounded-full px-5 py-2.5 text-xs sm:text-sm flex items-center gap-1.5 transition shadow-sm cursor-pointer shrink-0"
           >
             <Icon name="plus" size={16} />
             Nueva categoría
-          </Button>
-        }
-      >
+          </button>
+        </div>
+
         <StateWrapper
           loading={categories.loading}
           error={categories.error}
           onRetry={() => void categories.reload()}
         >
           {active.length === 0 ? (
-            <EmptyState title="Sin categorías" />
+            <div className="py-12">
+              <EmptyState title="Sin categorías" />
+            </div>
           ) : (
-            <ul className="divide-y divide-white/5">
-              {active.map((category, index) => (
-                <li key={category.id} className="flex items-center gap-3 py-3 px-2 rounded-2xl hover:bg-white/5 transition">
-                  <CategoryDot category={category} index={index} />
-                  <span className="flex-1 min-w-0">
-                    <span className="block truncate font-semibold text-white text-sm">
-                      {category.name}
-                    </span>
-                    <span className="text-xs text-neutral-400">
-                      {category.type === 'EXPENSE' ? 'Gasto' : 'Ingreso'}
-                    </span>
-                  </span>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setEditing(category)}
-                      aria-label={`Editar ${category.name}`}
-                      className="text-neutral-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition"
-                    >
-                      <Icon name="pencil" size={15} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleting(category)}
-                      aria-label={`Dar de baja ${category.name}`}
-                      className="text-neutral-400 hover:text-expense p-2 rounded-xl hover:bg-white/5 transition"
-                    >
-                      <Icon name="trash" size={15} />
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+              {/* Income Column */}
+              <div>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-income flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-income" aria-hidden="true" />
+                    Ingresos ({incomeCategories.length})
+                  </h3>
+                </div>
+                {incomeCategories.length === 0 ? (
+                  <p className="text-xs text-neutral-500 italic p-4 bg-[#18181b] rounded-2xl border border-white/5">
+                    No hay categorías de ingreso activas
+                  </p>
+                ) : (
+                  <ul className="space-y-2.5">
+                    {incomeCategories.map((category, index) => (
+                      <li
+                        key={category.id}
+                        className="bg-[#18181b] border border-white/5 hover:border-white/10 rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 transition"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <CategoryDot category={category} index={index} />
+                          <span className="text-sm font-medium text-white truncate">
+                            {category.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setEditing(category)}
+                            aria-label={`Editar ${category.name}`}
+                            className="text-neutral-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition"
+                          >
+                            <Icon name="pencil" size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleting(category)}
+                            aria-label={`Dar de baja ${category.name}`}
+                            className="text-neutral-400 hover:text-expense p-2 rounded-xl hover:bg-white/5 transition"
+                          >
+                            <Icon name="trash" size={15} />
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Expense Column */}
+              <div>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-expense flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-expense" aria-hidden="true" />
+                    Gastos ({expenseCategories.length})
+                  </h3>
+                </div>
+                {expenseCategories.length === 0 ? (
+                  <p className="text-xs text-neutral-500 italic p-4 bg-[#18181b] rounded-2xl border border-white/5">
+                    No hay categorías de gasto activas
+                  </p>
+                ) : (
+                  <ul className="space-y-2.5">
+                    {expenseCategories.map((category, index) => (
+                      <li
+                        key={category.id}
+                        className="bg-[#18181b] border border-white/5 hover:border-white/10 rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 transition"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <CategoryDot category={category} index={index} />
+                          <span className="text-sm font-medium text-white truncate">
+                            {category.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setEditing(category)}
+                            aria-label={`Editar ${category.name}`}
+                            className="text-neutral-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition"
+                          >
+                            <Icon name="pencil" size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleting(category)}
+                            aria-label={`Dar de baja ${category.name}`}
+                            className="text-neutral-400 hover:text-expense p-2 rounded-xl hover:bg-white/5 transition"
+                          >
+                            <Icon name="trash" size={15} />
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           )}
 
           {inactive.length > 0 && (
-            <details className="mt-5 pt-4 border-t border-white/5">
+            <details className="mt-8 pt-6 border-t border-white/5">
               <summary className="text-xs font-semibold uppercase tracking-wider text-neutral-400 cursor-pointer hover:text-white transition">
                 {inactive.length} categoría{inactive.length === 1 ? '' : 's'} dada{inactive.length === 1 ? '' : 's'} de baja
               </summary>
-              <ul className="mt-3 space-y-1">
+              <ul className="mt-3 space-y-2">
                 {inactive.map((category, index) => (
-                  <li key={category.id} className="flex items-center gap-3 py-2 px-2 rounded-xl hover:bg-white/5">
+                  <li
+                    key={category.id}
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-white/5"
+                  >
                     <CategoryDot category={category} index={index} />
                     <span className="text-neutral-500 line-through flex-1 text-sm truncate">
-                      {category.name}
+                      {category.name} ({category.type === 'INCOME' ? 'Ingreso' : 'Gasto'})
                     </span>
                     <button
                       type="button"
                       onClick={() => void toggleActive(category)}
-                      className="text-xs text-gold hover:text-gold-hover font-medium underline"
+                      className="text-xs text-gold hover:text-gold-light font-medium underline cursor-pointer"
                     >
                       Reactivar
                     </button>
@@ -166,9 +243,10 @@ export function Settings() {
             </details>
           )}
         </StateWrapper>
-      </Card>
+      </div>
 
-      <Card title="Base de datos e infraestructura" className="bg-[#141414] border border-white/5 rounded-3xl p-5 sm:p-6">
+      <div className="bg-[#141414] border border-white/5 rounded-3xl p-6 sm:p-8">
+        <h2 className="text-xl font-bold text-white tracking-tight mb-2">Base de datos e infraestructura</h2>
         <p className="text-sm text-neutral-400">
           {session.data?.storage === 'postgresql'
             ? 'Todo vive en una base de datos PostgreSQL administrada y segura.'
@@ -178,13 +256,13 @@ export function Settings() {
           <Button
             size="sm"
             variant="secondary"
-            className="mt-4 rounded-full"
+            className="mt-4 rounded-full px-5 py-2 text-xs"
             onClick={() => void signOut()}
           >
             Cerrar sesión
           </Button>
         )}
-      </Card>
+      </div>
 
       <FormModal
         open={creating || editing !== null}

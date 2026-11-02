@@ -9,12 +9,10 @@ import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Category, Frequency, Recurring } from '../types'
 import { resolveDefaultAccountId, useFavoriteAccount } from '../utils/favoriteAccount'
+import { resolveColor } from '../utils/colors'
 import {
-  FREQUENCY_LABELS,
   money,
   parseMoney,
-  relativeDay,
-  shortDate,
   todayIso,
 } from '../utils/format'
 
@@ -72,14 +70,19 @@ export function Recurrentes() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-          Recurrentes
-        </h1>
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+            Recurrentes
+          </h1>
+          <p className="text-xs sm:text-sm text-neutral-400 mt-1">
+            Pagos e ingresos periódicos que se programan solos.
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="bg-gold text-black font-bold rounded-full px-5 py-2 text-xs sm:text-sm flex items-center gap-1.5 hover:bg-gold-hover shadow-sm transition-colors cursor-pointer"
+          className="bg-gold text-black font-bold rounded-full px-5 py-2.5 text-xs sm:text-sm flex items-center gap-1.5 hover:bg-gold-light shadow-sm transition cursor-pointer self-start sm:self-auto shrink-0"
         >
           <Icon name="plus" size={16} />
           Nuevo recurrente
@@ -93,22 +96,24 @@ export function Recurrentes() {
             hint="Cargá el alquiler, servicios o el sueldo una vez y se registran solos."
           />
         ) : (
-          <ul className="space-y-4">
-            {active.map((rule) => (
-              <RecurringCard
-                key={rule.id}
-                rule={rule}
-                onEdit={() => setEditing(rule)}
-                onToggle={() => void handleToggle(rule)}
-                onDelete={() => setDeleting(rule)}
-              />
-            ))}
-          </ul>
+          <div className="bg-[#141414] border border-white/5 rounded-3xl p-3 sm:p-5">
+            <ul className="divide-y divide-white/5">
+              {active.map((rule) => (
+                <RecurringRow
+                  key={rule.id}
+                  rule={rule}
+                  onEdit={() => setEditing(rule)}
+                  onToggle={() => void handleToggle(rule)}
+                  onDelete={() => setDeleting(rule)}
+                />
+              ))}
+            </ul>
+          </div>
         )}
 
         {inactive.length > 0 && (
           <details className="mt-4">
-            <summary className="text-xs text-zinc-400 cursor-pointer hover:text-white transition-colors">
+            <summary className="text-xs text-neutral-400 cursor-pointer hover:text-white transition">
               {inactive.length} pausado{inactive.length === 1 ? '' : 's'}
             </summary>
             <ul className="mt-3 space-y-2">
@@ -117,10 +122,10 @@ export function Recurrentes() {
                   key={rule.id}
                   className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#141414] border border-white/5"
                 >
-                  <span className="text-zinc-500 line-through text-sm truncate flex-1">
+                  <span className="text-neutral-500 line-through text-sm truncate flex-1">
                     {rule.description || rule.category?.name}
                   </span>
-                  <span className="text-zinc-500 tabular-nums text-sm font-semibold">
+                  <span className="text-neutral-500 tabular-nums text-sm font-semibold">
                     {money(rule.amount)}
                   </span>
                   <button
@@ -276,7 +281,19 @@ export function Recurrentes() {
   )
 }
 
-function RecurringCard({
+function parseDateCapsule(isoDate: string): { day: string; month: string } {
+  try {
+    const [year, m, d] = isoDate.split('-')
+    const date = new Date(Number(year), Number(m) - 1, Number(d))
+    const day = String(Number(d)).padStart(2, '0')
+    const month = date.toLocaleDateString('es-AR', { month: 'short' }).replace('.', '').slice(0, 3)
+    return { day, month }
+  } catch {
+    return { day: '--', month: '---' }
+  }
+}
+
+function RecurringRow({
   rule,
   onEdit,
   onToggle,
@@ -289,74 +306,74 @@ function RecurringCard({
 }) {
   const label = rule.description || rule.category?.name || 'Recurrente'
   const isIncome = rule.type === 'INCOME'
+  const { day, month } = parseDateCapsule(rule.next_date)
+  const dotColor = resolveColor(rule.category?.color, rule.category_id ?? 0)
 
   return (
-    <li>
-      <div className="bg-[#141414] border border-white/5 rounded-3xl p-5 sm:p-6 shadow-sm hover:border-white/10 transition-colors">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3.5 min-w-0">
-            <span
-              className={`w-9 h-9 rounded-full grid place-items-center shrink-0 mt-0.5 ${
-                isIncome
-                  ? 'bg-sky-950/70 text-sky-400 border border-sky-800/40'
-                  : 'bg-red-950/70 text-red-400 border border-red-800/40'
-              }`}
-            >
-              <Icon name="repeat" size={16} />
-            </span>
-            <div className="min-w-0">
-              <p className="font-bold text-white text-base truncate">{label}</p>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                {FREQUENCY_LABELS[rule.frequency] ?? rule.frequency} · {shortDate(rule.next_date)}
-                {rule.next_date < todayIso() && (
-                  <span className="text-gold font-medium"> · {relativeDay(rule.next_date)}</span>
-                )}
-              </p>
-              <p className="text-xs text-zinc-500 mt-0.5">
-                {rule.category?.name ?? 'Sin categoría'}
-                {rule.account_name ? ` · ${rule.account_name}` : ''}
-                {rule.times_charged > 0 && ` · ${rule.times_charged} cobros`}
-              </p>
-            </div>
-          </div>
-
-          <div className="text-right shrink-0">
-            <p
-              className={`font-black tabular-nums text-base sm:text-lg tracking-tight ${
-                isIncome ? 'text-income' : 'text-expense'
-              }`}
-            >
-              {isIncome ? '+' : '−'}
-              {money(rule.amount)}
-            </p>
-            <div className="flex gap-1 mt-1 justify-end">
-              <button
-                type="button"
-                onClick={onEdit}
-                aria-label={`Editar ${label}`}
-                className="text-zinc-500 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-              >
-                <Icon name="pencil" size={15} />
-              </button>
-              <button
-                type="button"
-                onClick={onDelete}
-                aria-label={`Borrar ${label}`}
-                className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-              >
-                <Icon name="trash" size={15} />
-              </button>
-            </div>
-          </div>
+    <li className="py-4 px-3 sm:px-5 flex items-center justify-between gap-4 hover:bg-white/[0.02] transition rounded-2xl">
+      {/* Left: Date Capsule & Description */}
+      <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+        <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-[#1c1c1f] border border-white/5 flex flex-col items-center justify-center shrink-0">
+          <span className="text-base sm:text-lg font-black text-white tabular-nums leading-none">
+            {day}
+          </span>
+          <span className="text-[10px] sm:text-[11px] font-bold text-neutral-400 uppercase tracking-wider mt-1">
+            {month}
+          </span>
         </div>
 
-        <div className="pt-3 mt-3 border-t border-white/5 flex justify-end">
+        <div className="min-w-0">
+          <p className="font-bold text-white text-sm sm:text-base truncate">{label}</p>
+          <div className="flex items-center gap-2 text-xs text-neutral-400 mt-0.5 truncate">
+            <span
+              aria-hidden="true"
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ backgroundColor: dotColor }}
+            />
+            <span className="truncate">
+              {rule.category?.name ?? 'Sin categoría'}
+              {rule.account_name ? ` · ${rule.account_name}` : ''}
+              {rule.times_charged > 0 ? ` · van ${rule.times_charged}` : ''}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Right: Amount & Actions */}
+      <div className="text-right shrink-0">
+        <p
+          className={`font-black tabular-nums text-base sm:text-lg tracking-tight ${
+            isIncome ? 'text-income' : 'text-expense'
+          }`}
+        >
+          {isIncome ? '+' : '−'}
+          {money(rule.amount)}
+        </p>
+
+        <div className="flex items-center justify-end gap-1 sm:gap-1.5 mt-1">
           <button
             type="button"
             onClick={onToggle}
-            className="text-xs font-semibold text-zinc-400 hover:text-gold transition-colors cursor-pointer"
+            className="text-xs font-semibold text-neutral-400 hover:text-white px-2 py-1 rounded-lg hover:bg-white/5 transition flex items-center gap-1 cursor-pointer"
           >
-            Pausar
+            <span className="text-[10px] font-mono leading-none tracking-tighter font-bold">||</span>
+            <span>Pausar</span>
+          </button>
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label={`Editar ${label}`}
+            className="text-neutral-400 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition cursor-pointer"
+          >
+            <Icon name="pencil" size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            aria-label={`Borrar ${label}`}
+            className="text-neutral-400 hover:text-expense p-1.5 rounded-lg hover:bg-white/5 transition cursor-pointer"
+          >
+            <Icon name="trash" size={15} />
           </button>
         </div>
       </div>

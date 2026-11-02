@@ -16,9 +16,14 @@ def dashboard(db: Session, period: str | None = None) -> DashboardRead:
     period = period or current_period()
     start, end = month_bounds(period)
 
+    prev_cents = tx.total_balance_at(db, start - timedelta(days=1))
+    accum_cents = tx.total_balance_at(db, end)
+
     return DashboardRead(
         month=period,
         available_balance=to_pesos(tx.total_balance(db)),
+        accumulated_balance=to_pesos(accum_cents),
+        previous_balance=to_pesos(prev_cents),
         month_summary=tx.summarize(db, start, end),
         expenses_by_category=tx.expenses_by_category(db, start, end),
         recent_transactions=tx.filter_transactions(db, limit=8).items,
@@ -61,25 +66,17 @@ def monthly_comparison(db: Session, period: str, months: int) -> list[MonthCompa
 def balance_evolution(db: Session, period: str, months: int) -> list[MonthComparison]:
     """Running balance at the end of each of the last N months."""
     periods = [shift_month(period, -offset) for offset in range(months - 1, -1, -1)]
-
-    first_start, _ = month_bounds(periods[0])
-    before, _ = tx.summarize_cents(
-        db, date.min, first_start - timedelta(days=1), include_initial=False
-    )
-    running = tx.initial_balances_total(db, created_before=first_start) + before
-
-
     rows = []
     for item in periods:
         start, end = month_bounds(item)
         income, expense = tx.summarize_cents(db, start, end)
-        running += income - expense
+        accum_cents = tx.total_balance_at(db, end)
         rows.append(
             MonthComparison(
                 month=item,
                 income=to_pesos(income),
                 expense=to_pesos(expense),
-                balance=to_pesos(running),
+                balance=to_pesos(accum_cents),
             )
         )
     return rows

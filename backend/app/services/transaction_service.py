@@ -43,6 +43,47 @@ def total_balance(db: Session) -> int:
     return sum(account_balance(db, account) for account in accounts)
 
 
+def account_balance_at(db: Session, account: Account, as_of: date) -> int:
+    """Saldo de una cuenta al final del día `as_of` (en centavos).
+
+    Saldo = saldo inicial de la cuenta (si fue creada antes o en esa fecha)
+            + ingresos registrados hasta `as_of`
+            - gastos registrados hasta `as_of`.
+    """
+    as_of_end = datetime.combine(as_of + timedelta(days=1), time.min)
+    if account.created_at and account.created_at >= as_of_end:
+        return 0
+
+    movements = db.execute(
+        select(Transaction.type, func.sum(Transaction.amount))
+        .where(
+            Transaction.account_id == account.id,
+            Transaction.date <= as_of,
+        )
+        .group_by(Transaction.type)
+    ).all()
+    total = account.initial_balance
+    for type_, amount in movements:
+        total += amount if type_ == INCOME else -amount
+    return total
+
+
+def total_balance_at(db: Session, as_of: date, account_id: int | None = None) -> int:
+    """Saldo acumulado total al final del día `as_of` (en centavos).
+
+    Si se especifica `account_id`, devuelve el saldo acumulado de esa cuenta.
+    Si no, suma los saldos de todas las cuentas activas al día `as_of`.
+    """
+    if account_id is not None:
+        account = db.get(Account, account_id)
+        if not account:
+            return 0
+        return account_balance_at(db, account, as_of)
+
+    accounts = db.scalars(select(Account).where(Account.active.is_(True))).all()
+    return sum(account_balance_at(db, account, as_of) for account in accounts)
+
+
 def initial_balances_total(db: Session, created_before: date | None = None) -> int:
     """Suma de los saldos iniciales, opcionalmente solo los anteriores a una fecha.
 
@@ -124,10 +165,14 @@ def summarize(
     include_initial: bool = True,
 ) -> PeriodSummary:
     income, expense = summarize_cents(db, start, end, account_id, include_initial)
+    prev_cents = total_balance_at(db, start - timedelta(days=1), account_id=account_id)
+    accum_cents = total_balance_at(db, end, account_id=account_id)
     return PeriodSummary(
         income=to_pesos(income),
         expense=to_pesos(expense),
         balance=to_pesos(income - expense),
+        previous_balance=to_pesos(prev_cents),
+        accumulated_balance=to_pesos(accum_cents),
     )
 
 

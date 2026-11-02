@@ -125,11 +125,11 @@ export function Accounts() {
                     <div className="flex items-end justify-between pt-4 mt-2 border-t border-black/10">
                       <div>
                         <span className="block text-[11px] font-semibold text-black/70">
-                          Este mes
+                          Saldo actual
                         </span>
                         <span className="block text-sm sm:text-base font-black text-black tabular-nums">
                           {account.balance === 0
-                            ? 'Sin movimientos'
+                            ? '$0'
                             : `${account.balance > 0 ? '+' : '−'}${money(Math.abs(account.balance))}`}
                         </span>
                       </div>
@@ -192,7 +192,7 @@ export function Accounts() {
                   <div className="flex items-end justify-between pt-4 mt-2 border-t border-white/5">
                     <div>
                       <span className="block text-[11px] font-medium text-zinc-500">
-                        Este mes
+                        Saldo actual
                       </span>
                       <span
                         className={`block text-sm sm:text-base font-bold tabular-nums ${

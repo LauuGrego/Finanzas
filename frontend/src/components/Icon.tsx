@@ -36,6 +36,8 @@ export type IconName =
   | 'filter'
   | 'arrowDownLeft'
   | 'arrowUpRight'
+  | 'x'
+  | 'delete'
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: <path d="M3 10.2 12 3l9 7.2M5 9.4V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.4" />,
@@ -128,6 +130,13 @@ const PATHS: Record<IconName, React.ReactNode> = {
   filter: <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />,
   arrowDownLeft: <path d="m17 7-10 10M17 17H7V7" />,
   arrowUpRight: <path d="m7 17 10-10M7 7h10v10" />,
+  x: <path d="M18 6 6 18M6 6l12 12" />,
+  delete: (
+    <>
+      <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
+      <path d="M18 9l-6 6M12 9l6 6" />
+    </>
+  ),
 }
 
 interface Props {

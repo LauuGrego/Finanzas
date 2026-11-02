@@ -15,6 +15,8 @@ class PeriodSummary(BaseModel):
     income: Money = 0
     expense: Money = 0
     balance: Money = 0
+    accumulated_balance: Money = 0
+    previous_balance: Money = 0
 
 
 class CategoryTotal(BaseModel):
@@ -56,6 +58,8 @@ class MonthComparison(BaseModel):
 class DashboardRead(BaseModel):
     month: str = Field(description="YYYY-MM")
     available_balance: Money
+    accumulated_balance: Money = 0
+    previous_balance: Money = 0
     month_summary: PeriodSummary
     expenses_by_category: list[CategoryTotal]
     recent_transactions: list[TransactionRead]

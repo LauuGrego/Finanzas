@@ -8,7 +8,7 @@ import { EmptyState, StateWrapper } from '../components/States'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Goal } from '../types'
-import { formatDate, money, parseMoney, percent } from '../utils/format'
+import { money, parseMoney, percent } from '../utils/format'
 
 /**
  * Metas: para qué estás juntando plata.
@@ -122,7 +122,7 @@ export function Metas() {
             hint="Creá una para un viaje, un equipo o un fondo de ahorro."
           />
         ) : (
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ul className="grid grid-cols-1 gap-5">
             {items.map((goal) => (
               <GoalCard
                 key={goal.id}
@@ -266,6 +266,48 @@ function deadlineNote(goal: Goal): string | null {
   return `Venció hace ${Math.abs(days)} días`
 }
 
+function GoalDonut({ progress, color }: { progress: number; color: string }) {
+  const r = 42
+  const c = 2 * Math.PI * r
+  const clamped = Math.min(Math.max(progress, 0), 100)
+  const offset = c - (clamped / 100) * c
+
+  return (
+    <div className="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 flex items-center justify-center">
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+        <circle
+          cx="50"
+          cy="50"
+          r={r}
+          stroke="#262626"
+          strokeWidth="7"
+          fill="none"
+        />
+        <circle
+          cx="50"
+          cy="50"
+          r={r}
+          stroke={color}
+          strokeWidth="7"
+          fill="none"
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className="transition-all duration-700 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-1">
+        <span className="text-base sm:text-lg font-black text-white tabular-nums tracking-tight">
+          {percent(progress)}
+        </span>
+        <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
+          completado
+        </span>
+      </div>
+    </div>
+  )
+}
+
 function GoalCard({
   goal,
   onEdit,
@@ -278,98 +320,87 @@ function GoalCard({
   onDelete: () => void
 }) {
   const style = statusStyle(goal)
+  const isCompleted = goal.status === 'cumplida' || goal.remaining <= 0
 
   return (
     <li className="list-none">
-      <div className="bg-[#141414] border border-white/5 rounded-3xl p-5 sm:p-6 transition hover:border-white/10 flex flex-col justify-between h-full">
-        <div>
-          <div className="flex items-start justify-between gap-3 mb-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-gold shrink-0 border border-white/5">
-                <Icon name="target" size={18} />
-              </div>
+      <div className="bg-[#141414] border border-white/5 hover:border-white/10 rounded-3xl p-6 sm:p-7 transition flex flex-col sm:flex-row items-center sm:items-start gap-6 h-full">
+        {/* Left Circular Donut */}
+        <GoalDonut progress={goal.progress} color={style.bar} />
+
+        {/* Right Info Section */}
+        <div className="flex-1 min-w-0 flex flex-col justify-between w-full h-full">
+          <div>
+            {/* Top row: Name, Target and Action Buttons */}
+            <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h3 className="font-bold text-white text-base truncate">{goal.name}</h3>
-                <span
-                  className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border mt-1 ${style.badgeBg}`}
+                <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">
+                  {goal.name}
+                </h3>
+                <p className="text-xs sm:text-sm text-neutral-400 font-medium tabular-nums mt-0.5">
+                  {money(goal.current_amount)} de {money(goal.target_amount)}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={onToggle}
+                  aria-label={goal.active ? `Pausar ${goal.name}` : `Reactivar ${goal.name}`}
+                  className="text-neutral-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition cursor-pointer"
                 >
-                  {style.note}
-                  {deadlineNote(goal) && (
-                    <span className="opacity-75 font-normal ml-1">· {deadlineNote(goal)}</span>
-                  )}
-                </span>
+                  <Icon name={goal.active ? 'pause' : 'check'} size={15} />
+                </button>
+                <button
+                  type="button"
+                  onClick={onEdit}
+                  aria-label={`Editar ${goal.name}`}
+                  className="text-neutral-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition cursor-pointer"
+                >
+                  <Icon name="pencil" size={15} />
+                </button>
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  aria-label={`Borrar ${goal.name}`}
+                  className="text-neutral-400 hover:text-expense p-2 rounded-xl hover:bg-white/5 transition cursor-pointer"
+                >
+                  <Icon name="trash" size={15} />
+                </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                type="button"
-                onClick={onToggle}
-                aria-label={goal.active ? `Pausar ${goal.name}` : `Reactivar ${goal.name}`}
-                className="text-neutral-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition"
-              >
-                <Icon name={goal.active ? 'pause' : 'check'} size={15} />
-              </button>
-              <button
-                type="button"
-                onClick={onEdit}
-                aria-label={`Editar ${goal.name}`}
-                className="text-neutral-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition"
-              >
-                <Icon name="pencil" size={15} />
-              </button>
-              <button
-                type="button"
-                onClick={onDelete}
-                aria-label={`Borrar ${goal.name}`}
-                className="text-neutral-400 hover:text-expense p-2 rounded-xl hover:bg-white/5 transition"
-              >
-                <Icon name="trash" size={15} />
-              </button>
+            {/* Middle: Faltan & Big Amount */}
+            <div className="mt-4">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                {isCompleted ? 'Estado' : 'Faltan'}
+              </span>
+              <p className="text-3xl sm:text-4xl font-black text-gold tracking-tight tabular-nums mt-0.5">
+                {isCompleted ? '¡Cumplida!' : money(goal.remaining)}
+              </p>
             </div>
           </div>
 
-          <div className="my-3">
-            <div className="flex justify-between items-baseline mb-1.5">
-              <span className="text-xl sm:text-2xl font-black text-white tabular-nums tracking-tight">
-                {money(goal.current_amount)}
+          {/* Bottom Badge Row */}
+          <div className="mt-4 pt-3 border-t border-white/5 flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${style.badgeBg}`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true" />
+              {style.note}
+            </span>
+            {deadlineNote(goal) && (
+              <span className="text-xs text-neutral-400">
+                · {deadlineNote(goal)}
               </span>
-              <span className="text-xs text-neutral-400 font-semibold tabular-nums">
-                de {money(goal.target_amount)}
-              </span>
-            </div>
-
-            {/* Progress bar with electric yellow fill */}
-            <div className="h-2 rounded-full bg-neutral-800/80 overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${Math.min(goal.progress, 100)}%`,
-                  backgroundColor: style.bar,
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between pt-3 border-t border-white/5 text-xs text-neutral-400">
-          <span className="font-semibold text-white tabular-nums">
-            {percent(goal.progress)} completado
-          </span>
-          <span className="tabular-nums">
-            {goal.status === 'cumplida' ? (
-              <span className="text-gold font-bold">¡Objetivo alcanzado!</span>
-            ) : (
-              `Faltan ${money(goal.remaining)}`
             )}
-          </span>
+            {!goal.active && (
+              <span className="text-xs text-neutral-500 italic">
+                (Pausada)
+              </span>
+            )}
+          </div>
         </div>
-
-        {!goal.active && (
-          <p className="text-[11px] text-neutral-500 mt-2 italic">
-            Meta pausada{goal.deadline && ` · Fecha objetivo: ${formatDate(goal.deadline)}`}
-          </p>
-        )}
       </div>
     </li>
   )

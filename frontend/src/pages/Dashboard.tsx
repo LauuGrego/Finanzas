@@ -95,34 +95,51 @@ export function Dashboard() {
             <div className="lg:col-span-2 space-y-6">
               {/* Hero Balance Card */}
               <section className="bg-gold text-black rounded-3xl p-6 sm:p-7 shadow-lg relative overflow-hidden">
-                <p className="text-xs sm:text-sm font-semibold text-black/75">
-                  Balance del mes
-                </p>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <p className="text-xs sm:text-sm font-bold text-black/80 uppercase tracking-wider">
+                    {period === currentPeriod() ? 'Saldo acumulado actual' : 'Saldo acumulado'}
+                  </p>
+                  {data.previous_balance !== undefined && (
+                    <span className="text-[11px] font-bold text-black/80 bg-black/10 px-3 py-1 rounded-full tabular-nums">
+                      Arrancó en ${money(data.previous_balance).replace('$', '').trim()}
+                    </span>
+                  )}
+                </div>
 
                 <p className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-black my-2 tabular-nums">
-                  {data.month_summary.balance < 0 ? '−' : ''}$ {money(Math.abs(data.month_summary.balance)).replace('$', '').trim()}
+                  {data.accumulated_balance < 0 ? '−' : ''}$ {money(Math.abs(data.accumulated_balance)).replace('$', '').trim()}
                 </p>
 
-                <p className="text-xs font-semibold text-black/70 mb-5">
-                  Ingresos menos gastos
+                <p className="text-xs font-bold text-black/75 mb-5 tabular-nums">
+                  {data.month_summary.balance === 0
+                    ? 'Sin movimientos registrados en este mes'
+                    : `Resultado neto del mes: ${data.month_summary.balance >= 0 ? '+' : '−'}${money(Math.abs(data.month_summary.balance))}`}
                 </p>
 
                 {/* Floating Black Capsule */}
-                <div className="bg-black text-white rounded-2xl p-4 sm:p-5 inline-flex flex-col gap-2.5 min-w-[220px] shadow-md">
+                <div className="bg-black text-white rounded-2xl p-4 sm:p-5 inline-flex flex-col gap-2.5 min-w-[240px] shadow-md">
                   <div className="flex items-center gap-2.5 text-xs sm:text-sm">
                     <span className="w-2.5 h-2.5 rounded-full bg-income shrink-0" />
-                    <span className="text-zinc-400 font-medium">Ingresos</span>
-                    <span className="font-bold text-white ml-auto tabular-nums">
+                    <span className="text-zinc-400 font-medium">Ingresos del mes</span>
+                    <span className="font-bold text-income ml-auto tabular-nums">
                       +{money(data.month_summary.income)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2.5 text-xs sm:text-sm">
                     <span className="w-2.5 h-2.5 rounded-full bg-expense shrink-0" />
-                    <span className="text-zinc-400 font-medium">Gastos</span>
-                    <span className="font-bold text-white ml-auto tabular-nums">
+                    <span className="text-zinc-400 font-medium">Gastos del mes</span>
+                    <span className="font-bold text-expense ml-auto tabular-nums">
                       −{money(data.month_summary.expense)}
                     </span>
                   </div>
+                  {data.previous_balance !== undefined && (
+                    <div className="flex items-center gap-2.5 text-[11px] pt-2 border-t border-white/10 text-zinc-400">
+                      <span>Viene del mes anterior:</span>
+                      <span className="ml-auto font-semibold text-zinc-300 tabular-nums">
+                        {money(data.previous_balance)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </section>
 

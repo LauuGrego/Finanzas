@@ -82,54 +82,54 @@ export function Presupuestos() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-          Presupuestos
-        </h1>
-        <div className="flex flex-wrap items-center gap-3">
-          <MonthStepper period={period} onChange={setPeriod} />
-          <button
-            type="button"
-            onClick={openCreate}
-            className="bg-gold text-black font-bold rounded-full px-5 py-2 text-xs sm:text-sm flex items-center gap-1.5 hover:bg-gold-hover shadow-sm transition-colors cursor-pointer"
-          >
-            <Icon name="plus" size={16} />
-            Nuevo presupuesto
-          </button>
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+            Presupuestos
+          </h1>
+          <p className="text-xs sm:text-sm text-neutral-400 mt-1">
+            Definí topes por categoría para controlar tus gastos mensuales.
+          </p>
         </div>
+        <MonthStepper period={period} onChange={setPeriod} />
       </header>
 
       {notice && (
-        <p className="text-xs text-zinc-300 bg-[#141414] border border-white/10 rounded-2xl p-4">
+        <p className="text-xs text-neutral-300 bg-[#141414] border border-white/10 rounded-2xl p-4">
           {notice}
         </p>
       )}
 
+      {/* Solid Yellow Hero Card */}
       {summary && summary.count > 0 && (
-        <div className="bg-[#141414] border border-white/5 rounded-3xl p-6 shadow-sm">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-              Gastado del mes
+        <div className="bg-gold text-black rounded-3xl p-6 sm:p-8 shadow-md">
+          <span className="text-xs font-bold uppercase tracking-wider text-black/75 block">
+            Gastado en {monthLabel(period)}
+          </span>
+          <div className="flex flex-wrap items-baseline gap-2 mt-2">
+            <span className="text-4xl sm:text-5xl font-black text-black tracking-tight tabular-nums">
+              {money(summary.spent)}
             </span>
-            <span className="font-black text-lg text-white tabular-nums">
-              {money(summary.spent)}{' '}
-              <span className="text-zinc-500 font-medium text-sm">
-                de {money(summary.amount)}
-              </span>
+            <span className="text-xl sm:text-2xl font-bold text-black/70 tabular-nums">
+              de {money(summary.amount)}
             </span>
           </div>
 
-          <BudgetBar
-            percentage={summary.percentage}
-            color={summary.over_count > 0 ? '#ef4444' : '#ffcd00'}
-          />
+          <div className="h-3 rounded-full bg-black/15 overflow-hidden my-5">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                summary.percentage > 100 ? 'bg-expense' : 'bg-black'
+              }`}
+              style={{ width: `${Math.min(summary.percentage, 100)}%` }}
+            />
+          </div>
 
-          <div className="flex items-center justify-between gap-3 mt-3 text-xs sm:text-sm font-medium">
-            <span className="text-zinc-400">
+          <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-black/80">
+            <span>
               {summary.count} {summary.count === 1 ? 'presupuesto' : 'presupuestos'}
               {summary.over_count > 0 && ` · ${summary.over_count} excedido${summary.over_count === 1 ? '' : 's'}`}
             </span>
-            <span className={`tabular-nums font-bold ${summary.remaining < 0 ? 'text-expense' : 'text-zinc-300'}`}>
+            <span className="tabular-nums font-black text-black">
               {summary.remaining < 0
                 ? `Excedido por ${money(Math.abs(summary.remaining))}`
                 : `Quedan ${money(summary.remaining)}`}
@@ -138,29 +138,46 @@ export function Presupuestos() {
         </div>
       )}
 
-      <StateWrapper
-        loading={budgets.loading}
-        error={budgets.error}
-        onRetry={() => void budgets.reload()}
-      >
-        {items.length === 0 ? (
-          <EmptyState
-            title={`Todavía no tenés presupuestos en ${monthLabel(period)}`}
-            hint="Definí topes por categoría para controlar tus gastos mensuales."
-          />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {items.map((budget) => (
-              <BudgetCard
-                key={budget.id}
-                budget={budget}
-                onEdit={() => openEdit(budget)}
-                onDelete={() => setDeleting(budget)}
-              />
-            ))}
-          </div>
-        )}
-      </StateWrapper>
+      {/* Category List Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+            Por categoría
+          </h2>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="bg-gold text-black font-bold rounded-full px-5 py-2 text-xs sm:text-sm flex items-center gap-1.5 hover:bg-gold-light shadow-sm transition-colors cursor-pointer shrink-0"
+          >
+            <Icon name="plus" size={16} />
+            Nuevo presupuesto
+          </button>
+        </div>
+
+        <StateWrapper
+          loading={budgets.loading}
+          error={budgets.error}
+          onRetry={() => void budgets.reload()}
+        >
+          {items.length === 0 ? (
+            <EmptyState
+              title={`Todavía no tenés presupuestos en ${monthLabel(period)}`}
+              hint="Definí topes por categoría para controlar tus gastos mensuales."
+            />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {items.map((budget) => (
+                <BudgetCard
+                  key={budget.id}
+                  budget={budget}
+                  onEdit={() => openEdit(budget)}
+                  onDelete={() => setDeleting(budget)}
+                />
+              ))}
+            </div>
+          )}
+        </StateWrapper>
+      </div>
 
       <FormModal
         open={creating || editing !== null}
@@ -271,21 +288,6 @@ export function Presupuestos() {
   )
 }
 
-function BudgetBar({ percentage, color }: { percentage: number; color?: string }) {
-  const over = percentage > 100
-  return (
-    <div className="h-2 rounded-full bg-zinc-800 overflow-hidden mt-3">
-      <div
-        className="h-full rounded-full transition-all duration-300"
-        style={{
-          width: `${Math.min(percentage, 100)}%`,
-          backgroundColor: over ? '#ef4444' : (color ?? '#ffcd00'),
-        }}
-      />
-    </div>
-  )
-}
-
 function BudgetCard({
   budget,
   onEdit,
@@ -300,45 +302,55 @@ function BudgetCard({
   const over = budget.over
 
   return (
-    <div className="bg-[#141414] border border-white/5 rounded-3xl p-5 sm:p-6 shadow-sm hover:border-white/10 transition-colors">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-2.5 min-w-0">
-          <span
-            aria-hidden="true"
-            className="w-2.5 h-2.5 rounded-full shrink-0 mt-1.5"
-            style={{ backgroundColor: barColor }}
-          />
-          <div className="min-w-0">
-            <p className="font-bold text-white text-base truncate">{label}</p>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              {money(budget.spent)} de {money(budget.amount)} · {percent(budget.percentage)}
-            </p>
+    <div className="bg-[#141414] border border-white/5 hover:border-white/10 rounded-3xl p-6 transition flex flex-col justify-between">
+      <div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <span
+              aria-hidden="true"
+              className="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm"
+              style={{ backgroundColor: barColor }}
+            />
+            <div className="min-w-0">
+              <p className="font-bold text-white text-base truncate">{label}</p>
+              <p className="text-xs text-neutral-400 mt-0.5 tabular-nums">
+                {money(budget.spent)} de {money(budget.amount)} · {percent(budget.percentage)}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label={`Editar ${label}`}
+              className="text-neutral-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition cursor-pointer"
+            >
+              <Icon name="pencil" size={15} />
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              aria-label={`Borrar ${label}`}
+              className="text-neutral-400 hover:text-expense p-2 rounded-xl hover:bg-white/5 transition cursor-pointer"
+            >
+              <Icon name="trash" size={15} />
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={onEdit}
-            aria-label={`Editar ${label}`}
-            className="text-zinc-500 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-          >
-            <Icon name="pencil" size={15} />
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            aria-label={`Borrar ${label}`}
-            className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-          >
-            <Icon name="trash" size={15} />
-          </button>
+        <div className="h-2.5 rounded-full bg-[#222222] overflow-hidden my-4">
+          <div
+            className="h-full rounded-full transition-all duration-300"
+            style={{
+              width: `${Math.min(budget.percentage, 100)}%`,
+              backgroundColor: over ? '#ef4444' : barColor,
+            }}
+          />
         </div>
       </div>
 
-      <BudgetBar percentage={budget.percentage} color={barColor} />
-
-      <p className={`text-xs font-semibold mt-3 ${over ? 'text-expense' : 'text-zinc-400'}`}>
+      <p className={`text-xs font-semibold tabular-nums ${over ? 'text-expense' : 'text-neutral-400'}`}>
         {over
           ? `Excedido por ${money(Math.abs(budget.remaining))}`
           : `Quedan ${money(budget.remaining)}`}

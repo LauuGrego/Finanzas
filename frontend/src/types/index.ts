@@ -59,6 +59,8 @@ export interface PeriodSummary {
   income: number
   expense: number
   balance: number
+  accumulated_balance?: number
+  previous_balance?: number
 }
 
 export interface CategoryTotal {
@@ -81,6 +83,8 @@ export interface UpcomingItem {
 export interface Dashboard {
   month: string
   available_balance: number
+  accumulated_balance: number
+  previous_balance: number
   month_summary: PeriodSummary
   expenses_by_category: CategoryTotal[]
   recent_transactions: Transaction[]
