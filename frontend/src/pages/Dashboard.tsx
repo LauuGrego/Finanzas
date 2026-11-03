@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from '../components/Card'
-import { Icon } from '../components/Icon'
 import { MonthStepper } from '../components/MonthStepper'
 import { EmptyState, ErrorState, Skeleton } from '../components/States'
 import { TransactionItem } from '../components/TransactionItem'
-import { TransactionModal, TransferModal } from '../components/TransactionModal'
+import { TransactionModal } from '../components/TransactionModal'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Transaction } from '../types'
@@ -21,7 +20,6 @@ export function Dashboard() {
   const [period, setPeriod] = useState(currentPeriod())
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [showNew, setShowNew] = useState(false)
-  const [showTransfer, setShowTransfer] = useState(false)
 
   const dashboard = useAsync(() => api.dashboard.get(period), [period])
   const accounts = useAsync(() => api.accounts.list(), [])
@@ -64,14 +62,6 @@ export function Dashboard() {
 
         <div className="flex flex-wrap items-center gap-2.5">
           <MonthStepper period={period} onChange={setPeriod} />
-          <button
-            type="button"
-            onClick={() => setShowTransfer(true)}
-            className="bg-[#18181b] hover:bg-[#222226] border border-white/10 text-white font-semibold rounded-full px-4 py-2 text-xs sm:text-sm flex items-center gap-1.5 transition cursor-pointer"
-          >
-            <Icon name="transfer" size={15} />
-            <span>Transferir</span>
-          </button>
         </div>
       </header>
 
@@ -431,13 +421,6 @@ export function Dashboard() {
           setShowNew(false)
           setEditing(null)
         }}
-        onSaved={reloadAll}
-      />
-
-      <TransferModal
-        open={showTransfer}
-        accounts={accounts.data?.accounts ?? []}
-        onClose={() => setShowTransfer(false)}
         onSaved={reloadAll}
       />
     </div>

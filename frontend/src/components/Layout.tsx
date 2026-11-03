@@ -49,6 +49,15 @@ export function Layout({ children }: { children: ReactNode }) {
             <span className="block text-xs text-muted">Tu agenda personal</span>
           </div>
         </div>
+        <div className="px-3 pb-3">
+          <NavLink
+            to="/nuevo"
+            className="flex items-center justify-center gap-2 rounded-2xl bg-gold hover:bg-gold-light text-black font-extrabold px-4 py-3 text-sm shadow-md shadow-gold/20 transition cursor-pointer"
+          >
+            <Icon name="plus" size={18} />
+            <span>Nuevo</span>
+          </NavLink>
+        </div>
         <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
           {LINKS.map((link) => (
             <NavLink key={link.to} to={link.to} end={link.to === '/'} className={linkClass}>
