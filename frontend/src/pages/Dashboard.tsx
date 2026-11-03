@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from '../components/Card'
-import { Icon } from '../components/Icon'
 import { MonthStepper } from '../components/MonthStepper'
 import { EmptyState, StateWrapper } from '../components/States'
 import { TransactionItem } from '../components/TransactionItem'
@@ -63,24 +62,6 @@ export function Dashboard() {
 
         <div className="flex flex-wrap items-center gap-2.5">
           <MonthStepper period={period} onChange={setPeriod} />
-
-          <button
-            type="button"
-            onClick={() => setShowTransfer(true)}
-            className="bg-[#141414] border border-white/15 text-white font-semibold rounded-full px-4 py-2 text-xs sm:text-sm flex items-center gap-2 hover:bg-white/10 transition-colors cursor-pointer shadow-sm"
-          >
-            <Icon name="transfer" size={16} />
-            Transferir
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowNew(true)}
-            className="bg-gold text-black font-bold rounded-full px-5 py-2 text-xs sm:text-sm flex items-center gap-1.5 hover:bg-gold-hover shadow-sm transition-colors cursor-pointer"
-          >
-            <Icon name="plus" size={16} />
-            Registrar gasto
-          </button>
         </div>
       </header>
 
