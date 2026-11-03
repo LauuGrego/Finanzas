@@ -25,7 +25,7 @@ export function useAsync<T>(
 
   const reload = useCallback(async () => {
     const currentReqId = ++reqIdRef.current
-    setState((prev) => ({ ...prev, loading: true, error: null }))
+    setState({ data: null, loading: true, error: null })
     try {
       const data = await loader()
       if (currentReqId === reqIdRef.current) {

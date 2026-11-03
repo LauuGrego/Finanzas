@@ -363,13 +363,18 @@ export function TransferModal({
 
   const [error, setError] = useState<string | null>(null)
   const [fromId, setFromId] = useState<number>(defaultFrom)
+  const [toId, setToId] = useState<number | string>(defaultTo)
   const [amountText, setAmountText] = useState('')
+  const [date, setDate] = useState(todayIso())
 
   useEffect(() => {
     if (open) {
       setError(null)
-      setFromId(resolveDefaultAccountId(accounts))
+      const initialFrom = resolveDefaultAccountId(accounts)
+      setFromId(initialFrom)
+      setToId(accounts.find((a) => a.id !== initialFrom)?.id ?? accounts[0]?.id ?? '')
       setAmountText('')
+      setDate(todayIso())
     }
   }, [open, accounts])
 
@@ -381,13 +386,21 @@ export function TransferModal({
       return
     }
 
+    const fromAccount = Number(form.get('from_account_id'))
+    const toAccount = Number(form.get('to_account_id'))
+
+    if (fromAccount === toAccount) {
+      setError('La cuenta de origen y de destino no pueden ser la misma')
+      return
+    }
+
     try {
       await api.transfers.create({
-        from_account_id: Number(form.get('from_account_id')),
-        to_account_id: Number(form.get('to_account_id')),
+        from_account_id: fromAccount,
+        to_account_id: toAccount,
         amount,
         description: (form.get('description') as string)?.trim() || null,
-        date: form.get('date') as string,
+        date: (form.get('date') as string) || todayIso(),
       })
       onSaved()
       onClose()
@@ -405,8 +418,37 @@ export function TransferModal({
       onSubmit={handleSubmit}
       error={error}
     >
-      {/* Visual Transfer Flow (Desde -> Hacia) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative">
+      {/* Top Segmented Header Indicator */}
+      <div className="bg-black/60 p-1.5 rounded-full border border-white/10 flex items-center justify-center py-2.5 px-4 gap-2 text-gold font-bold text-xs sm:text-sm shadow-inner">
+        <Icon name="transfer" size={16} />
+        <span>Transferencia entre cuentas</span>
+      </div>
+
+      {/* Hero Amount Card */}
+      <div className="rounded-3xl p-5 sm:p-6 text-center border border-white/10 bg-gold/[0.04] focus-within:border-gold/60 focus-within:ring-2 focus-within:ring-gold/15 transition-all duration-200">
+        <span className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">
+          Monto
+        </span>
+        <div className="flex items-center justify-center gap-1.5">
+          <span className="text-3xl sm:text-4xl font-extrabold text-gold/80 select-none">
+            $
+          </span>
+          <MoneyInput
+            id="transfer-amount"
+            name="amount"
+            required
+            autoFocus
+            placeholder="0"
+            hidePrefix
+            value={amountText}
+            onChange={setAmountText}
+            className="bg-transparent border-none text-3xl sm:text-5xl font-black text-white text-center tabular-nums focus:outline-none w-full max-w-[280px] p-0 tracking-tight no-spinner"
+          />
+        </div>
+      </div>
+
+      {/* Accounts Selection (Origen & Destino) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="label" htmlFor="from_account_id">
             Cuenta de origen
@@ -444,7 +486,8 @@ export function TransferModal({
               id="to_account_id"
               name="to_account_id"
               required
-              defaultValue={defaultTo}
+              value={toId}
+              onChange={(event) => setToId(Number(event.target.value))}
               className="w-full appearance-none rounded-2xl border border-white/10 bg-[#161616] px-4 py-3 pr-10 text-white font-medium focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20 transition-all cursor-pointer text-sm"
             >
               {accounts.map((account) => (
@@ -463,53 +506,33 @@ export function TransferModal({
         </div>
       </div>
 
-      {/* Hero Amount Field */}
-      <div className="rounded-3xl p-5 sm:p-6 text-center border border-white/10 bg-gold/[0.04] focus-within:border-gold/60 focus-within:ring-2 focus-within:ring-gold/15 transition-all duration-200">
-        <span className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">
-          Monto a transferir
-        </span>
-        <div className="flex items-center justify-center gap-1.5">
-          <span className="text-3xl sm:text-4xl font-extrabold text-gold/80 select-none">
-            $
-          </span>
-          <MoneyInput
-            id="transfer-amount"
-            name="amount"
-            required
-            autoFocus
-            placeholder="0"
-            hidePrefix
-            value={amountText}
-            onChange={setAmountText}
-            className="bg-transparent border-none text-3xl sm:text-5xl font-black text-white text-center tabular-nums focus:outline-none w-full max-w-[280px] p-0 tracking-tight no-spinner"
-          />
-        </div>
-      </div>
-
+      {/* Descripción */}
       <div>
         <label className="label" htmlFor="transfer-description">
-          Motivo o referencia
+          Descripción
         </label>
         <input
           id="transfer-description"
           name="description"
           type="text"
-          placeholder="Opcional: Ahorro, cambio de cuenta, etc."
+          placeholder="Opcional: Traspaso, fondo de ahorro, etc."
           maxLength={200}
           className="w-full rounded-2xl border border-white/10 bg-[#161616] px-4 py-3 text-white placeholder:text-neutral-600 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20 transition-all text-sm"
         />
       </div>
 
+      {/* Fecha */}
       <div>
         <label className="label" htmlFor="transfer-date">
-          Fecha de la transferencia
+          Fecha
         </label>
         <input
           id="transfer-date"
           name="date"
           type="date"
           required
-          defaultValue={todayIso()}
+          value={date}
+          onChange={(event) => setDate(event.target.value)}
           className="w-full rounded-2xl border border-white/10 bg-[#161616] px-4 py-3 text-white focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20 transition-all cursor-pointer text-sm"
         />
       </div>

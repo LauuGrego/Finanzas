@@ -4,7 +4,7 @@ import { FormModal } from '../components/FormModal'
 import { Icon } from '../components/Icon'
 import { MoneyInput } from '../components/MoneyInput'
 import { MonthStepper } from '../components/MonthStepper'
-import { EmptyState, StateWrapper } from '../components/States'
+import { EmptyState, Skeleton, StateWrapper } from '../components/States'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Budget, Category } from '../types'
@@ -101,7 +101,22 @@ export function Presupuestos() {
       )}
 
       {/* Solid Yellow Hero Card */}
-      {summary && summary.count > 0 && (
+      {budgets.loading ? (
+        <div className="bg-gold text-black rounded-3xl p-6 sm:p-8 shadow-md">
+          <Skeleton variant="gold" className="h-4 w-40 rounded mb-2" />
+          <div className="flex flex-wrap items-baseline gap-2 my-2">
+            <Skeleton variant="gold" className="h-10 sm:h-12 w-48 rounded-2xl" />
+            <Skeleton variant="gold" className="h-6 w-32 rounded-xl" />
+          </div>
+          <div className="h-3 rounded-full bg-black/15 my-5 overflow-hidden">
+            <Skeleton variant="gold" className="h-full w-2/3 rounded-full" />
+          </div>
+          <div className="flex items-center justify-between">
+            <Skeleton variant="gold" className="h-4 w-36 rounded" />
+            <Skeleton variant="gold" className="h-4 w-24 rounded" />
+          </div>
+        </div>
+      ) : summary && summary.count > 0 ? (
         <div className="bg-gold text-black rounded-3xl p-6 sm:p-8 shadow-md">
           <span className="text-xs font-bold uppercase tracking-wider text-black/75 block">
             Gastado en {monthLabel(period)}
@@ -136,7 +151,7 @@ export function Presupuestos() {
             </span>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Category List Section */}
       <div className="space-y-4">

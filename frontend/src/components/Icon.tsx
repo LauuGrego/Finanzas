@@ -36,6 +36,7 @@ export type IconName =
   | 'filter'
   | 'arrowDownLeft'
   | 'arrowUpRight'
+  | 'clock'
   | 'x'
   | 'delete'
 
@@ -130,6 +131,12 @@ const PATHS: Record<IconName, React.ReactNode> = {
   filter: <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />,
   arrowDownLeft: <path d="m17 7-10 10M17 17H7V7" />,
   arrowUpRight: <path d="m7 17 10-10M7 7h10v10" />,
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </>
+  ),
   x: <path d="M18 6 6 18M6 6l12 12" />,
   delete: (
     <>

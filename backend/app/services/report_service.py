@@ -26,7 +26,7 @@ def dashboard(db: Session, period: str | None = None) -> DashboardRead:
         previous_balance=to_pesos(prev_cents),
         month_summary=tx.summarize(db, start, end),
         expenses_by_category=tx.expenses_by_category(db, start, end),
-        recent_transactions=tx.filter_transactions(db, limit=8).items,
+        recent_transactions=tx.filter_transactions(db, start=start, end=end, limit=8).items,
         upcoming=_upcoming(db),
     )
 

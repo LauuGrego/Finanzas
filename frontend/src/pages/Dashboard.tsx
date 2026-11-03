@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Card } from '../components/Card'
 import { Icon } from '../components/Icon'
 import { MonthStepper } from '../components/MonthStepper'
-import { EmptyState, StateWrapper } from '../components/States'
+import { EmptyState, ErrorState, Skeleton } from '../components/States'
 import { TransactionItem } from '../components/TransactionItem'
 import { TransactionModal, TransferModal } from '../components/TransactionModal'
 import { useAsync } from '../hooks/useAsync'
@@ -15,7 +15,6 @@ import {
   formatDate,
   monthLabel,
   money,
-  todayIso,
 } from '../utils/format'
 
 export function Dashboard() {
@@ -31,7 +30,9 @@ export function Dashboard() {
   const goals = useAsync(() => api.goals.list(), [])
 
   const data = dashboard.data
-  const today = todayIso()
+  const isLoading = dashboard.loading || !data
+  const isBudgetsLoading = budgets.loading || !budgets.data
+  const isGoalsLoading = goals.loading || !goals.data
 
   function reloadAll() {
     void dashboard.reload()
@@ -74,12 +75,9 @@ export function Dashboard() {
         </div>
       </header>
 
-      <StateWrapper
-        loading={dashboard.loading}
-        error={dashboard.error}
-        onRetry={() => void dashboard.reload()}
-      >
-        {data && (
+      {dashboard.error ? (
+        <ErrorState message={dashboard.error} onRetry={() => void dashboard.reload()} />
+      ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column (2 Cols) */}
             <div className="lg:col-span-2 space-y-6">
@@ -89,57 +87,84 @@ export function Dashboard() {
                   <p className="text-xs sm:text-sm font-bold text-black/80 uppercase tracking-wider">
                     {period === currentPeriod() ? 'Saldo acumulado actual' : 'Saldo acumulado'}
                   </p>
-                  {data.previous_balance !== undefined && (
+                  {isLoading ? (
+                    <Skeleton variant="gold" className="h-5 w-24 rounded-full" />
+                  ) : data?.previous_balance !== undefined ? (
                     <span className="text-[11px] font-bold text-black/80 bg-black/10 px-3 py-1 rounded-full tabular-nums">
                       Arrancó en ${money(data.previous_balance).replace('$', '').trim()}
                     </span>
-                  )}
+                  ) : null}
                 </div>
 
-                <p className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-black my-2 tabular-nums">
-                  {data.accumulated_balance < 0 ? '−' : ''}$ {money(Math.abs(data.accumulated_balance)).replace('$', '').trim()}
-                </p>
+                {isLoading ? (
+                  <div className="my-2">
+                    <Skeleton variant="gold" className="h-12 sm:h-14 w-52 sm:w-64 rounded-2xl" />
+                  </div>
+                ) : (
+                  <p className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-black my-2 tabular-nums">
+                    {data.accumulated_balance < 0 ? '−' : ''}$ {money(Math.abs(data.accumulated_balance)).replace('$', '').trim()}
+                  </p>
+                )}
 
-                <p className="text-xs font-bold text-black/75 mb-5 tabular-nums">
-                  {data.month_summary.balance === 0
-                    ? 'Sin movimientos registrados en este mes'
-                    : `Resultado neto del mes: ${data.month_summary.balance >= 0 ? '+' : '−'}${money(Math.abs(data.month_summary.balance))}`}
-                </p>
+                {isLoading ? (
+                  <div className="mb-5">
+                    <Skeleton variant="gold" className="h-4 w-48 rounded" />
+                  </div>
+                ) : (
+                  <p className="text-xs font-bold text-black/75 mb-5 tabular-nums">
+                    {data.month_summary.balance === 0
+                      ? 'Sin movimientos registrados en este mes'
+                      : `Resultado neto del mes: ${data.month_summary.balance >= 0 ? '+' : '−'}${money(Math.abs(data.month_summary.balance))}`}
+                  </p>
+                )}
 
                 {/* Floating Black Capsule */}
                 <div className="bg-black text-white rounded-2xl p-4 sm:p-5 inline-flex flex-col gap-2.5 min-w-[240px] shadow-md">
                   <div className="flex items-center gap-2.5 text-xs sm:text-sm">
                     <span className="w-2.5 h-2.5 rounded-full bg-income shrink-0" />
                     <span className="text-zinc-400 font-medium">Ingresos del mes</span>
-                    <span className="font-bold text-income ml-auto tabular-nums">
-                      +{money(data.month_summary.income)}
-                    </span>
+                    {isLoading ? (
+                      <Skeleton variant="capsule" className="h-4 w-16 ml-auto rounded" />
+                    ) : (
+                      <span className="font-bold text-income ml-auto tabular-nums">
+                        +{money(data.month_summary.income)}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2.5 text-xs sm:text-sm">
                     <span className="w-2.5 h-2.5 rounded-full bg-expense shrink-0" />
                     <span className="text-zinc-400 font-medium">Gastos del mes</span>
-                    <span className="font-bold text-expense ml-auto tabular-nums">
-                      −{money(data.month_summary.expense)}
-                    </span>
+                    {isLoading ? (
+                      <Skeleton variant="capsule" className="h-4 w-16 ml-auto rounded" />
+                    ) : (
+                      <span className="font-bold text-expense ml-auto tabular-nums">
+                        −{money(data.month_summary.expense)}
+                      </span>
+                    )}
                   </div>
-                  {data.previous_balance !== undefined && (
+                  {isLoading ? (
+                    <div className="flex items-center gap-2.5 text-[11px] pt-2 border-t border-white/10 text-zinc-400">
+                      <span>Viene del mes anterior:</span>
+                      <Skeleton variant="capsule" className="h-3.5 w-14 ml-auto rounded" />
+                    </div>
+                  ) : data?.previous_balance !== undefined ? (
                     <div className="flex items-center gap-2.5 text-[11px] pt-2 border-t border-white/10 text-zinc-400">
                       <span>Viene del mes anterior:</span>
                       <span className="ml-auto font-semibold text-zinc-300 tabular-nums">
                         {money(data.previous_balance)}
                       </span>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </section>
 
-              {/* Últimos movimientos */}
+              {/* Movimientos del período */}
               <Card
-                title="Últimos movimientos"
+                title={period === currentPeriod() ? 'Últimos movimientos' : `Movimientos de ${monthLabel(period)}`}
                 action={
-                  data.recent_transactions.length > 0 ? (
+                  !isLoading && data && data.recent_transactions.length > 0 ? (
                     <Link
-                      to="/movimientos"
+                      to={`/movimientos?month=${period}`}
                       className="text-xs sm:text-sm font-bold text-gold hover:underline"
                     >
                       Ver todos
@@ -147,10 +172,23 @@ export function Dashboard() {
                   ) : null
                 }
               >
-                {data.recent_transactions.length === 0 ? (
+                {isLoading ? (
+                  <ul className="divide-y divide-white/5">
+                    {[1, 2, 3].map((n) => (
+                      <li key={n} className="flex items-center gap-3.5 py-3.5">
+                        <Skeleton className="w-9 h-9 rounded-full shrink-0" />
+                        <div className="flex-1 space-y-1.5 min-w-0">
+                          <Skeleton className="h-4 w-36 rounded" />
+                          <Skeleton className="h-3 w-20 rounded" />
+                        </div>
+                        <Skeleton className="h-4 w-16 rounded ml-auto" />
+                      </li>
+                    ))}
+                  </ul>
+                ) : data.recent_transactions.length === 0 ? (
                   <EmptyState
                     title="Todavía no hay movimientos"
-                    hint="Registrá tu primer gasto para empezar"
+                    hint={period === currentPeriod() ? 'Registrá tu primer gasto para empezar' : `No hay movimientos registrados en ${monthLabel(period)}`}
                   />
                 ) : (
                   <ul className="divide-y divide-white/5">
@@ -158,7 +196,7 @@ export function Dashboard() {
                       <li key={transaction.id}>
                         <TransactionItem
                           transaction={transaction}
-                          showDate={transaction.date === today}
+                          showDate={true}
                           onEdit={setEditing}
                         />
                       </li>
@@ -168,7 +206,21 @@ export function Dashboard() {
               </Card>
 
               {/* Distribución de gastos */}
-              {data.expenses_by_category.length > 0 && (
+              {isLoading ? (
+                <Card title="Distribución de gastos">
+                  <div className="space-y-3.5">
+                    {[1, 2].map((n) => (
+                      <div key={n} className="space-y-1.5">
+                        <div className="flex justify-between">
+                          <Skeleton className="h-4 w-28 rounded" />
+                          <Skeleton className="h-4 w-16 rounded" />
+                        </div>
+                        <Skeleton className="h-2 w-full rounded-full" />
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              ) : data && data.expenses_by_category.length > 0 ? (
                 <Card title="Distribución de gastos">
                   <ul className="space-y-3.5">
                     {data.expenses_by_category.map((item, index) => {
@@ -202,7 +254,7 @@ export function Dashboard() {
                     })}
                   </ul>
                 </Card>
-              )}
+              ) : null}
             </div>
 
             {/* Right Column (1 Col) */}
@@ -219,14 +271,29 @@ export function Dashboard() {
                   </Link>
                 }
               >
-                {data.upcoming.length === 0 ? (
+                {isLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((n) => (
+                      <div key={n} className="flex items-center justify-between py-2 gap-3">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="w-12 h-10 rounded-xl shrink-0" />
+                          <div className="space-y-1.5">
+                            <Skeleton className="h-4 w-28 rounded" />
+                            <Skeleton className="h-3 w-16 rounded" />
+                          </div>
+                        </div>
+                        <Skeleton className="h-4 w-16 rounded" />
+                      </div>
+                    ))}
+                  </div>
+                ) : data && data.upcoming.length === 0 ? (
                   <EmptyState
                     title="Nada programado"
                     hint="Cargá un recurrente o cuota y aparecerá acá."
                   />
                 ) : (
                   <ul className="divide-y divide-white/5">
-                    {data.upcoming.slice(0, 5).map((item, index) => {
+                    {data?.upcoming.slice(0, 5).map((item, index) => {
                       const dayNumber = item.date.slice(8, 10)
                       const monthName = new Date(`${item.date}T12:00:00`).toLocaleDateString('es-AR', { month: 'short' })
                       const isIncome = item.type === 'INCOME'
@@ -267,29 +334,53 @@ export function Dashboard() {
               <Card
                 title="Presupuesto"
                 action={
-                  <span className="text-xs text-muted font-medium">
-                    {totalBudgeted > 0 ? `Quedan ${money(budgetRemaining)}` : 'Sin configurar'}
-                  </span>
+                  isBudgetsLoading ? (
+                    <Skeleton className="h-3.5 w-20 rounded" />
+                  ) : (
+                    <span className="text-xs text-muted font-medium">
+                      {totalBudgeted > 0 ? `Quedan ${money(budgetRemaining)}` : 'Sin configurar'}
+                    </span>
+                  )
                 }
               >
-                <div className="space-y-3">
-                  <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-white rounded-full transition-all duration-300"
-                      style={{ width: `${budgetPercentage}%` }}
-                    />
+                {isBudgetsLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-2 w-full rounded-full" />
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-3.5 w-24 rounded" />
+                      <Skeleton className="h-3.5 w-16 rounded" />
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-muted font-medium tabular-nums">
-                    <span>{money(totalSpentInBudget)} de {money(totalBudgeted)}</span>
-                    <Link to="/presupuestos" className="text-gold hover:underline">
-                      Administrar
-                    </Link>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-white rounded-full transition-all duration-300"
+                        style={{ width: `${budgetPercentage}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted font-medium tabular-nums">
+                      <span>{money(totalSpentInBudget)} de {money(totalBudgeted)}</span>
+                      <Link to="/presupuestos" className="text-gold hover:underline">
+                        Administrar
+                      </Link>
+                    </div>
                   </div>
-                </div>
+                )}
               </Card>
 
               {/* Meta Widget */}
-              {featuredGoal ? (
+              {isGoalsLoading ? (
+                <Card title="Metas de ahorro">
+                  <div className="space-y-3">
+                    <Skeleton className="h-2.5 w-full rounded-full" />
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-3.5 w-24 rounded" />
+                      <Skeleton className="h-3.5 w-16 rounded" />
+                    </div>
+                  </div>
+                </Card>
+              ) : featuredGoal ? (
                 <Card
                   title={`Meta: ${featuredGoal.name}`}
                   action={
@@ -330,7 +421,6 @@ export function Dashboard() {
             </div>
           </div>
         )}
-      </StateWrapper>
 
       <TransactionModal
         open={showNew || editing !== null}

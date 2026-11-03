@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Card } from '../components/Card'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Icon } from '../components/Icon'
 import { MonthStepper } from '../components/MonthStepper'
-import { EmptyState, StateWrapper } from '../components/States'
+import { EmptyState, ErrorState, Skeleton } from '../components/States'
 import { TransactionModal } from '../components/TransactionModal'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
@@ -14,13 +15,30 @@ import { currentPeriod, money } from '../utils/format'
 
 export function Transactions() {
   const [favoriteId] = useFavoriteAccount()
-  const [period, setPeriod] = useState(currentPeriod())
+  const [searchParams, setSearchParams] = useSearchParams()
+  const monthParam = searchParams.get('month')
+  const [period, setPeriod] = useState(monthParam || currentPeriod())
   const [categoryId, setCategoryId] = useState('')
   const [accountId, setAccountId] = useState('')
   const [search, setSearch] = useState('')
   const [limit, setLimit] = useState(50)
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [deleting, setDeleting] = useState<Transaction | null>(null)
+
+  useEffect(() => {
+    if (monthParam && monthParam !== period) {
+      setPeriod(monthParam)
+    }
+  }, [monthParam, period])
+
+  function handlePeriodChange(next: string) {
+    setPeriod(next)
+    setSearchParams((prev) => {
+      const updated = new URLSearchParams(prev)
+      updated.set('month', next)
+      return updated
+    })
+  }
 
   const categories = useAsync(() => api.categories.list(), [])
   const accounts = useAsync(() => api.accounts.list(), [])
@@ -36,6 +54,8 @@ export function Transactions() {
       }),
     [period, categoryId, accountId, search, limit],
   )
+
+  const isMetricsLoading = dashboard.loading || !dashboard.data || page.loading || !page.data
 
   const items = page.data?.items ?? []
   const totalCount = page.data?.total ?? items.length
@@ -76,7 +96,7 @@ export function Transactions() {
         <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
           Movimientos
         </h1>
-        <MonthStepper period={period} onChange={setPeriod} />
+        <MonthStepper period={period} onChange={handlePeriodChange} />
       </header>
 
       {/* 3 Metric Cards */}
@@ -86,9 +106,13 @@ export function Transactions() {
           <span className="text-xs sm:text-sm font-semibold text-zinc-400 block mb-1">
             Ingresos
           </span>
-          <span className="text-2xl sm:text-3xl font-black text-income tabular-nums tracking-tight block">
-            +{money(totalIncome)}
-          </span>
+          {isMetricsLoading ? (
+            <Skeleton className="h-8 w-28 rounded-xl my-1" />
+          ) : (
+            <span className="text-2xl sm:text-3xl font-black text-income tabular-nums tracking-tight block">
+              +{money(totalIncome)}
+            </span>
+          )}
         </div>
 
         {/* Gastos */}
@@ -96,9 +120,13 @@ export function Transactions() {
           <span className="text-xs sm:text-sm font-semibold text-zinc-400 block mb-1">
             Gastos
           </span>
-          <span className="text-2xl sm:text-3xl font-black text-expense tabular-nums tracking-tight block">
-            −{money(totalExpense)}
-          </span>
+          {isMetricsLoading ? (
+            <Skeleton className="h-8 w-28 rounded-xl my-1" />
+          ) : (
+            <span className="text-2xl sm:text-3xl font-black text-expense tabular-nums tracking-tight block">
+              −{money(totalExpense)}
+            </span>
+          )}
         </div>
 
         {/* Balance (Hero Yellow Card) */}
@@ -107,16 +135,24 @@ export function Transactions() {
             <span className="text-xs sm:text-sm font-bold text-black/80 block mb-1">
               {categoryId || accountId || search ? 'Balance filtrado' : 'Saldo acumulado'}
             </span>
-            <span className="text-2xl sm:text-3xl font-black text-black tabular-nums tracking-tight block">
-              {categoryId || accountId || search
-                ? `${netBalance < 0 ? '−' : ''}${money(Math.abs(netBalance))}`
-                : `${(dashboard.data?.accumulated_balance ?? netBalance) < 0 ? '−' : ''}${money(Math.abs(dashboard.data?.accumulated_balance ?? netBalance))}`}
-            </span>
+            {isMetricsLoading ? (
+              <Skeleton variant="gold" className="h-8 w-36 rounded-xl my-1" />
+            ) : (
+              <span className="text-2xl sm:text-3xl font-black text-black tabular-nums tracking-tight block">
+                {categoryId || accountId || search
+                  ? `${netBalance < 0 ? '−' : ''}${money(Math.abs(netBalance))}`
+                  : `${(dashboard.data?.accumulated_balance ?? netBalance) < 0 ? '−' : ''}${money(Math.abs(dashboard.data?.accumulated_balance ?? netBalance))}`}
+              </span>
+            )}
           </div>
           {!categoryId && !accountId && !search && (
-            <span className="text-[11px] font-bold text-black/75 mt-2 tabular-nums">
-              Resultado del mes: {netBalance >= 0 ? '+' : '−'}{money(Math.abs(netBalance))}
-            </span>
+            isMetricsLoading ? (
+              <Skeleton variant="gold" className="h-4 w-28 rounded mt-2" />
+            ) : (
+              <span className="text-[11px] font-bold text-black/75 mt-2 tabular-nums">
+                Resultado del mes: {netBalance >= 0 ? '+' : '−'}{money(Math.abs(netBalance))}
+              </span>
+            )
           )}
         </div>
       </div>
@@ -163,14 +199,29 @@ export function Transactions() {
       </div>
 
       {/* Table / List View */}
-      <StateWrapper loading={page.loading} error={page.error} onRetry={() => void page.reload()}>
-        {items.length === 0 ? (
-          <EmptyState
-            title="Sin movimientos"
-            hint="Probá cambiando el mes o los filtros de búsqueda"
-          />
-        ) : (
-          <Card className="p-4 sm:p-6 overflow-hidden">
+      {page.loading || !page.data ? (
+        <Card className="p-4 sm:p-6 overflow-hidden">
+          <div className="space-y-4">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <div key={n} className="flex items-center justify-between py-3 border-b border-white/5">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-36 rounded" />
+                  <Skeleton className="h-3 w-24 rounded" />
+                </div>
+                <Skeleton className="h-4 w-20 rounded" />
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : page.error ? (
+        <ErrorState message={page.error} onRetry={() => void page.reload()} />
+      ) : items.length === 0 ? (
+        <EmptyState
+          title="Sin movimientos"
+          hint="Probá cambiando el mes o los filtros de búsqueda"
+        />
+      ) : (
+        <Card className="p-4 sm:p-6 overflow-hidden">
             {/* Table Header Columns (Desktop) */}
             <div className="hidden sm:grid sm:grid-cols-12 gap-4 pb-3 border-b border-white/5 text-xs font-semibold text-zinc-400">
               <span className="col-span-4">Concepto</span>
@@ -205,7 +256,11 @@ export function Transactions() {
                       <span className="text-sm font-bold text-white tracking-tight">
                         {capitalizedDay}
                       </span>
-                      <span className="text-xs sm:text-sm font-bold tabular-nums text-income">
+                      <span
+                        className={`text-xs sm:text-sm font-bold tabular-nums ${
+                          dayBalance >= 0 ? 'text-income' : 'text-expense'
+                        }`}
+                      >
                         {dayBalance >= 0 ? '+' : '−'}{money(Math.abs(dayBalance))}
                       </span>
                     </div>
@@ -311,7 +366,6 @@ export function Transactions() {
             )}
           </Card>
         )}
-      </StateWrapper>
 
       <TransactionModal
         open={editing !== null}

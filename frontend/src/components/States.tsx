@@ -1,5 +1,26 @@
 import type { ReactNode } from 'react'
 
+export function Skeleton({
+  className = '',
+  variant = 'dark',
+}: {
+  className?: string
+  variant?: 'dark' | 'gold' | 'capsule'
+}) {
+  const bg =
+    variant === 'gold'
+      ? 'bg-black/15'
+      : variant === 'capsule'
+        ? 'bg-white/15'
+        : 'bg-white/10'
+  return (
+    <span
+      aria-hidden="true"
+      className={`inline-block animate-pulse rounded-xl ${bg} ${className}`}
+    />
+  )
+}
+
 export function Spinner({ label = 'Cargando' }: { label?: string }) {
   return (
     <div className="flex items-center justify-center gap-3 py-12 text-neutral-400">
