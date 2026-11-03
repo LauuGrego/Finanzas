@@ -96,8 +96,8 @@ FINANZAS_PASSWORD=una-clave-larga \
 ../.venv/Scripts/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-El frontend ya está incluido en el repo como build, así que en el servidor
-basta con clonar, `pip install -r requirements.txt` y lo de arriba.
+Para producción en un solo proceso, se compila el frontend (cd frontend && npm run build)
+y luego FastAPI sirve automáticamente los estáticos desde frontend/dist junto con la API.
 
 En Render la base es Supabase y **no hay disco**: por eso es una base de datos y
 no un archivo. `DATABASE_URL` ya está puesta en el panel de Render.

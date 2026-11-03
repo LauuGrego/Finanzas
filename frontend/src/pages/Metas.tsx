@@ -136,17 +136,15 @@ export function Metas() {
         )}
       </StateWrapper>
 
-      {!showPaused && (
-        <label className="inline-flex items-center gap-2.5 cursor-pointer py-1 text-sm text-neutral-400 hover:text-white transition">
-          <input
-            type="checkbox"
-            checked={showPaused}
-            onChange={(event) => setShowPaused(event.target.checked)}
-            className="accent-gold w-4 h-4 rounded"
-          />
-          <span>Ver las metas pausadas</span>
-        </label>
-      )}
+      <label className="inline-flex items-center gap-2.5 cursor-pointer py-1 text-sm text-neutral-400 hover:text-white transition">
+        <input
+          type="checkbox"
+          checked={showPaused}
+          onChange={(event) => setShowPaused(event.target.checked)}
+          className="accent-gold w-4 h-4 rounded"
+        />
+        <span>{showPaused ? 'Ocultar las metas pausadas' : 'Ver las metas pausadas'}</span>
+      </label>
 
       <FormModal
         open={creating || editing !== null}

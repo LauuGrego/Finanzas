@@ -44,9 +44,10 @@ def test_a_locked_app_refuses_anonymous_writes(locked: TestClient):
     assert locked.post("/api/transactions", json={"account_id": 1}).status_code == 401
 
 
-def test_the_frontend_itself_is_gated(locked: TestClient, built):
-    """Otherwise the app shell loads and only the data is hidden."""
-    assert locked.get("/").status_code == 401
+def test_the_frontend_itself_is_accessible_without_auth(locked: TestClient, built):
+    """The SPA shell loads so the user can reach the login screen without 401 blocking HTML."""
+    assert locked.get("/").status_code == 200
+    assert locked.get("/api/accounts").status_code == 401
 
 
 def test_login_hands_out_a_cookie_that_works(locked: TestClient):

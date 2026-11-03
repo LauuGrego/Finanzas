@@ -27,6 +27,22 @@ from app.services.periods import current_period, month_bounds, parse_period, shi
 # --------------------------------------------------------------------------- #
 # Lectura
 # --------------------------------------------------------------------------- #
+def _batch_spent_cents(db: Session, period: str) -> dict[int, int]:
+    """Total spent per category during a month in centavos, in a single grouped query."""
+    start, end = month_bounds(period)
+    rows = db.execute(
+        select(Transaction.category_id, func.sum(Transaction.amount))
+        .where(
+            Transaction.type == "EXPENSE",
+            Transaction.date >= start,
+            Transaction.date <= end,
+            Transaction.transfer_id.is_(None),
+        )
+        .group_by(Transaction.category_id)
+    ).all()
+    return {row[0]: int(row[1]) for row in rows if row[0] is not None}
+
+
 def list_for_period(db: Session, period: str) -> list[BudgetRead]:
     """All budgets for a given month, the most-spent first.
 
@@ -45,13 +61,13 @@ def list_for_period(db: Session, period: str) -> list[BudgetRead]:
         .scalars()
         .all()
     )
-    items = [_to_read(db, budget) for budget in budgets]
+    spent_map = _batch_spent_cents(db, period)
+    items = [_to_read(db, budget, spent=spent_map.get(budget.category_id, 0)) for budget in budgets]
     items.sort(key=lambda item: (-item.percentage, item.category_id))
     return items
 
 
-def summary_for_period(db: Session, period: str) -> BudgetSummary:
-    items = list_for_period(db, period)
+def _derive_summary(items: list[BudgetRead]) -> BudgetSummary:
     total_amount = sum(b.amount for b in items)
     total_spent = sum(b.spent for b in items)
     over = sum(1 for b in items if b.over)
@@ -65,13 +81,18 @@ def summary_for_period(db: Session, period: str) -> BudgetSummary:
     )
 
 
+def summary_for_period(db: Session, period: str) -> BudgetSummary:
+    items = list_for_period(db, period)
+    return _derive_summary(items)
+
+
 def get_list(db: Session, period: str | None = None) -> BudgetList:
     period = period or current_period()
     items = list_for_period(db, period)
     return BudgetList(
         items=items,
         total=len(items),
-        summary=summary_for_period(db, period),
+        summary=_derive_summary(items),
     )
 
 
@@ -227,8 +248,9 @@ def _spent_cents(
     return int(db.scalar(query) or 0)
 
 
-def _to_read(db: Session, budget: Budget) -> BudgetRead:
-    spent = _spent_cents(db, budget.category_id, budget.period)
+def _to_read(db: Session, budget: Budget, spent: int | None = None) -> BudgetRead:
+    if spent is None:
+        spent = _spent_cents(db, budget.category_id, budget.period)
     category = budget.category
     return BudgetRead(
         id=budget.id,

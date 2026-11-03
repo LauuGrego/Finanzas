@@ -39,6 +39,7 @@ def generate_due(db: Session, today: date | None = None) -> int:
             select(Recurring)
             .options(selectinload(Recurring.category), selectinload(Recurring.account))
             .where(Recurring.active.is_(True), Recurring.next_date <= today)
+            .with_for_update()
             .order_by(Recurring.next_date)
         )
         .scalars()

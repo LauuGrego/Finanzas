@@ -84,22 +84,6 @@ def total_balance_at(db: Session, as_of: date, account_id: int | None = None) ->
     return sum(account_balance_at(db, account, as_of) for account in accounts)
 
 
-def initial_balances_total(db: Session, created_before: date | None = None) -> int:
-    """Suma de los saldos iniciales, opcionalmente solo los anteriores a una fecha.
-
-    El filtro por fecha es lo que permite que `summarize_cents` cuente el saldo
-    inicial de una cuenta como ingreso en el mes en que se creo, sin que el
-    grafico de evolucion lo sume dos veces: la semilla de ese grafico usa
-    `created_before` para traer solo lo que ya existia antes de la ventana.
-    """
-    query = select(func.coalesce(func.sum(Account.initial_balance), 0)).where(
-        Account.active.is_(True)
-    )
-    if created_before is not None:
-        query = query.where(Account.created_at < datetime.combine(created_before, time.min))
-    return db.scalar(query) or 0
-
-
 # --------------------------------------------------------------------------- #
 # Summaries
 # --------------------------------------------------------------------------- #
@@ -326,29 +310,11 @@ def resolve_references(
     return account, category
 
 
-def blocks_spending(account: Account) -> bool:
-    """Si esta cuenta es de las que no pueden quedar en negativo.
-
-    Una cuenta de crédito es al revés: su saldo negativo ES la deuda, que es
-    lo que significa una tarjeta. Bloquearle los gastos la volvería inútil.
-    """
-    return account.type != AccountType.CREDIT
-
-
-def ensure_sufficient_funds(
-    db: Session, account: Account, amount: int, *, already_counted: int = 0
-) -> None:
-    """Las cuentas no restringen movimientos por saldo."""
-    return
-
-
 def create_transaction(db: Session, payload: dict) -> Transaction:
     account, category = resolve_references(
         db, payload["account_id"], payload.get("category_id"), payload["type"]
     )
     amount = to_cents(payload["amount"])
-    if payload["type"] == EXPENSE:
-        ensure_sufficient_funds(db, account, amount)
     transaction = Transaction(
         account_id=account.id,
         category_id=category.id if category else payload.get("category_id"),
@@ -376,13 +342,6 @@ def apply_update(db: Session, transaction: Transaction, changes: dict) -> Transa
     )
 
     amount = to_cents(changes["amount"]) if "amount" in changes else transaction.amount
-    if merged["type"] == EXPENSE:
-        already_counted = 0
-        if merged["account_id"] == transaction.account_id:
-            already_counted = (
-                -transaction.amount if transaction.type == INCOME else transaction.amount
-            )
-        ensure_sufficient_funds(db, account, amount, already_counted=already_counted)
 
     if "amount" in changes:
         transaction.amount = amount
@@ -411,7 +370,6 @@ def create_transfer(db: Session, payload: dict) -> tuple[str, list[Transaction]]
 
     transfer_id = str(uuid4())
     amount = to_cents(payload["amount"])
-    ensure_sufficient_funds(db, from_account, amount)
     description = payload.get("description") or f"Transferencia {from_account.name} → {to_account.name}"
 
     out = Transaction(

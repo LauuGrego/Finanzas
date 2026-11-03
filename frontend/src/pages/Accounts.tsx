@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { FormModal } from '../components/FormModal'
 import { Icon, type IconName } from '../components/Icon'
+import { MoneyInput } from '../components/MoneyInput'
 import { EmptyState, StateWrapper } from '../components/States'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Account } from '../types'
 import { useFavoriteAccount } from '../utils/favoriteAccount'
-import { money } from '../utils/format'
+import { money, parseMoney } from '../utils/format'
 
 const TYPE_LABELS: Record<string, string> = {
   BANK: 'Banco',
@@ -46,10 +47,19 @@ export function Accounts() {
       return
     }
 
+    const type = ((form.get('type') as string) || 'BANK') as Account['type']
+    const initialBalanceRaw = form.get('initial_balance')
+    const initial_balance =
+      initialBalanceRaw !== null && String(initialBalanceRaw).trim() !== ''
+        ? parseMoney(String(initialBalanceRaw))
+        : editing
+          ? editing.initial_balance
+          : 0
+
     const payload = {
       name,
-      type: ((form.get('type') as string) || 'BANK') as Account['type'],
-      initial_balance: 0,
+      type,
+      initial_balance,
     }
 
     try {
@@ -307,6 +317,22 @@ export function Accounts() {
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="label" htmlFor="initial_balance">
+            Saldo inicial
+          </label>
+          <MoneyInput
+            id="initial_balance"
+            name="initial_balance"
+            defaultValue={editing?.initial_balance ?? 0}
+            placeholder="0"
+            className="input no-spinner pl-8 text-base font-semibold"
+          />
+          <p className="text-xs text-neutral-400 mt-1">
+            Con cuánta plata arrancó la cuenta antes de registrar movimientos.
+          </p>
         </div>
       </FormModal>
 

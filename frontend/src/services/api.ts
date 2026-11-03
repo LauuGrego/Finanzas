@@ -119,12 +119,18 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init?: RequestInit, timeoutMs = 30_000): Promise<T> {
   const { init: reqInit, cleanup } = withTimeout(init, timeoutMs)
+  const hasBody = reqInit?.body !== undefined && reqInit?.body !== null
+  const headers: Record<string, string> = {
+    ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+    ...(reqInit?.headers as Record<string, string> | undefined),
+  }
+
   let response: Response
   try {
     response = await fetch(`${BASE}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       ...reqInit,
+      headers,
     })
   } catch (err: unknown) {
     if (

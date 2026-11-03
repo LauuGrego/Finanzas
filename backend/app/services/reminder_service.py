@@ -4,6 +4,7 @@ import logging
 from datetime import date, timedelta
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from app import config
@@ -76,6 +77,16 @@ def check_and_send_reminders(db: Session, today: date | None = None) -> list[dic
             results.append(item_info)
             continue
 
+        # Reserve the reminder entry first in a subtransaction to prevent duplicate sends under concurrency
+        reminder_entry = RecurringReminder(recurring_id=rule.id, due_date=rule.next_date)
+        try:
+            with db.begin_nested():
+                db.add(reminder_entry)
+                db.flush()
+        except IntegrityError:
+            logger.info("Recordatorio ya registrado concurrentemente para recurrente #%d", rule.id)
+            continue
+
         subject, text_content, html_content = email_service.build_recurring_reminder_email(rule)
         sent = email_service.send_email(
             to_email=recipient,
@@ -85,11 +96,12 @@ def check_and_send_reminders(db: Session, today: date | None = None) -> list[dic
         )
 
         if sent:
-            db.add(RecurringReminder(recurring_id=rule.id, due_date=rule.next_date))
             db.commit()
             item_info["sent"] = True
             results.append(item_info)
         else:
+            db.delete(reminder_entry)
+            db.commit()
             item_info["sent"] = False
             item_info["reason"] = "Error al enviar correo por SMTP"
             results.append(item_info)

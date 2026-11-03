@@ -39,6 +39,7 @@ def generate_due(db: Session, today: date | None = None) -> int:
                 Installment.next_date <= today,
                 Installment.paid_count < Installment.total_count,
             )
+            .with_for_update()
             .order_by(Installment.next_date)
         )
         .scalars()

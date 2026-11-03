@@ -153,7 +153,13 @@ async def require_session(request: Request, call_next):
     tier is exactly the case it exists for: without it, a financial history is
     one guessed path away.
     """
-    if not config.PASSWORD or request.url.path in OPEN_PATHS:
+    if not config.PASSWORD:
+        return await call_next(request)
+
+    path = request.url.path
+    # Allow static assets and SPA shell through so the login UI can render.
+    # Protected financial data lives entirely under /api/*.
+    if not path.startswith("/api") or path in OPEN_PATHS:
         return await call_next(request)
 
     if config.CRON_SECRET:

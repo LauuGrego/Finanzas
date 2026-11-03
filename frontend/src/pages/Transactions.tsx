@@ -18,6 +18,7 @@ export function Transactions() {
   const [categoryId, setCategoryId] = useState('')
   const [accountId, setAccountId] = useState('')
   const [search, setSearch] = useState('')
+  const [limit, setLimit] = useState(50)
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [deleting, setDeleting] = useState<Transaction | null>(null)
 
@@ -31,19 +32,28 @@ export function Transactions() {
         category_id: categoryId ? Number(categoryId) : undefined,
         account_id: accountId ? Number(accountId) : undefined,
         search: search || undefined,
-        limit: 200,
+        limit,
       }),
-    [period, categoryId, accountId, search],
+    [period, categoryId, accountId, search, limit],
   )
 
   const items = page.data?.items ?? []
+  const totalCount = page.data?.total ?? items.length
 
-  const totalIncome = items
-    .filter((t) => t.type === 'INCOME')
-    .reduce((sum, t) => sum + t.amount, 0)
-  const totalExpense = items
-    .filter((t) => t.type === 'EXPENSE')
-    .reduce((sum, t) => sum + t.amount, 0)
+  const hasCustomFilter = Boolean(categoryId || accountId || search)
+
+  const totalIncome = !hasCustomFilter && dashboard.data?.month_summary
+    ? dashboard.data.month_summary.income
+    : items
+        .filter((t) => t.type === 'INCOME')
+        .reduce((sum, t) => sum + t.amount, 0)
+
+  const totalExpense = !hasCustomFilter && dashboard.data?.month_summary
+    ? dashboard.data.month_summary.expense
+    : items
+        .filter((t) => t.type === 'EXPENSE')
+        .reduce((sum, t) => sum + t.amount, 0)
+
   const netBalance = totalIncome - totalExpense
 
   const byDay = new Map<string, Transaction[]>()
@@ -287,6 +297,18 @@ export function Transactions() {
                 )
               })}
             </div>
+
+            {totalCount > items.length && (
+              <div className="pt-4 mt-2 text-center border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setLimit((prev) => prev + 50)}
+                  className="bg-[#18181b] hover:bg-[#222226] border border-white/10 text-white font-semibold rounded-full px-5 py-2.5 text-xs sm:text-sm transition cursor-pointer"
+                >
+                  Cargar más movimientos ({items.length} de {totalCount})
+                </button>
+              </div>
+            )}
           </Card>
         )}
       </StateWrapper>

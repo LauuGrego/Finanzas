@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Account
-from app.money import to_pesos
+from app.money import to_cents, to_pesos
 from app.schemas.account import AccountCreate, AccountList, AccountRead, AccountUpdate
 from app.schemas.transaction import TransactionPage
 from app.services import transaction_service as tx
@@ -48,7 +48,7 @@ def create_account(payload: AccountCreate, db: Session = Depends(get_db)) -> Acc
     account = Account(
         name=payload.name,
         type=payload.type,
-        initial_balance=int(payload.initial_balance * 100),
+        initial_balance=to_cents(payload.initial_balance),
     )
     db.add(account)
     db.commit()
@@ -86,7 +86,7 @@ def update_account(
 
     changes = payload.model_dump(exclude_unset=True)
     if "initial_balance" in changes:
-        changes["initial_balance"] = int(changes["initial_balance"] * 100)
+        changes["initial_balance"] = to_cents(changes["initial_balance"])
     if "name" in changes:
         clash = db.scalar(
             select(Account).where(Account.name == changes["name"], Account.id != account_id)

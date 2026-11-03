@@ -7,11 +7,13 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Account
+from app.money import to_pesos
 from app.schemas.reports import (
     CategoryTotal,
     DashboardRead,
     DayDetail,
     MonthComparison,
+    PeriodSummary,
     UpcomingItem,
 )
 from app.services import report_service
@@ -89,18 +91,40 @@ def calendar_day(day: date, db: Session = Depends(get_db)) -> DayDetail:
 def calendar_month(month: str, db: Session = Depends(get_db)) -> dict[str, DayDetail]:
     """Every day of the month with its movements, for rendering the agenda grid."""
     start, end = month_bounds(_period(month))
-    page = tx.filter_transactions(db, start=start, end=end, limit=500)
+    page = tx.filter_transactions(db, start=start, end=end, limit=1000)
     by_day: dict[str, list[TransactionRead]] = {}
     for item in page.items:
         by_day.setdefault(item.date.isoformat(), []).append(item)
+
+    # Initial balance prior to the start of the month, calculated once
+    start_cents = tx.total_balance_at(db, start - timedelta(days=1))
+    running_cents = start_cents
 
     days: dict[str, DayDetail] = {}
     cursor = start
     while cursor <= end:
         items = by_day.get(cursor.isoformat(), [])
+        day_income = sum(
+            t.amount for t in items if getattr(t.type, "value", t.type) == "INCOME" and t.transfer_counterpart_id is None
+        )
+        day_expense = sum(
+            t.amount for t in items if getattr(t.type, "value", t.type) == "EXPENSE" and t.transfer_counterpart_id is None
+        )
+        day_balance = day_income - day_expense
+
+        prev_day_balance = to_pesos(running_cents)
+        running_cents += int(round(day_balance * 100))
+        accum_day_balance = to_pesos(running_cents)
+
         days[cursor.isoformat()] = DayDetail(
             date=cursor,
-            summary=tx.summarize(db, cursor, cursor, include_initial=False),
+            summary=PeriodSummary(
+                income=day_income,
+                expense=day_expense,
+                balance=day_balance,
+                previous_balance=prev_day_balance,
+                accumulated_balance=accum_day_balance,
+            ),
             transactions=items,
         )
         cursor += timedelta(days=1)
