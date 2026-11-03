@@ -77,6 +77,7 @@ export interface UpcomingItem {
   description: string
   amount: number
   kind: 'recurring' | 'installment'
+  type?: 'INCOME' | 'EXPENSE'
   category: CategoryRef | null
 }
 

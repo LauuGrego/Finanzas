@@ -100,6 +100,7 @@ def upcoming(
                 description=f"{label} · cuota {plan.paid_count + 1} de {plan.total_count}",
                 amount=to_pesos(plan.amount),
                 kind="installment",
+                type="EXPENSE",
                 category=(
                     {"id": category.id, "name": category.name, "color": category.color}
                     if category

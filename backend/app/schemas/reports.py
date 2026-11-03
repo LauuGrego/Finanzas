@@ -45,6 +45,7 @@ class UpcomingItem(BaseModel):
     description: str
     amount: Money
     kind: str = Field(default="recurring", pattern="^(recurring|installment)$")
+    type: str = Field(default="EXPENSE", pattern="^(INCOME|EXPENSE)$")
     category: CategoryRef | None = None
 
 

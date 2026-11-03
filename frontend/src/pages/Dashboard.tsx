@@ -220,6 +220,7 @@ export function Dashboard() {
                     {data.upcoming.slice(0, 5).map((item, index) => {
                       const dayNumber = item.date.slice(8, 10)
                       const monthName = new Date(`${item.date}T12:00:00`).toLocaleDateString('es-AR', { month: 'short' })
+                      const isIncome = item.type === 'INCOME'
 
                       return (
                         <li
@@ -242,9 +243,9 @@ export function Dashboard() {
                           </div>
 
                           <span className={`font-bold tabular-nums text-sm shrink-0 whitespace-nowrap ${
-                            item.amount < 0 ? 'text-income' : 'text-expense'
+                            isIncome ? 'text-income' : 'text-expense'
                           }`}>
-                            {item.amount < 0 ? '+' : '−'}{money(Math.abs(item.amount))}
+                            {isIncome ? '+' : '−'}{money(Math.abs(item.amount))}
                           </span>
                         </li>
                       )

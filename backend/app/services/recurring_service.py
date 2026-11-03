@@ -95,6 +95,7 @@ def upcoming(db: Session, today: date | None = None, limit: int = UPCOMING_LIMIT
                 description=rule.description or (category.name if category else "Recurrente"),
                 amount=to_pesos(rule.amount),
                 kind="recurring",
+                type=category.type if category else "EXPENSE",
                 category=(
                     {"id": category.id, "name": category.name, "color": category.color}
                     if category
