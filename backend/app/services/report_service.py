@@ -64,19 +64,18 @@ def monthly_comparison(db: Session, period: str, months: int) -> list[MonthCompa
 
 
 def balance_evolution(db: Session, period: str, months: int) -> list[MonthComparison]:
-    """Running balance at the end of each of the last N months."""
+    """Net monthly balance (income - expense) of each of the last N months."""
     periods = [shift_month(period, -offset) for offset in range(months - 1, -1, -1)]
     rows = []
     for item in periods:
         start, end = month_bounds(item)
-        income, expense = tx.summarize_cents(db, start, end)
-        accum_cents = tx.total_balance_at(db, end)
+        income, expense = tx.summarize_cents(db, start, end, include_initial=False)
         rows.append(
             MonthComparison(
                 month=item,
                 income=to_pesos(income),
                 expense=to_pesos(expense),
-                balance=to_pesos(accum_cents),
+                balance=to_pesos(income - expense),
             )
         )
     return rows

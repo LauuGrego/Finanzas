@@ -133,27 +133,16 @@ export function Transactions() {
         <div className="bg-gold text-black rounded-3xl p-5 sm:p-6 shadow-md flex flex-col justify-between">
           <div>
             <span className="text-xs sm:text-sm font-bold text-black/80 block mb-1">
-              {categoryId || accountId || search ? 'Balance filtrado' : 'Saldo acumulado'}
+              {categoryId || accountId || search ? 'Balance filtrado' : 'Balance'}
             </span>
             {isMetricsLoading ? (
               <Skeleton variant="gold" className="h-8 w-36 rounded-xl my-1" />
             ) : (
               <span className="text-2xl sm:text-3xl font-black text-black tabular-nums tracking-tight block">
-                {categoryId || accountId || search
-                  ? `${netBalance < 0 ? '−' : ''}${money(Math.abs(netBalance))}`
-                  : `${(dashboard.data?.accumulated_balance ?? netBalance) < 0 ? '−' : ''}${money(Math.abs(dashboard.data?.accumulated_balance ?? netBalance))}`}
+                {netBalance < 0 ? '−' : ''}$ {money(Math.abs(netBalance)).replace('$', '').trim()}
               </span>
             )}
           </div>
-          {!categoryId && !accountId && !search && (
-            isMetricsLoading ? (
-              <Skeleton variant="gold" className="h-4 w-28 rounded mt-2" />
-            ) : (
-              <span className="text-[11px] font-bold text-black/75 mt-2 tabular-nums">
-                Resultado del mes: {netBalance >= 0 ? '+' : '−'}{money(Math.abs(netBalance))}
-              </span>
-            )
-          )}
         </div>
       </div>
 

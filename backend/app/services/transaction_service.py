@@ -106,19 +106,15 @@ def summarize_cents(
     start: date,
     end: date,
     account_id: int | None = None,
-    include_initial: bool = True,
+    include_initial: bool = False,
 ) -> tuple[int, int]:
     """Return (income, expense) in centavos for a date range.
 
     Transfer movements are excluded: moving money between your own accounts is
     not income or spending, even though they are stored as two movements.
 
-    `include_initial` adds the starting balances of the accounts created inside the
-    range, in the month of their creation. Without it, "Ingresos" shows 0 next to a
-    "Dinero disponible" that does include them, and the two figures cannot be
-    reconciled. Callers that render a single day turn it off: an initial balance
-    did not arrive on any particular day — it was always there — so charging it to
-    one would paint a day with a big income and no movement to explain it.
+    By default, initial balances are not counted as monthly income because
+    accounts do not track a running current balance and only register movements.
     """
     query = select(Transaction.type, func.sum(Transaction.amount)).where(
         Transaction.date >= start,
@@ -146,7 +142,7 @@ def summarize(
     start: date,
     end: date,
     account_id: int | None = None,
-    include_initial: bool = True,
+    include_initial: bool = False,
 ) -> PeriodSummary:
     income, expense = summarize_cents(db, start, end, account_id, include_initial)
     prev_cents = total_balance_at(db, start - timedelta(days=1), account_id=account_id)

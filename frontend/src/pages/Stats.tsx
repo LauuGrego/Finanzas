@@ -219,9 +219,12 @@ export function Stats() {
 
         {/* Balance neto por mes */}
         <div className="bg-[#141414] border border-white/5 rounded-3xl p-6 sm:p-7">
-          <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight mb-4">
+          <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
             Balance neto por mes
           </h2>
+          <p className="text-xs text-neutral-400 mt-1 mb-4">
+            Ingresos menos gastos
+          </p>
 
           <StateWrapper
             loading={evolution.loading}

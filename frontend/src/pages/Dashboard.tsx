@@ -74,16 +74,9 @@ export function Dashboard() {
               {/* Hero Balance Card */}
               <section className="bg-gold text-black rounded-3xl p-6 sm:p-7 shadow-lg relative overflow-hidden">
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <p className="text-xs sm:text-sm font-bold text-black/80 uppercase tracking-wider">
-                    {period === currentPeriod() ? 'Saldo acumulado actual' : 'Saldo acumulado'}
+                  <p className="text-xs sm:text-sm font-bold text-black/80">
+                    Balance del mes
                   </p>
-                  {isLoading ? (
-                    <Skeleton variant="gold" className="h-5 w-24 rounded-full" />
-                  ) : data?.previous_balance !== undefined ? (
-                    <span className="text-[11px] font-bold text-black/80 bg-black/10 px-3 py-1 rounded-full tabular-nums">
-                      Arrancó en ${money(data.previous_balance).replace('$', '').trim()}
-                    </span>
-                  ) : null}
                 </div>
 
                 {isLoading ? (
@@ -92,7 +85,7 @@ export function Dashboard() {
                   </div>
                 ) : (
                   <p className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-black my-2 tabular-nums">
-                    {data.accumulated_balance < 0 ? '−' : ''}$ {money(Math.abs(data.accumulated_balance)).replace('$', '').trim()}
+                    {data.month_summary.balance < 0 ? '−' : ''}$ {money(Math.abs(data.month_summary.balance)).replace('$', '').trim()}
                   </p>
                 )}
 
@@ -102,9 +95,7 @@ export function Dashboard() {
                   </div>
                 ) : (
                   <p className="text-xs font-bold text-black/75 mb-5 tabular-nums">
-                    {data.month_summary.balance === 0
-                      ? 'Sin movimientos registrados en este mes'
-                      : `Resultado neto del mes: ${data.month_summary.balance >= 0 ? '+' : '−'}${money(Math.abs(data.month_summary.balance))}`}
+                    Ingresos menos gastos
                   </p>
                 )}
 
@@ -132,19 +123,6 @@ export function Dashboard() {
                       </span>
                     )}
                   </div>
-                  {isLoading ? (
-                    <div className="flex items-center gap-2.5 text-[11px] pt-2 border-t border-white/10 text-zinc-400">
-                      <span>Viene del mes anterior:</span>
-                      <Skeleton variant="capsule" className="h-3.5 w-14 ml-auto rounded" />
-                    </div>
-                  ) : data?.previous_balance !== undefined ? (
-                    <div className="flex items-center gap-2.5 text-[11px] pt-2 border-t border-white/10 text-zinc-400">
-                      <span>Viene del mes anterior:</span>
-                      <span className="ml-auto font-semibold text-zinc-300 tabular-nums">
-                        {money(data.previous_balance)}
-                      </span>
-                    </div>
-                  ) : null}
                 </div>
               </section>
 

@@ -3,13 +3,12 @@ import { Link } from 'react-router-dom'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { FormModal } from '../components/FormModal'
 import { Icon, type IconName } from '../components/Icon'
-import { MoneyInput } from '../components/MoneyInput'
 import { EmptyState, StateWrapper } from '../components/States'
 import { useAsync } from '../hooks/useAsync'
 import { api } from '../services/api'
 import type { Account } from '../types'
 import { useFavoriteAccount } from '../utils/favoriteAccount'
-import { money, parseMoney } from '../utils/format'
+import { money } from '../utils/format'
 
 const TYPE_LABELS: Record<string, string> = {
   BANK: 'Banco',
@@ -48,18 +47,9 @@ export function Accounts() {
     }
 
     const type = ((form.get('type') as string) || 'BANK') as Account['type']
-    const initialBalanceRaw = form.get('initial_balance')
-    const initial_balance =
-      initialBalanceRaw !== null && String(initialBalanceRaw).trim() !== ''
-        ? parseMoney(String(initialBalanceRaw))
-        : editing
-          ? editing.initial_balance
-          : 0
-
     const payload = {
       name,
       type,
-      initial_balance,
     }
 
     try {
@@ -135,11 +125,11 @@ export function Accounts() {
                     <div className="flex items-end justify-between pt-4 mt-2 border-t border-black/10">
                       <div>
                         <span className="block text-[11px] font-semibold text-black/70">
-                          Saldo actual
+                          Este mes
                         </span>
                         <span className="block text-sm sm:text-base font-black text-black tabular-nums">
                           {account.balance === 0
-                            ? '$0'
+                            ? 'Sin movimientos'
                             : `${account.balance > 0 ? '+' : '−'}${money(Math.abs(account.balance))}`}
                         </span>
                       </div>
@@ -202,7 +192,7 @@ export function Accounts() {
                   <div className="flex items-end justify-between pt-4 mt-2 border-t border-white/5">
                     <div>
                       <span className="block text-[11px] font-medium text-zinc-500">
-                        Saldo actual
+                        Este mes
                       </span>
                       <span
                         className={`block text-sm sm:text-base font-bold tabular-nums ${
@@ -317,22 +307,6 @@ export function Accounts() {
               </option>
             ))}
           </select>
-        </div>
-
-        <div>
-          <label className="label" htmlFor="initial_balance">
-            Saldo inicial
-          </label>
-          <MoneyInput
-            id="initial_balance"
-            name="initial_balance"
-            defaultValue={editing?.initial_balance ?? 0}
-            placeholder="0"
-            className="input no-spinner pl-8 text-base font-semibold"
-          />
-          <p className="text-xs text-neutral-400 mt-1">
-            Con cuánta plata arrancó la cuenta antes de registrar movimientos.
-          </p>
         </div>
       </FormModal>
 

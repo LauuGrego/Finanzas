@@ -10,11 +10,18 @@ from app.money import to_cents, to_pesos
 from app.schemas.account import AccountCreate, AccountList, AccountRead, AccountUpdate
 from app.schemas.transaction import TransactionPage
 from app.services import transaction_service as tx
+from app.services.periods import current_period, month_bounds
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
 
-def _read(db: Session, account: Account) -> AccountRead:
+def _read(db: Session, account: Account, month: str | None = None) -> AccountRead:
+    period = month or current_period()
+    start, end = month_bounds(period)
+    income, expense = tx.summarize_cents(
+        db, start, end, account_id=account.id, include_initial=False
+    )
+    month_balance = income - expense
     return AccountRead(
         id=account.id,
         name=account.name,
@@ -22,22 +29,23 @@ def _read(db: Session, account: Account) -> AccountRead:
         initial_balance=to_pesos(account.initial_balance),
         active=account.active,
         created_at=account.created_at,
-        balance=to_pesos(tx.account_balance(db, account)),
+        balance=to_pesos(month_balance),
     )
 
 
 @router.get("", response_model=AccountList)
 def list_accounts(
     include_inactive: bool = Query(False),
+    month: str | None = Query(None, description="YYYY-MM, defaults to current month"),
     db: Session = Depends(get_db),
 ) -> AccountList:
     query = select(Account).order_by(Account.active.desc(), Account.name)
     if not include_inactive:
         query = query.where(Account.active.is_(True))
     accounts = db.scalars(query).all()
-    reads = [_read(db, account) for account in accounts]
-    total = sum(tx.account_balance(db, a) for a in accounts if a.active)
-    return AccountList(accounts=reads, total_balance=to_pesos(total))
+    reads = [_read(db, account, month) for account in accounts]
+    total = sum(a.balance for a in reads if a.active)
+    return AccountList(accounts=reads, total_balance=round(total, 2))
 
 
 @router.post("", response_model=AccountRead, status_code=status.HTTP_201_CREATED)

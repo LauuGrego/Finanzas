@@ -181,8 +181,8 @@ function query(params: Record<string, string | number | boolean | null | undefin
 
 export const api = {
   accounts: {
-    list: (includeInactive = false) =>
-      request<AccountList>(`/accounts${query({ include_inactive: includeInactive })}`),
+    list: (includeInactive = false, month?: string) =>
+      request<AccountList>(`/accounts${query({ include_inactive: includeInactive, month })}`),
     create: (payload: Partial<Account>) =>
       request<Account>('/accounts', { method: 'POST', body: JSON.stringify(payload) }),
     update: (id: number, payload: Partial<Account>) =>
