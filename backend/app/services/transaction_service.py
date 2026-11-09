@@ -242,8 +242,31 @@ def filter_transactions(
     rows = db.scalars(
         query.order_by(Transaction.date.desc(), Transaction.id.desc()).limit(limit).offset(offset)
     ).all()
+
+    summary_query = (
+        select(Transaction.type, func.sum(Transaction.amount))
+        .where(Transaction.transfer_id.is_(None))
+    )
+    for condition in conditions:
+        summary_query = summary_query.where(condition)
+    summary_query = summary_query.group_by(Transaction.type)
+
+    filtered_income = 0
+    filtered_expense = 0
+    for t_type, t_amount in db.execute(summary_query).all():
+        if t_type == INCOME:
+            filtered_income += t_amount
+        elif t_type == EXPENSE:
+            filtered_expense += t_amount
+
     return TransactionPage(
-        items=[to_read(row) for row in rows], total=total, limit=limit, offset=offset
+        items=[to_read(row) for row in rows],
+        total=total,
+        limit=limit,
+        offset=offset,
+        income=to_pesos(filtered_income),
+        expense=to_pesos(filtered_expense),
+        balance=to_pesos(filtered_income - filtered_expense),
     )
 
 

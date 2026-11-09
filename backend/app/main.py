@@ -4,10 +4,11 @@ import asyncio
 import hmac
 import logging
 import secrets
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
@@ -163,7 +164,7 @@ async def require_session(request: Request, call_next):
         return await call_next(request)
 
     if config.CRON_SECRET:
-        token = request.headers.get("x-cron-secret") or request.query_params.get("cron_secret")
+        token = request.headers.get("x-cron-secret")
         if token and hmac.compare_digest(token, config.CRON_SECRET):
             return await call_next(request)
 
@@ -188,6 +189,33 @@ app.add_middleware(
 )
 
 
+# Rate limiting en memoria para /api/login por IP
+LOGIN_ATTEMPTS: dict[str, list[float]] = {}
+MAX_LOGIN_ATTEMPTS = 5
+LOGIN_WINDOW_SECONDS = 60
+
+
+def check_login_rate_limit(ip: str) -> None:
+    now = time.time()
+    attempts = [t for t in LOGIN_ATTEMPTS.get(ip, []) if now - t < LOGIN_WINDOW_SECONDS]
+    if len(attempts) >= MAX_LOGIN_ATTEMPTS:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiados intentos fallidos. Esperá un minuto antes de reintentar.",
+        )
+    LOGIN_ATTEMPTS[ip] = attempts
+
+
+def record_login_failure(ip: str) -> None:
+    now = time.time()
+    attempts = [t for t in LOGIN_ATTEMPTS.get(ip, []) if now - t < LOGIN_WINDOW_SECONDS]
+    attempts.append(now)
+    LOGIN_ATTEMPTS[ip] = attempts
+
+
+def reset_login_attempts(ip: str) -> None:
+    LOGIN_ATTEMPTS.pop(ip, None)
+
 
 class LoginRequest(BaseModel):
     password: str
@@ -200,8 +228,12 @@ def login(payload: LoginRequest, request: Request, response: Response) -> dict[s
     Deliberately does not say how wrong it was, and answers the same way for an
     unknown user, so the endpoint cannot be used to test passwords.
     """
+    client_ip = request.client.host if request.client else "unknown"
+    check_login_rate_limit(client_ip)
     if config.PASSWORD and not hmac.compare_digest(payload.password, config.PASSWORD):
-        raise HTTPException(status_code=401, detail="Clave incorrecta")
+        record_login_failure(client_ip)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Clave incorrecta")
+    reset_login_attempts(client_ip)
     auth.issue_cookie(response, secure=is_secure(request))
     return {"ok": True}
 

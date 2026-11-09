@@ -25,7 +25,7 @@ export function useAsync<T>(
 
   const reload = useCallback(async () => {
     const currentReqId = ++reqIdRef.current
-    setState({ data: null, loading: true, error: null })
+    setState((prev) => ({ ...prev, loading: true, error: null }))
     try {
       const data = await loader()
       if (currentReqId === reqIdRef.current) {
@@ -33,11 +33,11 @@ export function useAsync<T>(
       }
     } catch (error) {
       if (currentReqId === reqIdRef.current) {
-        setState({
-          data: null,
+        setState((prev) => ({
+          data: prev.data,
           loading: false,
           error: error instanceof Error ? error.message : 'Error desconocido',
-        })
+        }))
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

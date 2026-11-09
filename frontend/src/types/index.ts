@@ -53,6 +53,9 @@ export interface TransactionPage {
   total: number
   limit: number
   offset: number
+  income?: number
+  expense?: number
+  balance?: number
 }
 
 export interface PeriodSummary {

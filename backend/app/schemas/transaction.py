@@ -53,6 +53,9 @@ class TransactionPage(BaseModel):
     total: int
     limit: int
     offset: int
+    income: Money = 0
+    expense: Money = 0
+    balance: Money = 0
 
 
 class TransferCreate(BaseModel):

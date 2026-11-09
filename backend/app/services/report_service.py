@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from sqlalchemy.orm import Session
 
 from app.money import to_pesos
-from app.schemas.reports import DashboardRead, MonthComparison, UpcomingItem
+from app.schemas.reports import DashboardRead, MonthComparison, PeriodSummary, UpcomingItem
 from app.services import installment_service, recurring_service
 from app.services import transaction_service as tx
 from app.services.periods import current_period, month_bounds, shift_month
@@ -16,15 +16,25 @@ def dashboard(db: Session, period: str | None = None) -> DashboardRead:
     period = period or current_period()
     start, end = month_bounds(period)
 
+    income_cents, expense_cents = tx.summarize_cents(db, start, end, include_initial=False)
+    net_cents = income_cents - expense_cents
     prev_cents = tx.total_balance_at(db, start - timedelta(days=1))
-    accum_cents = tx.total_balance_at(db, end)
+    accum_cents = prev_cents + net_cents
+
+    month_summary = PeriodSummary(
+        income=to_pesos(income_cents),
+        expense=to_pesos(expense_cents),
+        balance=to_pesos(net_cents),
+        previous_balance=to_pesos(prev_cents),
+        accumulated_balance=to_pesos(accum_cents),
+    )
 
     return DashboardRead(
         month=period,
-        available_balance=to_pesos(tx.total_balance(db)),
+        available_balance=to_pesos(accum_cents),
         accumulated_balance=to_pesos(accum_cents),
         previous_balance=to_pesos(prev_cents),
-        month_summary=tx.summarize(db, start, end),
+        month_summary=month_summary,
         expenses_by_category=tx.expenses_by_category(db, start, end),
         recent_transactions=tx.filter_transactions(db, start=start, end=end, limit=8).items,
         upcoming=_upcoming(db),

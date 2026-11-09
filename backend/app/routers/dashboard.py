@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Account
+from app.models import Account, Transaction
 from app.money import to_pesos
 from app.schemas.reports import (
     CategoryTotal,
@@ -91,9 +91,14 @@ def calendar_day(day: date, db: Session = Depends(get_db)) -> DayDetail:
 def calendar_month(month: str, db: Session = Depends(get_db)) -> dict[str, DayDetail]:
     """Every day of the month with its movements, for rendering the agenda grid."""
     start, end = month_bounds(_period(month))
-    page = tx.filter_transactions(db, start=start, end=end, limit=1000)
+    query = (
+        tx.base_query()
+        .where(Transaction.date >= start, Transaction.date <= end)
+        .order_by(Transaction.date.asc(), Transaction.id.asc())
+    )
+    all_transactions = [tx.to_read(row) for row in db.scalars(query).all()]
     by_day: dict[str, list[TransactionRead]] = {}
-    for item in page.items:
+    for item in all_transactions:
         by_day.setdefault(item.date.isoformat(), []).append(item)
 
     # Initial balance prior to the start of the month, calculated once

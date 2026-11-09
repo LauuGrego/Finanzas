@@ -21,7 +21,8 @@ export function Transactions() {
   const [categoryId, setCategoryId] = useState('')
   const [accountId, setAccountId] = useState('')
   const [search, setSearch] = useState('')
-  const [limit, setLimit] = useState(50)
+  const [items, setItems] = useState<Transaction[]>([])
+  const [loadingMore, setLoadingMore] = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [deleting, setDeleting] = useState<Transaction | null>(null)
 
@@ -44,37 +45,46 @@ export function Transactions() {
   const accounts = useAsync(() => api.accounts.list(), [])
   const dashboard = useAsync(() => api.dashboard.get(period), [period])
   const page = useAsync(
-    () =>
-      api.transactions.list({
+    async () => {
+      const res = await api.transactions.list({
         month: period,
         category_id: categoryId ? Number(categoryId) : undefined,
         account_id: accountId ? Number(accountId) : undefined,
         search: search || undefined,
-        limit,
-      }),
-    [period, categoryId, accountId, search, limit],
+        limit: 50,
+        offset: 0,
+      })
+      setItems(res.items)
+      return res
+    },
+    [period, categoryId, accountId, search],
   )
 
   const isMetricsLoading = dashboard.loading || !dashboard.data || page.loading || !page.data
 
-  const items = page.data?.items ?? []
-  const totalCount = page.data?.total ?? items.length
+  const totalCount = page.data?.total ?? 0
 
-  const hasCustomFilter = Boolean(categoryId || accountId || search)
+  const totalIncome = page.data?.income ?? 0
+  const totalExpense = page.data?.expense ?? 0
+  const netBalance = page.data?.balance ?? 0
 
-  const totalIncome = !hasCustomFilter && dashboard.data?.month_summary
-    ? dashboard.data.month_summary.income
-    : items
-        .filter((t) => t.type === 'INCOME')
-        .reduce((sum, t) => sum + t.amount, 0)
-
-  const totalExpense = !hasCustomFilter && dashboard.data?.month_summary
-    ? dashboard.data.month_summary.expense
-    : items
-        .filter((t) => t.type === 'EXPENSE')
-        .reduce((sum, t) => sum + t.amount, 0)
-
-  const netBalance = totalIncome - totalExpense
+  async function handleLoadMore() {
+    if (loadingMore || !page.data || items.length >= totalCount) return
+    setLoadingMore(true)
+    try {
+      const res = await api.transactions.list({
+        month: period,
+        category_id: categoryId ? Number(categoryId) : undefined,
+        account_id: accountId ? Number(accountId) : undefined,
+        search: search || undefined,
+        limit: 50,
+        offset: items.length,
+      })
+      setItems((prev) => [...prev, ...res.items])
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   const byDay = new Map<string, Transaction[]>()
   for (const transaction of items) {
@@ -351,10 +361,13 @@ export function Transactions() {
               <div className="pt-4 mt-2 text-center border-t border-white/5">
                 <button
                   type="button"
-                  onClick={() => setLimit((prev) => prev + 50)}
-                  className="bg-[#18181b] hover:bg-[#222226] border border-white/10 text-white font-semibold rounded-full px-5 py-2.5 text-xs sm:text-sm transition cursor-pointer"
+                  disabled={loadingMore}
+                  onClick={handleLoadMore}
+                  className="bg-[#18181b] hover:bg-[#222226] border border-white/10 text-white font-semibold rounded-full px-5 py-2.5 text-xs sm:text-sm transition cursor-pointer disabled:opacity-50"
                 >
-                  Cargar más movimientos ({items.length} de {totalCount})
+                  {loadingMore
+                    ? 'Cargando más…'
+                    : `Cargar más movimientos (${items.length} de ${totalCount})`}
                 </button>
               </div>
             )}
