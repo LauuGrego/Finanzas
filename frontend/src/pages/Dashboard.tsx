@@ -77,6 +77,15 @@ export function Dashboard() {
                   <p className="text-xs sm:text-sm font-bold text-black/80">
                     Balance del mes
                   </p>
+                  {isLoading ? (
+                    <Skeleton variant="gold" className="h-5 w-24 rounded-full" />
+                  ) : data && data.previous_balance !== 0 ? (
+                    <span className="text-[11px] font-bold text-black/80 bg-black/10 px-3 py-1 rounded-full tabular-nums">
+                      {data.previous_balance > 0
+                        ? `Ahorro previo: +${money(data.previous_balance)}`
+                        : `Arrastre previo: −${money(Math.abs(data.previous_balance))}`}
+                    </span>
+                  ) : null}
                 </div>
 
                 {isLoading ? (
@@ -95,7 +104,11 @@ export function Dashboard() {
                   </div>
                 ) : (
                   <p className="text-xs font-bold text-black/75 mb-5 tabular-nums">
-                    Ingresos menos gastos
+                    {data.month_summary.balance < 0 && data.previous_balance > 0 && data.accumulated_balance >= 0
+                      ? 'Déficit mensual cubierto con ahorros previos'
+                      : data.month_summary.balance === 0
+                        ? 'Sin movimientos registrados en este mes'
+                        : 'Ingresos menos gastos'}
                   </p>
                 )}
 
@@ -123,6 +136,34 @@ export function Dashboard() {
                       </span>
                     )}
                   </div>
+
+                  {/* Arrastre / Remanente acumulado */}
+                  {isLoading ? (
+                    <div className="flex items-center gap-2.5 text-[11px] pt-2 border-t border-white/10 text-zinc-400">
+                      <span>Viene del mes anterior:</span>
+                      <Skeleton variant="capsule" className="h-3.5 w-14 ml-auto rounded" />
+                    </div>
+                  ) : data && data.previous_balance !== 0 ? (
+                    <div className="flex items-center gap-2.5 text-[11px] pt-2 border-t border-white/10 text-zinc-400">
+                      <span>Viene del mes anterior:</span>
+                      <span className={`ml-auto font-semibold tabular-nums ${
+                        data.previous_balance >= 0 ? 'text-zinc-300' : 'text-expense'
+                      }`}>
+                        {data.previous_balance >= 0 ? '+' : '−'}{money(Math.abs(data.previous_balance))}
+                      </span>
+                    </div>
+                  ) : null}
+
+                  {!isLoading && data && data.previous_balance !== 0 ? (
+                    <div className="flex items-center gap-2.5 text-[11px] pt-1 text-zinc-400 font-medium">
+                      <span>Disponible acumulado:</span>
+                      <span className={`ml-auto font-bold tabular-nums ${
+                        data.accumulated_balance >= 0 ? 'text-gold' : 'text-expense'
+                      }`}>
+                        {data.accumulated_balance >= 0 ? '' : '−'}{money(Math.abs(data.accumulated_balance))}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
               </section>
 

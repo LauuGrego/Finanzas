@@ -143,6 +143,11 @@ export function Transactions() {
               </span>
             )}
           </div>
+          {!categoryId && !accountId && !search && dashboard.data && dashboard.data.previous_balance !== 0 && (
+            <span className="text-[11px] font-bold text-black/75 mt-2 tabular-nums">
+              Viene del mes anterior: {dashboard.data.previous_balance >= 0 ? '+' : '−'}{money(Math.abs(dashboard.data.previous_balance))}
+            </span>
+          )}
         </div>
       </div>
 
